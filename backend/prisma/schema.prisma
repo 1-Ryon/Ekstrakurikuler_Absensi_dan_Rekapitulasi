@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id           String         @id @default(uuid())
+  username     String         @unique
+  passwordHash String         @default("$2b$10$defaultHashPlaceholder")
+  role         String         // 'ADMIN' | 'PEMBINA' | 'SISWA'
+  namaLengkap  String
+  nomorInduk   String         @unique // NIP atau NISN
+  avatarUrl    String         @default("https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=160&auto=format&fit=crop&q=80")
+  spesialisasi String?        // Misal: Guru Eskul Computer Club / Koordinator
+  kelas        String?        // Misal: XII RPL 1 (jika role SISWA)
+  statusAktif  Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+
+  // Relations
+  eskulDiampu  Eskul[]        @relation("PembinaEskul")
+  keanggotaan  AnggotaEskul[]
+  presensiList Presensi[]
+  penilaianList Penilaian[]
+
+  @@map("users")
+}
+
+model Eskul {
+  id          String         @id @default(uuid())
+  namaEskul   String
+  pembinaId   String
+  pembina     User           @relation("PembinaEskul", fields: [pembinaId], references: [id])
+  jadwalHari  String         // Misal: 'Kamis'
+  jamMulai    String         // Misal: '15:30'
+  jamSelesai  String         // Misal: '17:00'
+  lokasi      String         // Misal: 'Lab Komputer RPL 1'
+  kategori    String         @default("Olahraga") // 'Olahraga' | 'Teknologi' | 'Seni & Budaya' | 'Keagamaan' | 'Kepemimpinan'
+  kuota       Int            @default(40)
+  status      String         @default("Aktif") // 'Aktif' | 'Non-Aktif'
+  deskripsi   String?
+  createdAt   DateTime       @default(now())
+
+  // Relations
+  anggota     AnggotaEskul[]
+  sesiList    SesiPertemuan[]
+  penilaian   Penilaian[]
+
+  @@map("eskul")
+}
+
+model AnggotaEskul {
+  id          String   @id @default(uuid())
+  eskulId     String
+  siswaId     String
+  tahunAjaran String   @default("2026/2027")
+  createdAt   DateTime @default(now())
+
+  eskul       Eskul    @relation(fields: [eskulId], references: [id], onDelete: Cascade)
+  siswa       User     @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+
+  @@unique([eskulId, siswaId, tahunAjaran])
+  @@map("anggota_eskul")
+}
+
+model SesiPertemuan {
+  id             String     @id @default(uuid())
+  eskulId        String
+  tanggal        String     // Format YYYY-MM-DD
+  jamMulai       String     @default("15:30")
+  jamSelesai     String     @default("17:00")
+  lokasi         String?
+  tokenAktif     String?
+  tokenExpiresAt DateTime?
+  status         String     @default("BERLANGSUNG") // 'BELUM_DIMULAI' | 'BERLANGSUNG' | 'SELESAI'
+  createdAt      DateTime   @default(now())
+
+  eskul          Eskul      @relation(fields: [eskulId], references: [id], onDelete: Cascade)
+  presensiList   Presensi[]
+
+  @@map("sesi_pertemuan")
+}
+
+model Presensi {
+  id         String        @id @default(uuid())
+  sesiId     String
+  siswaId    String
+  waktuScan  DateTime      @default(now())
+  status     String        @default("HADIR") // 'HADIR' | 'IZIN' | 'SAKIT' | 'ALPA'
+  metode     String        @default("DYNAMIC_QR") // 'DYNAMIC_QR' | 'MANUAL_DISPENSASI'
+  deviceInfo String?
+
+  sesi       SesiPertemuan @relation(fields: [sesiId], references: [id], onDelete: Cascade)
+  siswa      User          @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+
+  @@map("presensi")
+}
+
+model Penilaian {
+  id             String   @id @default(uuid())
+  eskulId        String
+  siswaId        String
+  semester       Int      @default(1) // 1 atau 2
+  tahunAjaran    String   @default("2026/2027")
+  nilaiKehadiran Float    @default(90.0) // bobot 40%
+  nilaiKeaktifan Float    @default(85.0) // bobot 30%
+  nilaiKinerja   Float    @default(85.0) // bobot 30%
+  nilaiAkhir     Float    @default(87.0)
+  predikat       String   @default("A")  // 'A' | 'B' | 'C' | 'D'
+  catatan        String?
+  createdAt      DateTime @default(now())
+
+  eskul          Eskul    @relation(fields: [eskulId], references: [id], onDelete: Cascade)
+  siswa          User     @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+
+  @@unique([eskulId, siswaId, semester, tahunAjaran])
+  @@map("penilaian")
+}
