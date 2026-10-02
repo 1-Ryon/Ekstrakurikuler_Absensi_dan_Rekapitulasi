@@ -103,7 +103,7 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-[#00B884] tracking-tight">
-            Dynamic QR Presensi Eskul
+            QR Dinamis Presensi Eskul
           </h1>
           <p className="text-slate-500 text-sm mt-0.5">
             Sistem QR Code terenkripsi berganti otomatis setiap 15 detik untuk mencegah kecurangan dan titip absen.
@@ -116,7 +116,7 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
           className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-semibold text-sm rounded-xl shadow-sm transition-all"
         >
           <Sparkles className="w-4 h-4" />
-          <span>Simulasi 1 Siswa Scan QR</span>
+          <span>Simulasi 1 Siswa Pindai QR</span>
         </button>
       </div>
 
@@ -162,7 +162,7 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
                 className={`p-2 rounded-xl transition-colors ${
                   isFullscreen ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
-                title={isFullscreen ? 'Keluar Fullscreen' : 'Mode Proyektor Layar Penuh'}
+                title={isFullscreen ? 'Keluar Layar Penuh' : 'Mode Proyektor Layar Penuh'}
               >
                 {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
               </button>
@@ -222,7 +222,7 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
               <div className="truncate">
-                <span className="text-slate-400 font-medium">Payload Token: </span>
+                <span className="text-slate-400 font-medium">Data Token: </span>
                 <span className="font-mono text-slate-700 font-semibold truncate">
                   {tokenPayload}
                 </span>
@@ -233,7 +233,7 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
               className="text-[#00B884] hover:text-[#009e70] font-semibold text-xs flex items-center gap-1 shrink-0 ml-2"
             >
               <RefreshCw className="w-3 h-3" />
-              <span>Refresh</span>
+              <span>Segarkan</span>
             </button>
           </div>
         </div>

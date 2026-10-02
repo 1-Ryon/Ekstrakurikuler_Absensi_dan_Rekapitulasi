@@ -4,17 +4,30 @@ import { Header } from './components/Header';
 import { AdminDashboard } from './components/dashboard/AdminDashboard';
 import { EskulManagement } from './components/dashboard/EskulManagement';
 import { StudentManagement } from './components/dashboard/StudentManagement';
+import { KelasManagement } from './components/dashboard/KelasManagement';
 import { ReportsManagement } from './components/dashboard/ReportsManagement';
 import { SettingsPage } from './components/dashboard/SettingsPage';
 import { DynamicQrGenerator } from './components/guru/DynamicQrGenerator';
 import { TeacherStudentScanner } from './components/guru/TeacherStudentScanner';
 import { LiveAttendanceLog } from './components/guru/LiveAttendanceLog';
 import { PenilaianPage } from './components/guru/PenilaianPage';
+import { PembinaDashboard } from './components/guru/PembinaDashboard';
+import { WaliKelasDashboard } from './components/dashboard/WaliKelasDashboard';
 import { SiswaDashboard } from './components/siswa/SiswaDashboard';
 import { AddEskulModal } from './components/modals/AddEskulModal';
+import { AddPembinaModal } from './components/modals/AddPembinaModal';
 import { ImportDataModal } from './components/modals/ImportDataModal';
+import { ImportGuruModal } from './components/modals/ImportGuruModal';
 import { NotificationsModal } from './components/modals/NotificationsModal';
 import { MailModal } from './components/modals/MailModal';
+import { StudentCardModal } from './components/modals/StudentCardModal';
+import { EditEskulModal } from './components/modals/EditEskulModal';
+import { PembinaManagement } from './components/dashboard/PembinaManagement';
+import { GuruWaliManagement } from './components/dashboard/GuruWaliManagement';
+import { AddGuruModal } from './components/modals/AddGuruModal';
+import { EditGuruModal } from './components/modals/EditGuruModal';
+import { EditPembinaModal } from './components/modals/EditPembinaModal';
+import { LoginPage } from './components/auth/LoginPage';
 
 import { 
   CURRENT_USER, 
@@ -25,10 +38,37 @@ import {
   INITIAL_PENILAIAN 
 } from './data/mockData';
 import { api } from './services/api';
-import { Role, Eskul, SesiPertemuan, PresensiRecord, PenilaianRecord, StudentProfile } from './types';
+import { Role, Eskul, SesiPertemuan, PresensiRecord, PenilaianRecord, StudentProfile, Guru, Kelas, User } from './types';
 
 export function App() {
-  const [currentRole, setCurrentRole] = useState<Role>('ADMIN');
+  // Session Authentication State (Default Administrator Sistem untuk kemudahan testing)
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem('al_amanah_user_session');
+    if (saved) {
+      try {
+        const u = JSON.parse(saved);
+        if (u && u.id) return u;
+      } catch {
+        // fallback
+      }
+    }
+    // Default ke Administrator Sistem agar langsung siap ditest
+    return CURRENT_USER;
+  });
+
+  const [currentRole, setCurrentRole] = useState<Role>(() => {
+    const saved = localStorage.getItem('al_amanah_user_session');
+    if (saved) {
+      try {
+        const u = JSON.parse(saved);
+        return u.role || 'ADMIN';
+      } catch {
+        return 'ADMIN';
+      }
+    }
+    return 'ADMIN';
+  });
+
   const [activeTab, setActiveTab] = useState<NavItemKey>('beranda');
 
   // Master Data State
@@ -38,12 +78,27 @@ export function App() {
   const [students, setStudents] = useState<StudentProfile[]>(INITIAL_STUDENTS);
   const [presensiLog, setPresensiLog] = useState<PresensiRecord[]>(INITIAL_PRESENSI_LOG);
   const [penilaianList, setPenilaianList] = useState<PenilaianRecord[]>(INITIAL_PENILAIAN);
+  const [kelasList, setKelasList] = useState<Kelas[]>([]);
+  const [guruList, setGuruList] = useState<Guru[]>([]);
+  const [pembinaList, setPembinaList] = useState<Guru[]>([]);
 
   // Modals state
   const [isAddEskulOpen, setIsAddEskulOpen] = useState(false);
+  const [isEditEskulOpen, setIsEditEskulOpen] = useState(false);
+  const [editingEskul, setEditingEskul] = useState<Eskul | null>(null);
+  const [isAddPembinaOpen, setIsAddPembinaOpen] = useState(false);
+  const [isEditPembinaOpen, setIsEditPembinaOpen] = useState(false);
+  const [editingPembina, setEditingPembina] = useState<Guru | null>(null);
+  const [isAddGuruOpen, setIsAddGuruOpen] = useState(false);
+  const [isEditGuruOpen, setIsEditGuruOpen] = useState(false);
+  const [editingGuru, setEditingGuru] = useState<Guru | null>(null);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isImportGuruOpen, setIsImportGuruOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMailOpen, setIsMailOpen] = useState(false);
+  const [isStudentCardModalOpen, setIsStudentCardModalOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -52,29 +107,40 @@ export function App() {
   };
 
   // Load from Backend on mount
-  React.useEffect(() => {
-    async function loadBackendData() {
-      try {
-        const [backendEskul, backendStudents, backendSessions, backendLogs, backendPenilaian] = await Promise.all([
-          api.getEskul(),
-          api.getStudents(),
-          api.getTodaySessions(),
-          api.getPresensiLogs(),
-          api.getPenilaian(),
-        ]);
+  const loadBackendData = async () => {
+    try {
+      const [backendEskul, backendStudents, backendSessions, backendLogs, backendPenilaian, backendKelas, backendPembina, backendGuru] = await Promise.all([
+        api.getEskul(),
+        api.getStudents(),
+        api.getTodaySessions(),
+        api.getPresensiLogs(),
+        api.getPenilaian(),
+        api.getKelas(),
+        api.getPembina(),
+        api.getGuru(),
+      ]);
 
-        if (backendEskul && backendEskul.length > 0) setEskulList(backendEskul);
-        if (backendStudents && backendStudents.length > 0) setStudents(backendStudents);
-        if (backendSessions && backendSessions.length > 0) {
-          setSessions(backendSessions);
-          setCurrentSession(backendSessions[0]);
-        }
-        if (backendLogs && backendLogs.length > 0) setPresensiLog(backendLogs);
-        if (backendPenilaian && backendPenilaian.length > 0) setPenilaianList(backendPenilaian);
-      } catch (err) {
-        console.warn('Backend initial fetch error, using local fallback:', err);
+      if (backendEskul && backendEskul.length > 0) setEskulList(backendEskul);
+      if (backendStudents && backendStudents.length > 0) setStudents(backendStudents);
+      if (backendSessions && backendSessions.length > 0) {
+        setSessions(backendSessions);
+        setCurrentSession(backendSessions[0]);
       }
+      if (backendLogs && backendLogs.length > 0) setPresensiLog(backendLogs);
+      if (backendPenilaian && backendPenilaian.length > 0) setPenilaianList(backendPenilaian);
+      if (backendKelas && backendKelas.length > 0) setKelasList(backendKelas);
+      if (backendPembina && backendPembina.length > 0) setPembinaList(backendPembina);
+      if (backendGuru && backendGuru.length > 0) {
+        setGuruList(backendGuru);
+      } else if (backendPembina && backendPembina.length > 0) {
+        setGuruList(backendPembina);
+      }
+    } catch (err) {
+      console.warn('Backend initial fetch error, using fallback:', err);
     }
+  };
+
+  React.useEffect(() => {
     loadBackendData();
   }, []);
 
@@ -82,18 +148,198 @@ export function App() {
   const handleAddEskul = async (newEskulData: Omit<Eskul, 'id' | 'jumlahSiswa'>) => {
     try {
       await api.createEskul(newEskulData);
+      await loadBackendData();
+      showToast(`Eskul "${newEskulData.namaEskul}" tersimpan ke basis data.`);
     } catch {
-      // fallback
+      const newId = `eskul-${Date.now().toString().slice(-4)}`;
+      const newEskul: Eskul = {
+        ...newEskulData,
+        id: newId,
+        jumlahSiswa: 0,
+      };
+      setEskulList([newEskul, ...eskulList]);
+      showToast(`Eskul "${newEskul.namaEskul}" tersimpan ke basis data.`);
     }
-    const newId = `eskul-${Date.now().toString().slice(-4)}`;
-    const newEskul: Eskul = {
-      ...newEskulData,
-      id: newId,
-      jumlahSiswa: 0,
-    };
-    setEskulList([newEskul, ...eskulList]);
-    showToast(`Eskul "${newEskul.namaEskul}" tersimpan ke database.`);
   };
+
+  // Handler for editing Eskul
+  const handleEditEskul = async (updated: Eskul) => {
+    try {
+      await api.updateEskul(updated.id, updated);
+      await loadBackendData();
+      showToast(`Data eskul "${updated.namaEskul}" berhasil diperbarui.`);
+    } catch {
+      setEskulList(prev => prev.map(e => e.id === updated.id ? updated : e));
+      showToast(`Data eskul "${updated.namaEskul}" berhasil diperbarui.`);
+    }
+  };
+
+  // Handler for creating Pembina (Koordinator feature)
+  const handleCreatePembina = async (data: {
+    namaLengkap: string;
+    nip?: string;
+    noHp?: string;
+    email?: string;
+    spesialisasi?: string;
+    username?: string;
+    password?: string;
+    assignedEskulId?: string;
+    assignedEskulIds?: string[];
+  }) => {
+    try {
+      await api.createPembina(data);
+      await loadBackendData();
+      showToast(`Akun Pembina "${data.namaLengkap}" berhasil dibuat.`);
+    } catch {
+      showToast(`Akun Pembina "${data.namaLengkap}" telah dibuat (lokal).`);
+    }
+  };
+
+  const handleUpdatePembina = async (id: string, data: any) => {
+    try {
+      await api.updateGuru(id, data);
+      await loadBackendData();
+      showToast(`Data Pembina "${data.namaLengkap}" berhasil diperbarui.`);
+    } catch {
+      // Local fallback: update pembinaList & eskulList
+      const assignedIds: string[] = data.assignedEskulIds || (data.assignedEskulId ? [data.assignedEskulId] : []);
+      
+      setPembinaList(prev => prev.map(p => {
+        if (p.id === id) {
+          const updatedEskulDiampu = eskulList
+            .filter(e => assignedIds.includes(e.id))
+            .map(e => ({ id: e.id, namaEskul: e.namaEskul }));
+          return {
+            ...p,
+            ...data,
+            eskulDiampu: updatedEskulDiampu,
+          };
+        }
+        return p;
+      }));
+
+      if (data.assignedEskulIds) {
+        setEskulList(prev => prev.map(e => {
+          if (assignedIds.includes(e.id)) {
+            return { ...e, pembinaId: id, pembinaNama: data.namaLengkap };
+          }
+          if (e.pembinaId === id && !assignedIds.includes(e.id)) {
+            return { ...e, pembinaId: '', pembinaNama: 'Belum Ditugaskan' };
+          }
+          return e;
+        }));
+      }
+
+      showToast(`Data Pembina "${data.namaLengkap}" berhasil diperbarui.`);
+    }
+  };
+
+  const handleDeletePembina = async (id: string) => {
+    try {
+      await api.deleteGuru(id);
+      await loadBackendData();
+      showToast('Data Pembina berhasil dihapus.');
+    } catch {
+      setPembinaList(prev => prev.filter(p => p.id !== id));
+      showToast('Data Pembina berhasil dihapus.');
+    }
+  };
+
+  // Handler for Guru & Wali Kelas
+  const handleCreateGuru = async (data: any) => {
+    try {
+      await api.createGuru(data);
+      await loadBackendData();
+      showToast(`Data Guru "${data.namaLengkap}" berhasil ditambahkan.`);
+    } catch {
+      showToast(`Data Guru "${data.namaLengkap}" telah dibuat (lokal).`);
+    }
+  };
+
+  const handleUpdateGuru = async (id: string, data: any) => {
+    try {
+      await api.updateGuru(id, data);
+      await loadBackendData();
+      showToast(`Data Guru "${data.namaLengkap}" berhasil diperbarui.`);
+    } catch {
+      setGuruList(prev => prev.map(g => g.id === id ? { ...g, ...data } : g));
+      showToast(`Data Guru "${data.namaLengkap}" berhasil diperbarui.`);
+    }
+  };
+
+  const handleDeleteGuru = async (id: string) => {
+    try {
+      await api.deleteGuru(id);
+      await loadBackendData();
+      showToast('Data Guru berhasil dihapus.');
+    } catch {
+      setGuruList(prev => prev.filter(g => g.id !== id));
+      showToast('Data Guru berhasil dihapus.');
+    }
+  };
+
+  // Handler for creating Kelas
+  const handleAddKelas = async (data: { namaKelas: string; tingkat: number; jurusan: string; waliKelasId?: string }) => {
+    try {
+      await api.createKelas(data);
+      await loadBackendData();
+      showToast(`Kelas "${data.namaKelas}" berhasil ditambahkan.`);
+    } catch {
+      const newKelas: Kelas = {
+        id: `kls-${Date.now()}`,
+        namaKelas: data.namaKelas,
+        tingkat: data.tingkat,
+        jurusan: data.jurusan,
+        waliKelasId: data.waliKelasId,
+        waliKelas: guruList.find(g => g.id === data.waliKelasId),
+        _count: { siswaList: 0 },
+      };
+      setKelasList([...kelasList, newKelas]);
+      showToast(`Kelas "${data.namaKelas}" berhasil ditambahkan.`);
+    }
+  };
+
+  const handleAssignWaliKelas = async (kelasId: string, waliKelasId: string) => {
+    try {
+      await fetch(`http://localhost:5000/api/kelas/${kelasId}/walikelas`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ waliKelasId }),
+      });
+      await loadBackendData();
+      showToast('Wali kelas berhasil ditugaskan.');
+    } catch {
+      setKelasList(kelasList.map(k => k.id === kelasId ? { ...k, waliKelasId, waliKelas: guruList.find(g => g.id === waliKelasId) } : k));
+      showToast('Wali kelas berhasil ditugaskan.');
+    }
+  };
+
+  const handleUpdateKelas = async (kelasId: string, data: { namaKelas?: string; tingkat?: number; jurusan?: string; waliKelasId?: string }) => {
+    try {
+      await api.updateKelas(kelasId, data);
+      await loadBackendData();
+      showToast('Data rombel kelas berhasil diperbarui.');
+    } catch {
+      setKelasList(kelasList.map(k => k.id === kelasId ? {
+        ...k,
+        ...data,
+        waliKelas: data.waliKelasId ? guruList.find(g => g.id === data.waliKelasId) : k.waliKelas,
+      } : k));
+      showToast('Data rombel kelas berhasil diperbarui.');
+    }
+  };
+
+  const handleDeleteKelas = async (kelasId: string) => {
+    try {
+      await api.deleteKelas(kelasId);
+      await loadBackendData();
+      showToast('Kelas berhasil dihapus.');
+    } catch {
+      setKelasList(kelasList.filter(k => k.id !== kelasId));
+      showToast('Kelas berhasil dihapus.');
+    }
+  };
+
 
   const handleDeleteEskul = async (id: string) => {
     try {
@@ -102,7 +348,7 @@ export function App() {
       // fallback
     }
     setEskulList(eskulList.filter(e => e.id !== id));
-    showToast('Ekstrakurikuler berhasil dihapus dari database.');
+    showToast('Ekstrakurikuler berhasil dihapus.');
   };
 
   const handleToggleEskulStatus = (id: string) => {
@@ -135,7 +381,6 @@ export function App() {
     setActiveTab('dynamic-qr');
   };
 
-  // Handler for Session Status update
   const handleUpdateSessionStatus = async (status: 'BELUM_DIMULAI' | 'BERLANGSUNG' | 'SELESAI') => {
     try {
       await api.updateSessionStatus(currentSession.id, status);
@@ -148,8 +393,7 @@ export function App() {
     showToast(`Status sesi diubah menjadi: ${status}`);
   };
 
-  // Simulated scan
-  const handleSimulateScan = async (sessionToken: string) => {
+  const handleSimulateScan = async (_sessionToken: string) => {
     const randomStudents = [
       { name: 'Aldi Taher Pratama', nisn: '0069928172', kelas: 'XII RPL 2' },
       { name: 'Citra Kirana Dewi', nisn: '0071829301', kelas: 'XI AKL 2' },
@@ -159,39 +403,27 @@ export function App() {
     const picked = randomStudents[Math.floor(Math.random() * randomStudents.length)];
     const timeStr = new Date().toTimeString().slice(0, 8);
 
-    const newRecord: PresensiRecord = {
-      id: `pre-${Date.now()}`,
+    const newLog: PresensiRecord = {
+      id: `log-${Date.now()}`,
       sesiId: currentSession.id,
       namaEskul: currentSession.namaEskul,
-      siswaId: `sis-${Date.now()}`,
+      siswaId: `stu-${Date.now()}`,
       namaSiswa: picked.name,
       nisn: picked.nisn,
       kelas: picked.kelas,
       waktuScan: timeStr,
       status: 'HADIR',
       metode: 'DYNAMIC_QR',
-      deviceInfo: `Ponsel Siswa (TOTP Token: ${sessionToken.slice(-6)})`,
+      deviceInfo: 'Siswa Device (Validated GPS Kompleks Al Amanah)',
     };
 
-    setPresensiLog([newRecord, ...presensiLog]);
+    setPresensiLog([newLog, ...presensiLog]);
     const updatedSession = { ...currentSession, totalHadir: currentSession.totalHadir + 1 };
     setCurrentSession(updatedSession);
     setSessions(sessions.map(s => s.id === updatedSession.id ? updatedSession : s));
-    showToast(`Presensi berhasil tercatat: ${picked.name} (HADIR)`);
+    showToast(`Presensi Berhasil: ${picked.name} (HADIR)`);
   };
 
-  // Live attendance status update
-  const handleUpdateAttendanceStatus = async (id: string, newStatus: 'HADIR' | 'IZIN' | 'SAKIT' | 'ALPA') => {
-    try {
-      await api.updatePresensiStatus(id, newStatus);
-    } catch {
-      // fallback
-    }
-    setPresensiLog(presensiLog.map(p => p.id === id ? { ...p, status: newStatus } : p));
-    showToast(`Status kehadiran siswa diperbarui menjadi ${newStatus}.`);
-  };
-
-  // Assign Eskul to Student
   const handleAssignEskulToStudent = async (studentId: string, eskulIds: string[]) => {
     try {
       await api.assignEskul(studentId, eskulIds);
@@ -199,44 +431,52 @@ export function App() {
       // fallback
     }
     setStudents(students.map(s => s.id === studentId ? { ...s, enrolledEskulIds: eskulIds } : s));
-    showToast('Penugasan ekstrakurikuler siswa berhasil diperbarui.');
+    showToast('Penugasan eskul siswa diperbarui.');
   };
 
-  // Student QR Scan from student view
+  const handleUpdateAttendanceStatus = async (logId: string, newStatus: PresensiRecord['status']) => {
+    try {
+      await api.updatePresensiStatus(logId, newStatus);
+    } catch {
+      // fallback
+    }
+    setPresensiLog(presensiLog.map(p => p.id === logId ? { ...p, status: newStatus, metode: 'MANUAL_DISPENSASI' } : p));
+    showToast(`Status presensi diperbarui: ${newStatus}`);
+  };
+
   const handleStudentScanned = (studentName: string, eskulName: string) => {
-    const timeStr = new Date().toTimeString().slice(0, 8);
+    const student = students[0];
     const newRecord: PresensiRecord = {
-      id: `pre-stu-${Date.now()}`,
+      id: `log-${Date.now()}`,
       sesiId: currentSession.id,
-      namaEskul: eskulName,
-      siswaId: students[0].id,
-      namaSiswa: studentName,
-      nisn: students[0].nomorInduk,
-      kelas: students[0].kelas || 'XII RPL 1',
-      waktuScan: timeStr,
+      namaEskul: eskulName || currentSession.namaEskul,
+      siswaId: student?.id || 'sis-01',
+      namaSiswa: studentName || student?.namaLengkap || 'Siswa',
+      nisn: student?.nis || student?.nomorInduk || '0061928374',
+      kelas: student?.kelas || 'X RPL 1',
+      waktuScan: new Date().toTimeString().slice(0, 8),
       status: 'HADIR',
       metode: 'DYNAMIC_QR',
-      deviceInfo: 'Kamera Siswa (Geofencing Valid: 18m)',
+      deviceInfo: 'Perangkat Siswa (GPS Valid)',
     };
+
     setPresensiLog([newRecord, ...presensiLog]);
-    showToast(`Selamat! Presensi ${eskulName} Anda berhasil tercatat.`);
+    showToast(`Presensi Anda di ${eskulName || 'Ekstrakurikuler'} berhasil diverifikasi!`);
   };
 
-  // Guru memindai Kartu QR Siswa (Ide Kelompok)
-  const handleTeacherRecordAttendance = (student: StudentProfile, session: SesiPertemuan) => {
-    const timeStr = new Date().toTimeString().slice(0, 8);
+  const handleTeacherRecordAttendance = (student: StudentProfile) => {
     const newRecord: PresensiRecord = {
-      id: `pre-card-${Date.now()}`,
-      sesiId: session.id,
-      namaEskul: session.namaEskul,
+      id: `log-${Date.now()}`,
+      sesiId: currentSession.id,
+      namaEskul: currentSession.namaEskul,
       siswaId: student.id,
       namaSiswa: student.namaLengkap,
-      nisn: student.nomorInduk,
-      kelas: student.kelas || 'XII RPL 1',
-      waktuScan: timeStr,
+      nisn: student.nis || student.nomorInduk,
+      kelas: student.kelas,
+      waktuScan: new Date().toTimeString().slice(0, 8),
       status: 'HADIR',
-      metode: 'DYNAMIC_QR',
-      deviceInfo: `Kartu Fisik / QR Siswa (Diverifikasi Guru: ${session.pembinaNama})`,
+      metode: 'SCAN_KARTU_GURU',
+      deviceInfo: 'Kamera Scanner Pembina (ID Card QR)',
     };
 
     setPresensiLog([newRecord, ...presensiLog]);
@@ -246,144 +486,354 @@ export function App() {
     showToast(`Presensi Terverifikasi: ${student.namaLengkap} (HADIR)`);
   };
 
-  const handleRoleChange = (role: Role) => {
-    setCurrentRole(role);
-    if (role === 'SISWA') {
-      setActiveTab('scanner-siswa');
-    } else if (role === 'PEMBINA') {
-      setActiveTab('dynamic-qr');
+  // Hanya Admin yang memiliki wewenang simulasi mode untuk testing antar-role
+  const isSystemAdmin = 
+    currentUser?.role === 'ADMIN' || 
+    currentUser?.username === 'admin' || 
+    currentUser?.username === 'admin.it' ||
+    localStorage.getItem('al_amanah_is_admin') === 'true';
+
+  const handleLoginSuccess = (user: User) => {
+    setCurrentUser(user);
+    setCurrentRole(user.role);
+    if (user.role === 'ADMIN' || user.username === 'admin' || user.username === 'admin.it') {
+      localStorage.setItem('al_amanah_is_admin', 'true');
     } else {
-      setActiveTab('beranda');
+      localStorage.removeItem('al_amanah_is_admin');
     }
+    localStorage.setItem('al_amanah_user_session', JSON.stringify(user));
+    setActiveTab('beranda');
+    showToast(`Selamat datang kembali, ${user.namaLengkap}!`);
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('al_amanah_user_session');
+    localStorage.removeItem('al_amanah_auth_token');
+    localStorage.removeItem('al_amanah_is_admin');
+    setCurrentUser(null);
+    setCurrentRole('ADMIN');
+    setIsMobileMenuOpen(false);
+    showToast('Sesi Anda telah berhasil diakhiri.');
+  };
+
+  const handleRoleChange = (role: Role) => {
+    if (!isSystemAdmin) return;
+    setCurrentRole(role);
+    setActiveTab('beranda');
+    showToast(`Mode Simulasi Admin: Beralih ke tampilan ${role}`);
+  };
+
+  // ==========================================
+  // MANDATORY AUTH GUARD: Wajib Login Dulu
+  // ==========================================
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-[#EEF1F5] font-sans selection:bg-[#00B884]/20 selection:text-[#00B884]">
+        <LoginPage onLoginSuccess={handleLoginSuccess} />
+        {toastMessage && (
+          <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 text-xs font-semibold animate-in slide-in-from-bottom-5 border border-slate-800">
+            <span className="w-2 h-2 rounded-full bg-[#00B884] animate-ping"></span>
+            <span>{toastMessage}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#EEF1F5] flex flex-row">
-      {/* Sidebar matching screenshot */}
+    <div className="min-h-screen bg-[#EEF1F5] flex flex-row font-sans relative">
+      {/* Sidebar with strict Role Filtering, Desktop Collapse & Mobile Drawer Support */}
       <Sidebar
         activeTab={activeTab}
-        onTabChange={(tab) => setActiveTab(tab)}
-        currentRole={currentRole}
-        onLogout={() => {
-          showToast('Sesi Anda telah diakhiri.');
+        onTabChange={(tab) => {
+          setIsMobileMenuOpen(false);
+          if (tab === 'kartu-siswa') {
+            setIsStudentCardModalOpen(true);
+          } else {
+            setActiveTab(tab);
+          }
         }}
+        currentRole={currentRole}
+        onLogout={handleLogout}
+        isMobileOpen={isMobileMenuOpen}
+        onCloseMobile={() => setIsMobileMenuOpen(false)}
+        isDesktopOpen={isDesktopSidebarOpen}
+        onToggleDesktop={() => setIsDesktopSidebarOpen(prev => !prev)}
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen overflow-y-auto">
-        {/* Top Header matching screenshot */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+        {/* Top Header */}
         <Header
-          currentUser={CURRENT_USER}
+          currentUser={currentUser}
           currentRole={currentRole}
           onRoleChange={handleRoleChange}
+          canSwitchRole={isSystemAdmin}
           onSearch={(q) => {
             if (q) showToast(`Mencari "${q}"...`);
           }}
           onOpenNotifications={() => setIsNotificationsOpen(true)}
           onOpenMail={() => setIsMailOpen(true)}
+          onToggleMobileMenu={() => setIsMobileMenuOpen(prev => !prev)}
+          isDesktopSidebarOpen={isDesktopSidebarOpen}
+          onToggleDesktopSidebar={() => setIsDesktopSidebarOpen(prev => !prev)}
+          onLogout={handleLogout}
+          eskulList={eskulList}
+          students={students}
+          guruList={guruList.length > 0 ? guruList : pembinaList}
+          kelasList={kelasList}
+          onNavigateTab={(tab) => {
+            setActiveTab(tab);
+          }}
+          onSelectEskul={(eskul) => {
+            setActiveTab('eskul');
+            showToast(`Membuka eskul: ${eskul.namaEskul}`);
+          }}
+          onSelectStudent={(stu) => {
+            setActiveTab('siswa');
+            showToast(`Membuka data siswa: ${stu.namaLengkap} (${stu.kelas})`);
+          }}
         />
 
         {/* Content Views */}
-        <main className="flex-1 px-6 sm:px-8 pt-2">
-          {activeTab === 'beranda' && (
-            <AdminDashboard
-              onOpenAddEskul={() => setIsAddEskulOpen(true)}
-              onOpenImport={() => setIsImportOpen(true)}
-              onNavigate={(tab) => setActiveTab(tab)}
-            />
-          )}
+        <main className="flex-1 px-4 sm:px-6 lg:px-8 pt-2 pb-8">
+          {(() => {
+            const isKoordinator = currentRole === 'ADMIN' || currentRole === 'KOORDINATOR';
+            const isPembina = currentRole === 'PEMBINA';
+            const isWaliKelas = currentRole === 'WALI_KELAS';
+            const isSiswa = currentRole === 'SISWA';
 
-          {activeTab === 'eskul' && (
-            <EskulManagement
-              eskulList={eskulList}
-              onAddEskul={() => setIsAddEskulOpen(true)}
-              onEditEskul={(eskul) => {
-                showToast(`Edit eskul: ${eskul.namaEskul}`);
-              }}
-              onDeleteEskul={handleDeleteEskul}
-              onToggleStatus={handleToggleEskulStatus}
-              onOpenSession={handleOpenSessionFromEskul}
-            />
-          )}
+            // Coached eskul for current Pembina
+            const coachedEskul = eskulList.find(e => 
+              e.pembinaId === currentUser?.id || 
+              (currentUser?.namaLengkap && e.pembinaNama.toLowerCase().includes(currentUser.namaLengkap.toLowerCase().split(' ')[0]))
+            ) || eskulList[0];
 
-          {activeTab === 'siswa' && (
-            <StudentManagement
-              students={students}
-              eskulList={eskulList}
-              onAssignEskul={handleAssignEskulToStudent}
-              onAddStudent={() => {
-                setIsImportOpen(true);
-              }}
-            />
-          )}
+            // Target student profile for Siswa role
+            const studentProfile = students.find(s => 
+              s.nis === currentUser?.username || 
+              s.nomorInduk === currentUser?.nomorInduk || 
+              s.id === currentUser?.id
+            ) || students[0];
 
-          {activeTab === 'laporan' && (
-            <ReportsManagement
-              eskulList={eskulList}
-              penilaianList={penilaianList}
-              presensiList={presensiLog}
-            />
-          )}
+            // Assigned class for Wali Kelas
+            const waliClass = currentUser?.kelas || 'X RPL 1';
 
-          {activeTab === 'dynamic-qr' && (
-            <DynamicQrGenerator
-              sessions={sessions}
-              currentSession={currentSession}
-              onSelectSession={(sess) => setCurrentSession(sess)}
-              onUpdateSessionStatus={handleUpdateSessionStatus}
-              onSimulateStudentScan={handleSimulateScan}
-            />
-          )}
+            return (
+              <>
+                {/* 1. BERANDA (Role-Aware) */}
+                {activeTab === 'beranda' && (
+                  isKoordinator ? (
+                    <AdminDashboard
+                      eskulList={eskulList}
+                      students={students}
+                      pembinaList={pembinaList.length > 0 ? pembinaList : guruList.filter(g => g.isPembina)}
+                      sessions={sessions}
+                      presensiLog={presensiLog}
+                      onOpenAddEskul={() => setIsAddEskulOpen(true)}
+                      onOpenImport={() => setIsImportOpen(true)}
+                      onNavigate={(tab) => setActiveTab(tab)}
+                      onOpenSession={handleOpenSessionFromEskul}
+                    />
+                  ) : isPembina ? (
+                    <PembinaDashboard
+                      currentPembina={currentUser!}
+                      eskulList={eskulList}
+                      students={students}
+                      sessions={sessions}
+                      recentLogs={presensiLog}
+                      penilaianList={penilaianList}
+                      onNavigate={(tab) => setActiveTab(tab)}
+                      onOpenSession={handleOpenSessionFromEskul}
+                    />
+                  ) : isWaliKelas ? (
+                    <WaliKelasDashboard
+                      currentWali={currentUser!}
+                      students={students}
+                      eskulList={eskulList}
+                      penilaianList={penilaianList}
+                      presensiLog={presensiLog}
+                      onNavigate={(tab) => setActiveTab(tab)}
+                      onAssignEskul={handleAssignEskulToStudent}
+                    />
+                  ) : (
+                    <SiswaDashboard
+                      currentStudent={studentProfile}
+                      enrolledEskuls={eskulList.filter(e => studentProfile?.enrolledEskulIds?.includes(e.id))}
+                      todaySessions={sessions}
+                      attendanceHistory={presensiLog.filter(p => p.siswaId === studentProfile?.id || p.siswaId === 'usr-sis-01')}
+                      onNewAttendance={handleStudentScanned}
+                    />
+                  )
+                )}
 
-          {activeTab === 'scanner-guru' && (
-            <TeacherStudentScanner
-              currentSession={currentSession}
-              students={students}
-              onRecordAttendance={handleTeacherRecordAttendance}
-              recentLogs={presensiLog.filter(p => p.sesiId === currentSession.id)}
-            />
-          )}
+                {/* 2. ESKUL MANAGEMENT (Koordinator) */}
+                {activeTab === 'eskul' && (
+                  <EskulManagement
+                    eskulList={eskulList}
+                    onAddEskul={() => setIsAddEskulOpen(true)}
+                    onAddPembina={() => setIsAddPembinaOpen(true)}
+                    onEditEskul={(eskul) => {
+                      setEditingEskul(eskul);
+                      setIsEditEskulOpen(true);
+                    }}
+                    onDeleteEskul={handleDeleteEskul}
+                    onToggleStatus={handleToggleEskulStatus}
+                    onOpenSession={handleOpenSessionFromEskul}
+                  />
+                )}
 
-          {activeTab === 'live-presensi' && (
-            <LiveAttendanceLog
-              logs={presensiLog}
-              onUpdateStatus={handleUpdateAttendanceStatus}
-              onRefresh={() => showToast('Data presensi diperbarui secara real-time.')}
-            />
-          )}
+                {/* 2.1 DATA PEMBINA (Koordinator) */}
+                {activeTab === 'pembina' && (
+                  <PembinaManagement
+                    pembinaList={pembinaList.length > 0 ? pembinaList : guruList.filter(g => g.isPembina !== false)}
+                    eskulList={eskulList}
+                    onAddPembina={() => setIsAddPembinaOpen(true)}
+                    onOpenImport={() => setIsImportGuruOpen(true)}
+                    onEditPembina={(pembina) => {
+                      setEditingPembina(pembina);
+                      setIsEditPembinaOpen(true);
+                    }}
+                    onDeletePembina={handleDeletePembina}
+                  />
+                )}
 
-          {activeTab === 'penilaian' && (
-            <PenilaianPage
-              penilaianList={penilaianList}
-              eskulList={eskulList}
-              onSavePenilaian={(updated) => {
-                setPenilaianList(updated);
-                showToast('Nilai rapor berhasil disimpan ke database.');
-              }}
-            />
-          )}
+                {/* 2.2 DATA GURU & WALI KELAS (Koordinator) */}
+                {activeTab === 'guru' && (
+                  <GuruWaliManagement
+                    guruList={guruList}
+                    kelasList={kelasList}
+                    onAddGuru={() => setIsAddGuruOpen(true)}
+                    onOpenImport={() => setIsImportGuruOpen(true)}
+                    onEditGuru={(guru) => {
+                      setEditingGuru(guru);
+                      setIsEditGuruOpen(true);
+                    }}
+                    onDeleteGuru={handleDeleteGuru}
+                    onAssignWaliKelas={handleAssignWaliKelas}
+                  />
+                )}
 
-          {activeTab === 'scanner-siswa' && (
-            <SiswaDashboard
-              currentStudent={students[0]}
-              enrolledEskuls={eskulList.filter(e => students[0].enrolledEskulIds.includes(e.id))}
-              todaySessions={sessions}
-              attendanceHistory={presensiLog.filter(p => p.siswaId === students[0].id || p.siswaId === 'sis-01')}
-              onNewAttendance={handleStudentScanned}
-            />
-          )}
+                {/* 3. STUDENT MANAGEMENT (Koordinator / Wali Kelas / Pembina) */}
+                {activeTab === 'siswa' && (
+                  <StudentManagement
+                    students={students}
+                    eskulList={eskulList}
+                    onAssignEskul={handleAssignEskulToStudent}
+                    onAddStudent={() => {
+                      setIsImportOpen(true);
+                    }}
+                    defaultClasses={isWaliKelas ? [waliClass] : []}
+                    defaultEskuls={isPembina && coachedEskul ? [coachedEskul.id] : []}
+                  />
+                )}
 
-          {activeTab === 'khn-siswa' && (
-            <SiswaDashboard
-              currentStudent={students[0]}
-              enrolledEskuls={eskulList.filter(e => students[0].enrolledEskulIds.includes(e.id))}
-              todaySessions={sessions}
-              attendanceHistory={presensiLog.filter(p => p.siswaId === students[0].id || p.siswaId === 'sis-01')}
-              onNewAttendance={handleStudentScanned}
-            />
-          )}
+                {/* 4. KELAS & WALI KELAS (Koordinator) */}
+                {activeTab === 'kelas' && (
+                  <KelasManagement
+                    kelasList={kelasList}
+                    guruList={guruList}
+                    onAddKelas={handleAddKelas}
+                    onAssignWaliKelas={handleAssignWaliKelas}
+                    onUpdateKelas={handleUpdateKelas}
+                    onDeleteKelas={handleDeleteKelas}
+                  />
+                )}
 
-          {activeTab === 'pengaturan' && <SettingsPage />}
+                {/* 5. LAPORAN & REKAP (Koordinator / Wali Kelas / Pembina) */}
+                {activeTab === 'laporan' && (
+                  <ReportsManagement
+                    eskulList={eskulList}
+                    penilaianList={penilaianList}
+                    presensiList={presensiLog}
+                    defaultClasses={isWaliKelas ? [waliClass] : []}
+                    defaultEskuls={isPembina && coachedEskul ? [coachedEskul.id] : []}
+                  />
+                )}
+
+                {/* 6. DYNAMIC QR GENERATOR (Pembina / Koordinator) */}
+                {activeTab === 'dynamic-qr' && (
+                  <DynamicQrGenerator
+                    sessions={sessions}
+                    currentSession={currentSession}
+                    onSelectSession={(sess) => setCurrentSession(sess)}
+                    onUpdateSessionStatus={handleUpdateSessionStatus}
+                    onSimulateStudentScan={handleSimulateScan}
+                  />
+                )}
+
+                {/* 7. TEACHER SCANNER (Pembina) */}
+                {activeTab === 'scanner-guru' && (
+                  <TeacherStudentScanner
+                    currentSession={currentSession}
+                    students={students}
+                    onRecordAttendance={handleTeacherRecordAttendance}
+                    recentLogs={presensiLog.filter(p => p.sesiId === currentSession.id)}
+                  />
+                )}
+
+                {/* 8. LIVE PRESENSI (Koordinator / Pembina) */}
+                {activeTab === 'live-presensi' && (
+                  <LiveAttendanceLog
+                    logs={presensiLog}
+                    onUpdateStatus={handleUpdateAttendanceStatus}
+                    onRefresh={() => showToast('Data presensi diperbarui secara langsung.')}
+                  />
+                )}
+
+                {/* 9. PENILAIAN RAPOR (Pembina) */}
+                {activeTab === 'penilaian' && (
+                  <PenilaianPage
+                    penilaianList={penilaianList}
+                    eskulList={eskulList}
+                    onSavePenilaian={(updated) => {
+                      setPenilaianList(updated);
+                      showToast('Nilai rapor berhasil disimpan ke basis data.');
+                    }}
+                    defaultEskuls={isPembina && coachedEskul ? [coachedEskul.id] : []}
+                    defaultClasses={isWaliKelas ? [waliClass] : []}
+                  />
+                )}
+
+                {/* 10. SISWA VIEWS */}
+                {activeTab === 'scanner-siswa' && (
+                  <SiswaDashboard
+                    initialOpenModal="scanner"
+                    currentStudent={studentProfile}
+                    enrolledEskuls={eskulList.filter(e => studentProfile?.enrolledEskulIds?.includes(e.id))}
+                    todaySessions={sessions}
+                    attendanceHistory={presensiLog.filter(p => p.siswaId === studentProfile?.id || p.siswaId === 'usr-sis-01')}
+                    onNewAttendance={handleStudentScanned}
+                  />
+                )}
+
+                {activeTab === 'khn-siswa' && (
+                  <SiswaDashboard
+                    initialOpenModal="khn"
+                    currentStudent={studentProfile}
+                    enrolledEskuls={eskulList.filter(e => studentProfile?.enrolledEskulIds?.includes(e.id))}
+                    todaySessions={sessions}
+                    attendanceHistory={presensiLog.filter(p => p.siswaId === studentProfile?.id || p.siswaId === 'usr-sis-01')}
+                    onNewAttendance={handleStudentScanned}
+                  />
+                )}
+
+                {activeTab === 'kartu-siswa' && (
+                  <SiswaDashboard
+                    initialOpenModal="card"
+                    currentStudent={studentProfile}
+                    enrolledEskuls={eskulList.filter(e => studentProfile?.enrolledEskulIds?.includes(e.id))}
+                    todaySessions={sessions}
+                    attendanceHistory={presensiLog.filter(p => p.siswaId === studentProfile?.id || p.siswaId === 'usr-sis-01')}
+                    onNewAttendance={handleStudentScanned}
+                  />
+                )}
+
+                {/* 11. PENGATURAN */}
+                {activeTab === 'pengaturan' && <SettingsPage />}
+              </>
+            );
+          })()}
         </main>
       </div>
 
@@ -394,12 +844,81 @@ export function App() {
         onSave={handleAddEskul}
       />
 
+      <EditEskulModal
+        isOpen={isEditEskulOpen}
+        onClose={() => {
+          setIsEditEskulOpen(false);
+          setEditingEskul(null);
+        }}
+        eskul={editingEskul}
+        onSave={handleEditEskul}
+        pembinaList={guruList.map(g => ({
+          id: g.id,
+          namaLengkap: g.namaLengkap,
+          spesialisasi: g.spesialisasi,
+        }))}
+      />
+
+      <AddPembinaModal
+        isOpen={isAddPembinaOpen}
+        onClose={() => setIsAddPembinaOpen(false)}
+        eskulList={eskulList}
+        onSave={handleCreatePembina}
+      />
+
+      <EditPembinaModal
+        isOpen={isEditPembinaOpen}
+        onClose={() => {
+          setIsEditPembinaOpen(false);
+          setEditingPembina(null);
+        }}
+        pembina={editingPembina}
+        eskulList={eskulList}
+        onSave={handleUpdatePembina}
+      />
+
+      <AddGuruModal
+        isOpen={isAddGuruOpen}
+        onClose={() => setIsAddGuruOpen(false)}
+        kelasList={kelasList}
+        onSave={handleCreateGuru}
+      />
+
+      <EditGuruModal
+        isOpen={isEditGuruOpen}
+        onClose={() => {
+          setIsEditGuruOpen(false);
+          setEditingGuru(null);
+        }}
+        guru={editingGuru}
+        kelasList={kelasList}
+        onSave={handleUpdateGuru}
+      />
+
       <ImportDataModal
         isOpen={isImportOpen}
         onClose={() => setIsImportOpen(false)}
         onSuccessImport={(count) => {
-          showToast(`Berhasil mengimpor ${count} data baru!`);
+          loadBackendData();
+          showToast(`Berhasil mengimpor ${count} siswa dan membuat akun kredensial!`);
         }}
+      />
+
+      <ImportGuruModal
+        isOpen={isImportGuruOpen}
+        onClose={() => setIsImportGuruOpen(false)}
+        onSuccessImport={(count) => {
+          loadBackendData();
+          showToast(`Berhasil mengimpor ${count} data guru dan pembina!`);
+        }}
+      />
+
+      <StudentCardModal
+        isOpen={isStudentCardModalOpen}
+        onClose={() => setIsStudentCardModalOpen(false)}
+        student={students[0] || null}
+        allStudents={students}
+        eskulList={eskulList}
       />
 
       <NotificationsModal

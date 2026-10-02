@@ -3,6 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { X, Printer, Download, ShieldCheck, Sparkles, Smartphone, Award } from 'lucide-react';
 import { StudentProfile, Eskul } from '../../types';
 import { SchoolLogo } from '../SchoolLogo';
+import { UserAvatar } from '../common/UserAvatar';
 
 interface StudentCardModalProps {
   isOpen: boolean;
@@ -45,7 +46,7 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({
               </h3>
               <p className="text-xs text-slate-400">
                 {isBatchMode 
-                  ? 'Format lembar cetak A4 siap print & laminasi untuk seluruh siswa.' 
+                  ? 'Format lembar cetak A4 siap cetak & laminasi untuk seluruh siswa.' 
                   : 'Bisa langsung ditunjukkan dari layar HP siswa atau dicetak/disimpan ke PDF.'}
               </p>
             </div>
@@ -76,7 +77,7 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({
             <div className="flex items-center gap-2">
               <Smartphone className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>
-                <strong>Dua Cara Penggunaan:</strong> Siswa bisa screenshot/buka kartu ini di HP untuk di-scan guru, ATAU dicetak dalam bentuk ID Card fisik (ukuran kartu saku).
+                <strong>Dua Cara Penggunaan:</strong> Siswa bisa tangkapan layar/buka kartu ini di HP untuk dipindai guru, ATAU dicetak dalam bentuk Kartu Fisik (ukuran saku).
               </span>
             </div>
           </div>
@@ -116,10 +117,9 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({
                     {/* Left: Avatar & Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2.5 mb-2">
-                        <img
-                          src={stu.avatarUrl}
-                          alt={stu.namaLengkap}
-                          className="w-12 h-12 rounded-2xl object-cover ring-2 ring-[#00B884] shadow-xs shrink-0"
+                        <UserAvatar
+                          name={stu.namaLengkap}
+                          className="w-12 h-12 rounded-2xl ring-2 ring-[#00B884] shadow-xs shrink-0 text-sm font-extrabold"
                         />
                         <div className="min-w-0">
                           <h4 className="font-extrabold text-sm text-slate-800 leading-tight truncate">
@@ -169,7 +169,7 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({
                         includeMargin={false}
                       />
                       <span className="text-[8px] font-mono font-bold text-slate-400 mt-1.5 uppercase tracking-tighter">
-                        SCAN UNTUK HADIR
+                        PINDAI UNTUK HADIR
                       </span>
                     </div>
                   </div>

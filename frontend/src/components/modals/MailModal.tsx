@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Mail, Send, User } from 'lucide-react';
 import { PEMBINA_LIST } from '../../data/mockData';
+import { UserAvatar } from '../common/UserAvatar';
 
 interface MailModalProps {
   isOpen: boolean;
@@ -58,10 +59,9 @@ export const MailModal: React.FC<MailModalProps> = ({
               key={m.id}
               className="p-3.5 rounded-2xl border border-slate-100 bg-slate-50/70 hover:bg-slate-50 transition-colors flex items-start gap-3"
             >
-              <img
-                src={m.avatar}
-                alt={m.sender}
-                className="w-9 h-9 rounded-full object-cover ring-2 ring-emerald-500/20 shrink-0"
+              <UserAvatar
+                name={m.sender}
+                className="w-9 h-9 ring-2 ring-emerald-500/20 shrink-0 text-xs shadow-xs"
               />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">

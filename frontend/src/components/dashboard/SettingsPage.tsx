@@ -36,7 +36,7 @@ export const SettingsPage: React.FC = () => {
           Pengaturan Sistem & Keamanan
         </h1>
         <p className="text-slate-500 text-sm mt-0.5">
-          Konfigurasi parameter enkripsi dynamic QR, radius geofencing presensi, dan formula bobot penilaian rapor.
+          Konfigurasi parameter enkripsi QR dinamis, radius pembatasan wilayah (geofencing) presensi, dan formula bobot penilaian rapor.
         </p>
       </div>
 
@@ -56,7 +56,7 @@ export const SettingsPage: React.FC = () => {
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-800">
-                Keamanan Dynamic QR & Anti-Fraud
+                Keamanan QR Dinamis & Anti-Kecurangan
               </h2>
               <p className="text-xs text-slate-400">
                 Pencegahan kecurangan titip absen dan tangkapan layar (screenshot sharing).
@@ -68,7 +68,7 @@ export const SettingsPage: React.FC = () => {
             <div>
               <label className="text-xs font-bold text-slate-700 block mb-1.5 flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-slate-400" />
-                <span>Interval Regenerasi Token Dynamic QR (Detik)</span>
+                <span>Interval Regenerasi Token QR Dinamis (Detik)</span>
               </label>
               <select
                 value={qrExpiry}
@@ -98,7 +98,7 @@ export const SettingsPage: React.FC = () => {
                 <option value={50}>50 Meter (Area Inti Gedung)</option>
                 <option value={100}>100 Meter (Seluruh Kompleks SMK Al Amanah)</option>
                 <option value={200}>200 Meter (Toleransi Area Lapangan Luar)</option>
-                <option value={0}>Non-aktifkan Geofencing</option>
+                <option value={0}>Nonaktifkan Geofencing</option>
               </select>
               <span className="text-[11px] text-slate-400 mt-1 block">
                 Koordinat Sekolah: -6.34215, 106.71124 (Puspiptek Serpong)

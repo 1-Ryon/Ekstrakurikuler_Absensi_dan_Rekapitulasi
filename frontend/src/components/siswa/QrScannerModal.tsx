@@ -76,7 +76,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
             <Camera className="w-3.5 h-3.5" />
             <span>Kamera Presensi Siswa</span>
           </div>
-          <h3 className="text-lg font-bold">Pindai Dynamic QR Guru</h3>
+          <h3 className="text-lg font-bold">Pindai QR Dinamis Guru</h3>
           <p className="text-xs text-slate-400 mt-0.5">
             Arahkan kamera ke layar proyektor / HP guru pembina
           </p>
@@ -115,7 +115,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
                 Memverifikasi TOTP Token...
               </div>
               <div className="text-xs text-slate-500">
-                Anti-fraud Token Check
+                Pemeriksaan Keamanan Token
               </div>
             </div>
           )}

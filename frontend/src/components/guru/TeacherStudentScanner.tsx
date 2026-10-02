@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { SesiPertemuan, StudentProfile, PresensiRecord } from '../../types';
+import { UserAvatar } from '../common/UserAvatar';
 
 interface TeacherStudentScannerProps {
   currentSession: SesiPertemuan;
@@ -83,7 +84,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-[#00B884] tracking-tight flex items-center gap-3">
-            <span>Scanner Guru (Scan QR Siswa)</span>
+            <span>Pemindai Guru (Pindai QR Siswa)</span>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
               Mode Lapangan
             </span>
@@ -171,7 +172,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
               className="w-full sm:w-auto px-4 py-2 bg-[#00B884] hover:bg-[#009e70] active:scale-[0.98] text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 shrink-0 disabled:opacity-50"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Scan Kartu Ini (Beep)</span>
+              <span>Pindai Kartu Ini (Beep)</span>
             </button>
           </div>
         </div>
@@ -192,10 +193,9 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
             {lastScannedStudent ? (
               <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-2xl animate-in zoom-in-95 duration-200">
                 <div className="flex items-center gap-3.5 mb-3">
-                  <img
-                    src={lastScannedStudent.avatarUrl}
-                    alt={lastScannedStudent.namaLengkap}
-                    className="w-14 h-14 rounded-2xl object-cover ring-2 ring-emerald-500 shadow-xs"
+                  <UserAvatar
+                    name={lastScannedStudent.namaLengkap}
+                    className="w-14 h-14 rounded-2xl ring-2 ring-emerald-500 shadow-xs text-base"
                   />
                   <div>
                     <h4 className="font-extrabold text-base text-slate-800 leading-tight">

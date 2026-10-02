@@ -50,15 +50,18 @@ export const KartuHasilNilaiModal: React.FC<KartuHasilNilaiModalProps> = ({
         {/* Certificate / Document Card */}
         <div className="mt-5 p-6 rounded-2xl border-2 border-emerald-600/30 bg-gradient-to-b from-emerald-50/30 to-white relative">
           {/* Header Document */}
-          <div className="text-center border-b border-slate-200 pb-4 mb-5">
-            <h3 className="font-extrabold text-sm uppercase text-slate-900 tracking-wider">
-              SMK AL AMANAH KOTA TANGERANG SELATAN
-            </h3>
-            <p className="text-[11px] text-slate-500">
-              KARTU HASIL NILAI (KHN) EKSTRAKURIKULER
-            </p>
-            <div className="text-[10px] text-emerald-700 font-bold mt-1">
-              TAHUN PELAJARAN 2026/2027 • SEMESTER GANJIL
+          <div className="flex items-center justify-center gap-3.5 border-b border-slate-200 pb-4 mb-5">
+            <img src="/logo-smk.png" alt="Logo SMK Al Amanah" className="w-12 h-12 object-contain shrink-0" />
+            <div className="text-center">
+              <h3 className="font-extrabold text-sm uppercase text-slate-900 tracking-wider">
+                SMK AL AMANAH KOTA TANGERANG SELATAN
+              </h3>
+              <p className="text-[11px] text-slate-500">
+                KARTU HASIL NILAI (KHN) EKSTRAKURIKULER
+              </p>
+              <div className="text-[10px] text-emerald-700 font-bold mt-1">
+                TAHUN PELAJARAN 2026/2027 • SEMESTER GANJIL
+              </div>
             </div>
           </div>
 

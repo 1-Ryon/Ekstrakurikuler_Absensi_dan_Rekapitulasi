@@ -1,0 +1,35 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: smk_amanah_backend
+    restart: always
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - DATABASE_URL=file:./dev.db
+      - JWT_SECRET=al_amanah_super_secret_jwt_key_2026_change_in_production
+    volumes:
+      - ./backend/prisma:/app/prisma
+    ports:
+      - "5000:5000"
+    networks:
+      - smk_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: smk_amanah_frontend
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - smk_network
+
+networks:
+  smk_network:
+    driver: bridge

@@ -3,8 +3,24 @@
 @tailwind utilities;
 
 @layer base {
+  *,
+  *::before,
+  *::after {
+    font-family: 'Poppins', sans-serif;
+  }
+
+  html,
   body {
     @apply font-sans bg-[#F0F2F5] text-slate-800;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  button,
+  input,
+  optgroup,
+  select,
+  textarea {
+    font-family: 'Poppins', sans-serif;
   }
 }
 

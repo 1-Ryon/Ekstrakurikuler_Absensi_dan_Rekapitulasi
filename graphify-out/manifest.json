@@ -1,0 +1,290 @@
+{
+  ".oxlintrc.json": {
+    "mtime": 1790265611.4398117,
+    "seen": 1790496056.6005902,
+    "ast_hash": "029f4905006c1fffd96bc863e2d98d3e",
+    "semantic_hash": "029f4905006c1fffd96bc863e2d98d3e"
+  },
+  "backend/package.json": {
+    "mtime": 1790267668.6243527,
+    "seen": 1790496056.600596,
+    "ast_hash": "831480c722d3d41a34601e105287e2f0",
+    "semantic_hash": "831480c722d3d41a34601e105287e2f0"
+  },
+  "backend/prisma/seed.js": {
+    "mtime": 1790447089.2438788,
+    "seen": 1790496056.600599,
+    "ast_hash": "2f4ef07ff0106f083db3bf4604dcc786",
+    "semantic_hash": "2f4ef07ff0106f083db3bf4604dcc786"
+  },
+  "backend/src/server.js": {
+    "mtime": 1790448687.1636775,
+    "seen": 1790496056.6006002,
+    "ast_hash": "e89bae3c37bc09b836be7afdc5f450d9",
+    "semantic_hash": "e89bae3c37bc09b836be7afdc5f450d9"
+  },
+  "frontend/package.json": {
+    "mtime": 1790269120.7471461,
+    "seen": 1790496056.6006017,
+    "ast_hash": "c4b5dc184655e7f928ede99453b09ed1",
+    "semantic_hash": "c4b5dc184655e7f928ede99453b09ed1"
+  },
+  "frontend/postcss.config.js": {
+    "mtime": 1790265745.83251,
+    "seen": 1790496056.6006029,
+    "ast_hash": "ef3ba2a81ba19f8ea5ddf625521e96f0",
+    "semantic_hash": "ef3ba2a81ba19f8ea5ddf625521e96f0"
+  },
+  "frontend/src/App.tsx": {
+    "mtime": 1790448903.2093592,
+    "seen": 1790496056.6006045,
+    "ast_hash": "b9b6232616833af902bd108fb3d07881",
+    "semantic_hash": "b9b6232616833af902bd108fb3d07881"
+  },
+  "frontend/src/components/Header.tsx": {
+    "mtime": 1790444000.278314,
+    "seen": 1790496056.6006057,
+    "ast_hash": "53d85e92f944e380ffc91157c28ae6e0",
+    "semantic_hash": "53d85e92f944e380ffc91157c28ae6e0"
+  },
+  "frontend/src/components/SchoolLogo.tsx": {
+    "mtime": 1790426421.4419239,
+    "seen": 1790496056.6006067,
+    "ast_hash": "63516487a517a783f6db4eef95e8ba92",
+    "semantic_hash": "63516487a517a783f6db4eef95e8ba92"
+  },
+  "frontend/src/components/Sidebar.tsx": {
+    "mtime": 1790448868.3181586,
+    "seen": 1790496056.6006076,
+    "ast_hash": "c388904aabda549fee51bfcf320bffb7",
+    "semantic_hash": "c388904aabda549fee51bfcf320bffb7"
+  },
+  "frontend/src/components/auth/LoginPage.tsx": {
+    "mtime": 1790442959.7053761,
+    "seen": 1790496056.6006093,
+    "ast_hash": "f571969a4257d6ed412d2d1ce42b15f4",
+    "semantic_hash": "f571969a4257d6ed412d2d1ce42b15f4"
+  },
+  "frontend/src/components/dashboard/AdminDashboard.tsx": {
+    "mtime": 1790446476.873289,
+    "seen": 1790496056.6006105,
+    "ast_hash": "843f3b35fb3b96c4dfbb731b72215c14",
+    "semantic_hash": "843f3b35fb3b96c4dfbb731b72215c14"
+  },
+  "frontend/src/components/dashboard/EskulManagement.tsx": {
+    "mtime": 1790445135.462302,
+    "seen": 1790496056.600612,
+    "ast_hash": "a0e791293c181a4eb51718f81ddd5f1d",
+    "semantic_hash": "a0e791293c181a4eb51718f81ddd5f1d"
+  },
+  "frontend/src/components/dashboard/GuruWaliManagement.tsx": {
+    "mtime": 1790448771.4483345,
+    "seen": 1790496056.6006129,
+    "ast_hash": "ad640a02cf92794c4338de295e33d5a2",
+    "semantic_hash": "ad640a02cf92794c4338de295e33d5a2"
+  },
+  "frontend/src/components/dashboard/KelasManagement.tsx": {
+    "mtime": 1790445327.8777604,
+    "seen": 1790496056.600614,
+    "ast_hash": "66c723f8975f0639183e88577c42954d",
+    "semantic_hash": "66c723f8975f0639183e88577c42954d"
+  },
+  "frontend/src/components/dashboard/PembinaManagement.tsx": {
+    "mtime": 1790448747.949609,
+    "seen": 1790496056.6006155,
+    "ast_hash": "445f484d82aa5807d77262d9f3f70c84",
+    "semantic_hash": "445f484d82aa5807d77262d9f3f70c84"
+  },
+  "frontend/src/components/dashboard/ReportsManagement.tsx": {
+    "mtime": 1790447183.6938756,
+    "seen": 1790496056.6006165,
+    "ast_hash": "f6f0984c88ad1cb0a24f587d0720b448",
+    "semantic_hash": "f6f0984c88ad1cb0a24f587d0720b448"
+  },
+  "frontend/src/components/dashboard/SettingsPage.tsx": {
+    "mtime": 1790265973.3762722,
+    "seen": 1790496056.6006176,
+    "ast_hash": "45a540f6fe717f38ba43bf91ab862c9a",
+    "semantic_hash": "45a540f6fe717f38ba43bf91ab862c9a"
+  },
+  "frontend/src/components/dashboard/StudentManagement.tsx": {
+    "mtime": 1790447171.7342308,
+    "seen": 1790496056.600619,
+    "ast_hash": "d052828ac7e4c3fa6ec7bb935560deb7",
+    "semantic_hash": "d052828ac7e4c3fa6ec7bb935560deb7"
+  },
+  "frontend/src/components/dashboard/WaliKelasDashboard.tsx": {
+    "mtime": 1790447145.964621,
+    "seen": 1790496056.60062,
+    "ast_hash": "2309bdfe7e33f80cf93c2f61130fa0f4",
+    "semantic_hash": "2309bdfe7e33f80cf93c2f61130fa0f4"
+  },
+  "frontend/src/components/guru/DynamicQrGenerator.tsx": {
+    "mtime": 1790265899.6682856,
+    "seen": 1790496056.6006212,
+    "ast_hash": "5657a8b737a80360cb6e37adcf35a84c",
+    "semantic_hash": "5657a8b737a80360cb6e37adcf35a84c"
+  },
+  "frontend/src/components/guru/LiveAttendanceLog.tsx": {
+    "mtime": 1790445238.3471992,
+    "seen": 1790496056.6006224,
+    "ast_hash": "98a562a2070382ba8e75409e204dbd26",
+    "semantic_hash": "98a562a2070382ba8e75409e204dbd26"
+  },
+  "frontend/src/components/guru/PembinaDashboard.tsx": {
+    "mtime": 1790447123.7201567,
+    "seen": 1790496056.6006348,
+    "ast_hash": "f36913b54816d5842c25c464ee9fe8fa",
+    "semantic_hash": "f36913b54816d5842c25c464ee9fe8fa"
+  },
+  "frontend/src/components/guru/PenilaianPage.tsx": {
+    "mtime": 1790447199.313872,
+    "seen": 1790496056.6006382,
+    "ast_hash": "0f3c8666fc134e5fecb739514294d6b4",
+    "semantic_hash": "0f3c8666fc134e5fecb739514294d6b4"
+  },
+  "frontend/src/components/guru/TeacherStudentScanner.tsx": {
+    "mtime": 1790270739.0283046,
+    "seen": 1790496056.6006408,
+    "ast_hash": "4f72320496421f8ead69b3606b04f1e8",
+    "semantic_hash": "4f72320496421f8ead69b3606b04f1e8"
+  },
+  "frontend/src/components/modals/AddEskulModal.tsx": {
+    "mtime": 1790265982.737629,
+    "seen": 1790496056.6006432,
+    "ast_hash": "d0b73b643d318c2e1cdd47ab7fb8bef2",
+    "semantic_hash": "d0b73b643d318c2e1cdd47ab7fb8bef2"
+  },
+  "frontend/src/components/modals/AddGuruModal.tsx": {
+    "mtime": 1790448782.918772,
+    "seen": 1790496056.6006444,
+    "ast_hash": "cf80e3e701ce0da46c6587d8e15fdfc8",
+    "semantic_hash": "cf80e3e701ce0da46c6587d8e15fdfc8"
+  },
+  "frontend/src/components/modals/AddPembinaModal.tsx": {
+    "mtime": 1790427517.4194539,
+    "seen": 1790496056.6006453,
+    "ast_hash": "9088a8e47f6f864c0df38c194f9d437a",
+    "semantic_hash": "9088a8e47f6f864c0df38c194f9d437a"
+  },
+  "frontend/src/components/modals/EditEskulModal.tsx": {
+    "mtime": 1790448249.6606653,
+    "seen": 1790496056.6006467,
+    "ast_hash": "fc3a050d4dce1f0bd42782c711c375ef",
+    "semantic_hash": "fc3a050d4dce1f0bd42782c711c375ef"
+  },
+  "frontend/src/components/modals/EditGuruModal.tsx": {
+    "mtime": 1790448796.227353,
+    "seen": 1790496056.6006477,
+    "ast_hash": "a81de21e1fba93fec7fbbb8aebda70e7",
+    "semantic_hash": "a81de21e1fba93fec7fbbb8aebda70e7"
+  },
+  "frontend/src/components/modals/EditPembinaModal.tsx": {
+    "mtime": 1790448822.9457679,
+    "seen": 1790496056.6006486,
+    "ast_hash": "577e937a8b4b4bbc54c9920ee48585d6",
+    "semantic_hash": "577e937a8b4b4bbc54c9920ee48585d6"
+  },
+  "frontend/src/components/modals/ImportDataModal.tsx": {
+    "mtime": 1790427483.4591665,
+    "seen": 1790496056.6006498,
+    "ast_hash": "138dba9ab68d5367cbfd30e26ad906b1",
+    "semantic_hash": "138dba9ab68d5367cbfd30e26ad906b1"
+  },
+  "frontend/src/components/modals/MailModal.tsx": {
+    "mtime": 1790266002.8664558,
+    "seen": 1790496056.600651,
+    "ast_hash": "375315970899be8635fad32399475b89",
+    "semantic_hash": "375315970899be8635fad32399475b89"
+  },
+  "frontend/src/components/modals/NotificationsModal.tsx": {
+    "mtime": 1790265996.8283112,
+    "seen": 1790496056.6006522,
+    "ast_hash": "685881accbdaa9db9c184e868e75be47",
+    "semantic_hash": "685881accbdaa9db9c184e868e75be47"
+  },
+  "frontend/src/components/modals/StudentCardModal.tsx": {
+    "mtime": 1790270724.7497008,
+    "seen": 1790496056.6006534,
+    "ast_hash": "6e8887bf91f065e0c14023f0c39c2d7d",
+    "semantic_hash": "6e8887bf91f065e0c14023f0c39c2d7d"
+  },
+  "frontend/src/components/siswa/KartuHasilNilaiModal.tsx": {
+    "mtime": 1790426440.1899552,
+    "seen": 1790496056.6006546,
+    "ast_hash": "0a8d0cc74ca60d7d345277f5922d7adf",
+    "semantic_hash": "0a8d0cc74ca60d7d345277f5922d7adf"
+  },
+  "frontend/src/components/siswa/QrScannerModal.tsx": {
+    "mtime": 1790265944.7102337,
+    "seen": 1790496056.6006556,
+    "ast_hash": "41213d3976d6f5d8ecfe289220622b97",
+    "semantic_hash": "41213d3976d6f5d8ecfe289220622b97"
+  },
+  "frontend/src/components/siswa/SiswaDashboard.tsx": {
+    "mtime": 1790447282.8215208,
+    "seen": 1790496056.6006567,
+    "ast_hash": "ad51b342e5c17ad5654e599195d80b3c",
+    "semantic_hash": "ad51b342e5c17ad5654e599195d80b3c"
+  },
+  "frontend/src/data/mockData.ts": {
+    "mtime": 1790434764.9699056,
+    "seen": 1790496056.6006577,
+    "ast_hash": "b760183bcd4f76a9c16fcbd10259c481",
+    "semantic_hash": "b760183bcd4f76a9c16fcbd10259c481"
+  },
+  "frontend/src/main.tsx": {
+    "mtime": 1790265611.4597936,
+    "seen": 1790496056.600659,
+    "ast_hash": "787e5a07efeb2bf6209d5937195f2f68",
+    "semantic_hash": "787e5a07efeb2bf6209d5937195f2f68"
+  },
+  "frontend/src/services/api.ts": {
+    "mtime": 1790448696.6535075,
+    "seen": 1790496056.60066,
+    "ast_hash": "05c315d7af13379c83468f2545d7dc0e",
+    "semantic_hash": "05c315d7af13379c83468f2545d7dc0e"
+  },
+  "frontend/src/types/index.ts": {
+    "mtime": 1790448707.5624452,
+    "seen": 1790496056.6006613,
+    "ast_hash": "83a94a8d285c6886c56c89819a521588",
+    "semantic_hash": "83a94a8d285c6886c56c89819a521588"
+  },
+  "frontend/tailwind.config.js": {
+    "mtime": 1790428781.777954,
+    "seen": 1790496056.6006622,
+    "ast_hash": "c7a0563bc883fe1be3c8ea1a4c908084",
+    "semantic_hash": "c7a0563bc883fe1be3c8ea1a4c908084"
+  },
+  "frontend/tsconfig.app.json": {
+    "mtime": 1790266035.0620563,
+    "seen": 1790496056.600666,
+    "ast_hash": "4153cb28cd251c5b8d7bbc5ced09cac6",
+    "semantic_hash": "4153cb28cd251c5b8d7bbc5ced09cac6"
+  },
+  "frontend/tsconfig.json": {
+    "mtime": 1790265611.4617968,
+    "seen": 1790496056.6006672,
+    "ast_hash": "a3d39fa780ebff65444de257f291ce6c",
+    "semantic_hash": "a3d39fa780ebff65444de257f291ce6c"
+  },
+  "frontend/tsconfig.node.json": {
+    "mtime": 1790265611.4627972,
+    "seen": 1790496056.6006684,
+    "ast_hash": "f9cb81ddcea69ffdab672fc8c48dca66",
+    "semantic_hash": "f9cb81ddcea69ffdab672fc8c48dca66"
+  },
+  "frontend/vite.config.ts": {
+    "mtime": 1790265611.4647968,
+    "seen": 1790496056.6006694,
+    "ast_hash": "5d54447744c19ccd28638a5c668d15ea",
+    "semantic_hash": "5d54447744c19ccd28638a5c668d15ea"
+  },
+  "package.json": {
+    "mtime": 1790269177.4362223,
+    "seen": 1790496056.6006708,
+    "ast_hash": "5c2d179aec03393d4464282647f16e3c",
+    "semantic_hash": "5c2d179aec03393d4464282647f16e3c"
+  }
+}

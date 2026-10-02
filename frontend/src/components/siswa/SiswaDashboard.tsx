@@ -19,23 +19,46 @@ import { KartuHasilNilaiModal } from './KartuHasilNilaiModal';
 import { StudentCardModal } from '../modals/StudentCardModal';
 
 interface SiswaDashboardProps {
-  currentStudent: StudentProfile;
+  currentStudent?: StudentProfile;
   enrolledEskuls: Eskul[];
   todaySessions: SesiPertemuan[];
   attendanceHistory: PresensiRecord[];
   onNewAttendance: (studentName: string, eskulName: string) => void;
+  initialOpenModal?: 'scanner' | 'khn' | 'card' | null;
 }
 
 export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
-  currentStudent,
+  currentStudent: rawStudent,
   enrolledEskuls,
   todaySessions,
   attendanceHistory,
   onNewAttendance,
+  initialOpenModal = null,
 }) => {
-  const [isScannerOpen, setIsScannerOpen] = useState(false);
-  const [isKhnOpen, setIsKhnOpen] = useState(false);
-  const [isCardModalOpen, setIsCardModalOpen] = useState(false);
+  const currentStudent: StudentProfile = rawStudent || {
+    id: 'usr-sis-01',
+    username: '20241001',
+    role: 'SISWA',
+    nis: '20241001',
+    nomorInduk: '20241001',
+    namaLengkap: 'Muhammad Farhan Al-Fatih',
+    kelas: 'X RPL 1',
+    jenisKelamin: 'L',
+    avatarUrl: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=160&auto=format&fit=crop&q=80',
+    kehadiranRataRata: 96,
+    enrolledEskulIds: ['eskul-01', 'eskul-02'],
+    statusAktif: true,
+  };
+
+  const [isScannerOpen, setIsScannerOpen] = useState(initialOpenModal === 'scanner');
+  const [isKhnOpen, setIsKhnOpen] = useState(initialOpenModal === 'khn');
+  const [isCardModalOpen, setIsCardModalOpen] = useState(initialOpenModal === 'card');
+
+  React.useEffect(() => {
+    if (initialOpenModal === 'scanner') setIsScannerOpen(true);
+    if (initialOpenModal === 'khn') setIsKhnOpen(true);
+    if (initialOpenModal === 'card') setIsCardModalOpen(true);
+  }, [initialOpenModal]);
 
   return (
     <div className="space-y-6 pb-8">
@@ -60,7 +83,7 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
           <button
             onClick={() => setIsCardModalOpen(true)}
             className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 bg-white text-[#00B884] hover:bg-slate-50 active:scale-[0.98] font-bold text-xs rounded-2xl shadow-lg transition-all"
-            title="Buka QR Code kartu siswa di layar HP untuk di-scan oleh Guru"
+            title="Buka QR Code kartu siswa di layar HP untuk dipindai oleh Guru"
           >
             <QrCode className="w-4 h-4" />
             <span>Kartu QR Saya (Tunjukkan ke Guru)</span>
@@ -71,7 +94,7 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
             className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3.5 bg-emerald-800/80 hover:bg-emerald-900 text-white font-bold text-xs rounded-2xl border border-white/20 transition-all"
           >
             <Camera className="w-4 h-4" />
-            <span>Scan Layar Guru</span>
+            <span>Pindai Layar Guru</span>
           </button>
 
           <button
@@ -187,7 +210,7 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
                   className="px-4 py-2 bg-[#00B884] hover:bg-[#009e70] active:scale-[0.98] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5"
                 >
                   <Camera className="w-3.5 h-3.5" />
-                  <span>Scan QR Sekarang</span>
+                  <span>Pindai QR Sekarang</span>
                 </button>
               ) : (
                 <span className="text-xs text-slate-400 font-medium">
