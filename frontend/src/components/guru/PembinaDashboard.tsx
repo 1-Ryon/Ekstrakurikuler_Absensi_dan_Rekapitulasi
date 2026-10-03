@@ -26,7 +26,7 @@ import {
   FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Eskul, SesiPertemuan, StudentProfile, PresensiRecord, PenilaianRecord } from '../../types';
+import { User, Eskul, SesiPertemuan, StudentProfile, PresensiRecord, PenilaianRecord, PengajuanJadwal } from '../../types';
 import { NavItemKey } from '../Sidebar';
 import { UserAvatar } from '../common/UserAvatar';
 
@@ -37,8 +37,12 @@ interface PembinaDashboardProps {
   sessions: SesiPertemuan[];
   recentLogs: PresensiRecord[];
   penilaianList: PenilaianRecord[];
+  jadwalProposals?: PengajuanJadwal[];
   onNavigate: (tab: NavItemKey) => void;
   onOpenSession: (eskul: Eskul) => void;
+  onOpenBukaAbsensiModal?: (eskul: Eskul) => void;
+  onOpenAjukanJadwalModal?: (eskul: Eskul) => void;
+  onOpenRiwayatJadwalModal?: () => void;
 }
 
 const DAYS_OF_WEEK = [
@@ -70,8 +74,12 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
   sessions,
   recentLogs,
   penilaianList,
+  jadwalProposals,
   onNavigate,
   onOpenSession,
+  onOpenBukaAbsensiModal,
+  onOpenAjukanJadwalModal,
+  onOpenRiwayatJadwalModal,
 }) => {
   // Find all eskuls coached by this pembina (support multi-eskul)
   const coachedEskuls = useMemo(() => {
@@ -125,7 +133,8 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
 
   // Active Session for this eskul
   const todaySession = useMemo(() => {
-    return sessions.find((s) => s.eskulId === activeCoachedEskul.id) || sessions[0];
+    if (!activeCoachedEskul) return undefined;
+    return sessions.find((s) => s.eskulId === activeCoachedEskul.id);
   }, [sessions, activeCoachedEskul]);
 
   // Recent attendance for this eskul
@@ -167,9 +176,23 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
   };
 
   const handleStartSession = () => {
-    onOpenSession(activeCoachedEskul);
-    onNavigate('dynamic-qr');
+    if (onOpenBukaAbsensiModal) {
+      onOpenBukaAbsensiModal(activeCoachedEskul);
+    } else {
+      onOpenSession(activeCoachedEskul);
+      onNavigate('dynamic-qr');
+    }
   };
+
+  const myPendingProposalsCount = useMemo(() => {
+    if (!jadwalProposals) return 0;
+    return jadwalProposals.filter(
+      (p) =>
+        p.status === 'MENUNGGU_VALIDASI' &&
+        (p.pembinaId === currentPembina.id ||
+          coachedEskuls.some((e) => e.id === p.eskulId))
+    ).length;
+  }, [jadwalProposals, currentPembina, coachedEskuls]);
 
   return (
     <div className="space-y-6 pb-16">
@@ -339,30 +362,64 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
 
           {/* Action Callout Button */}
           <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0 justify-center">
+            {/* 1. Alur Presensi 4-Tahap (Utama & Resmi) */}
+            <button
+              type="button"
+              onClick={() => onNavigate('alur-absensi')}
+              className="flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-emerald-600 via-[#00B884] to-teal-600 hover:from-emerald-700 hover:to-teal-700 active:scale-[0.98] text-white font-bold text-xs rounded-2xl shadow-md transition-all cursor-pointer"
+            >
+              <CheckCircle2 className="w-4 h-4 text-white" />
+              <span>Alur Presensi 4-Tahap (Resmi)</span>
+            </button>
+
+            {/* 2. Seleksi & Pendaftaran Siswa */}
+            <button
+              type="button"
+              onClick={() => onNavigate('pembina-pendaftaran')}
+              className="flex items-center justify-center gap-2 px-5 py-3 bg-blue-50 hover:bg-blue-100/70 text-blue-800 font-bold text-xs rounded-2xl border border-blue-200/80 shadow-2xs transition-all cursor-pointer"
+            >
+              <Users className="w-4 h-4 text-blue-600" />
+              <span>Pendaftaran &amp; Kuota Siswa</span>
+            </button>
+
+            {/* 3. Buka Sesi Standar / Proyektor */}
             <button
               type="button"
               onClick={handleStartSession}
-              className="flex items-center justify-center gap-2 px-6 py-3.5 bg-[#00B884] hover:bg-[#009e70] active:scale-[0.98] text-white font-bold text-xs rounded-2xl shadow-md transition-all cursor-pointer"
+              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-2xl border border-slate-200/80 shadow-2xs transition-all cursor-pointer"
             >
-              <Play className="w-4 h-4 fill-white" />
-              <span>{isTodaySchedule ? 'Buka Sesi & Tampilkan QR' : 'Mulai Sesi Latihan Hari Ini'}</span>
+              <Play className="w-4 h-4 fill-emerald-600 text-emerald-600" />
+              <span>{isTodaySchedule ? 'Tampilkan QR Proyektor' : 'Mulai Sesi Latihan'}</span>
             </button>
 
+            {/* 4. Scanner Cepat Guru */}
             <button
               type="button"
               onClick={() => onNavigate('scanner-guru')}
-              className="flex items-center justify-center gap-2 px-5 py-3 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-2xl border border-slate-200/80 shadow-2xs transition-all cursor-pointer"
+              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-2xl border border-slate-200/80 shadow-2xs transition-all cursor-pointer"
             >
               <ScanLine className="w-4 h-4 text-emerald-600" />
-              <span>Pindai Presensi Siswa</span>
+              <span>Pindai Kartu Siswa</span>
             </button>
+
+            {/* 5. Pengajuan Jadwal */}
+            {onOpenAjukanJadwalModal && (
+              <button
+                type="button"
+                onClick={() => onOpenAjukanJadwalModal(activeCoachedEskul)}
+                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-amber-50 hover:bg-amber-100/70 text-amber-800 font-bold text-xs rounded-2xl border border-amber-200/80 transition-all cursor-pointer"
+              >
+                <Calendar className="w-4 h-4 text-amber-600" />
+                <span>Ajukan Ganti Jadwal</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
 
       {/* 3. Kalender Jadwal Mingguan Pembina (Weekly Schedule Strip) */}
       <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-2xs space-y-3.5">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-emerald-50 text-[#00B884] flex items-center justify-center">
               <CalendarDays className="w-4 h-4" />
@@ -377,9 +434,33 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
             </div>
           </div>
 
-          <span className="text-xs font-semibold text-slate-500">
-            Semester Ganjil 2026/2027
-          </span>
+          <div className="flex items-center gap-2">
+            {onOpenAjukanJadwalModal && (
+              <button
+                type="button"
+                onClick={() => onOpenAjukanJadwalModal(activeCoachedEskul)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#00B884] hover:bg-[#009e70] text-white rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span>Ajukan Ganti Jadwal</span>
+              </button>
+            )}
+
+            {onOpenRiwayatJadwalModal && (
+              <button
+                type="button"
+                onClick={onOpenRiwayatJadwalModal}
+                className="relative flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+              >
+                <span>Riwayat Usulan</span>
+                {myPendingProposalsCount > 0 && (
+                  <span className="w-4 h-4 rounded-full bg-amber-500 text-white font-black text-[9px] flex items-center justify-center animate-pulse">
+                    {myPendingProposalsCount}
+                  </span>
+                )}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* 6 Days Grid */}
@@ -536,6 +617,25 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
                 Pertemuan Ke-12
               </span>
             </div>
+
+            {/* Active Session Topic & Description Highlight */}
+            {todaySession?.judul && (
+              <div className="p-3.5 bg-emerald-50/80 border border-emerald-200 rounded-2xl space-y-1 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-extrabold text-emerald-950 flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-[#00B884]" />
+                    Topik Pertemuan Sesi Ini:
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900 uppercase">
+                    {todaySession.status}
+                  </span>
+                </div>
+                <div className="font-black text-slate-900 text-sm">{todaySession.judul}</div>
+                <p className="text-slate-600 text-[11px] leading-relaxed mt-0.5">
+                  {todaySession.deskripsi}
+                </p>
+              </div>
+            )}
 
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-700 block">

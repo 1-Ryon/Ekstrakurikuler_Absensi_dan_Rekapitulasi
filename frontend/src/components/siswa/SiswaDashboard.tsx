@@ -13,7 +13,7 @@ import {
   Sparkles,
   QrCode
 } from 'lucide-react';
-import { StudentProfile, Eskul, SesiPertemuan, PresensiRecord } from '../../types';
+import { StudentProfile, Eskul, SesiPertemuan, PresensiRecord, PenilaianRecord } from '../../types';
 import { QrScannerModal } from './QrScannerModal';
 import { KartuHasilNilaiModal } from './KartuHasilNilaiModal';
 import { StudentCardModal } from '../modals/StudentCardModal';
@@ -23,6 +23,7 @@ interface SiswaDashboardProps {
   enrolledEskuls: Eskul[];
   todaySessions: SesiPertemuan[];
   attendanceHistory: PresensiRecord[];
+  penilaianRecords?: PenilaianRecord[];
   onNewAttendance: (studentName: string, eskulName: string) => void;
   initialOpenModal?: 'scanner' | 'khn' | 'card' | null;
 }
@@ -32,6 +33,7 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
   enrolledEskuls,
   todaySessions,
   attendanceHistory,
+  penilaianRecords = [],
   onNewAttendance,
   initialOpenModal = null,
 }) => {
@@ -201,6 +203,16 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
                   <div className="text-xs text-slate-500 mt-0.5">
                     {session.jamMulai} - {session.jamSelesai} WIB • {session.lokasi}
                   </div>
+                  {session.judul && (
+                    <div className="mt-1.5 text-xs font-bold text-emerald-900 bg-emerald-50/90 px-2.5 py-1 rounded-lg border border-emerald-200/80 inline-block">
+                      🎯 Topik: {session.judul}
+                    </div>
+                  )}
+                  {session.deskripsi && (
+                    <p className="text-[11px] text-slate-600 mt-1 line-clamp-2 leading-relaxed">
+                      {session.deskripsi}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -269,6 +281,8 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
         isOpen={isKhnOpen}
         onClose={() => setIsKhnOpen(false)}
         student={currentStudent}
+        enrolledEskuls={enrolledEskuls}
+        penilaianRecords={penilaianRecords}
       />
 
       {/* Modal Kartu QR Siswa untuk Ditunjukkan ke Guru / Dicetak */}

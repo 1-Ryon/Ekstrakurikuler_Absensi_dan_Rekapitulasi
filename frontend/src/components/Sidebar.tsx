@@ -14,6 +14,10 @@ import {
   GraduationCap,
   CreditCard,
   UserCheck,
+  ChevronDown,
+  CalendarClock,
+  UserPlus,
+  ClipboardCheck,
   X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -35,7 +39,11 @@ export type NavItemKey =
   | 'penilaian'
   | 'scanner-siswa'
   | 'kartu-siswa'
-  | 'khn-siswa';
+  | 'khn-siswa'
+  | 'validasi-jadwal'
+  | 'validasi-pendaftaran'
+  | 'pembina-pendaftaran'
+  | 'alur-absensi';
 
 interface SidebarProps {
   activeTab: NavItemKey;
@@ -46,6 +54,8 @@ interface SidebarProps {
   onCloseMobile?: () => void;
   isDesktopOpen?: boolean;
   onToggleDesktop?: () => void;
+  pendingJadwalCount?: number;
+  pendingPendaftaranCount?: number;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -57,7 +67,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCloseMobile,
   isDesktopOpen = true,
   onToggleDesktop,
+  pendingJadwalCount = 0,
+  pendingPendaftaranCount = 0,
 }) => {
+  const [isValidasiDropdownOpen, setIsValidasiDropdownOpen] = React.useState(
+    activeTab === 'validasi-jadwal' || activeTab === 'validasi-pendaftaran'
+  );
+
+  React.useEffect(() => {
+    if (activeTab === 'validasi-jadwal' || activeTab === 'validasi-pendaftaran') {
+      setIsValidasiDropdownOpen(true);
+    }
+  }, [activeTab]);
   const isKoordinator = currentRole === 'ADMIN' || currentRole === 'KOORDINATOR';
   const isPembina = currentRole === 'PEMBINA';
   const isWaliKelas = currentRole === 'WALI_KELAS';
@@ -188,6 +209,95 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </nav>
           </div>
 
+          {/* MENU VALIDASI & PERSETUJUAN (DROPDOWN) */}
+          <div>
+            <div className="text-[11px] font-semibold text-slate-400 tracking-wider uppercase mb-2 px-3 flex items-center justify-between">
+              <span>VALIDASI & PERSETUJUAN</span>
+              {(pendingJadwalCount + pendingPendaftaranCount > 0) && (
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+              )}
+            </div>
+            <div className="space-y-1">
+              <button
+                onClick={() => setIsValidasiDropdownOpen(!isValidasiDropdownOpen)}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-medium text-sm transition-all cursor-pointer ${
+                  activeTab === 'validasi-jadwal' || activeTab === 'validasi-pendaftaran'
+                    ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+                }`}
+              >
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <FileCheck className={`w-5 h-5 shrink-0 ${activeTab === 'validasi-jadwal' || activeTab === 'validasi-pendaftaran' ? 'text-[#00B884]' : 'text-slate-500'}`} />
+                  <span className="truncate">Menu Validasi</span>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {(pendingJadwalCount + pendingPendaftaranCount > 0) && (
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] font-extrabold bg-amber-500 text-white">
+                      {pendingJadwalCount + pendingPendaftaranCount}
+                    </span>
+                  )}
+                  <motion.div
+                    animate={{ rotate: isValidasiDropdownOpen ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChevronDown className="w-4 h-4 text-slate-400" />
+                  </motion.div>
+                </div>
+              </button>
+
+              {/* Dropdown Subitems */}
+              <AnimatePresence initial={false}>
+                {isValidasiDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
+                    className="overflow-hidden pl-4 pr-1 space-y-1 pt-1"
+                  >
+                    <button
+                      onClick={() => handleTabClick('validasi-jadwal')}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                        activeTab === 'validasi-jadwal'
+                          ? 'text-[#00B884] bg-emerald-100/70 font-bold shadow-2xs'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 truncate">
+                        <CalendarClock className={`w-4 h-4 shrink-0 ${activeTab === 'validasi-jadwal' ? 'text-[#00B884]' : 'text-slate-400'}`} />
+                        <span className="truncate">Validasi Jadwal</span>
+                      </div>
+                      {pendingJadwalCount > 0 && (
+                        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                          {pendingJadwalCount}
+                        </span>
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => handleTabClick('validasi-pendaftaran')}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                        activeTab === 'validasi-pendaftaran'
+                          ? 'text-[#00B884] bg-emerald-100/70 font-bold shadow-2xs'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 truncate">
+                        <UserCheck className={`w-4 h-4 shrink-0 ${activeTab === 'validasi-pendaftaran' ? 'text-[#00B884]' : 'text-slate-400'}`} />
+                        <span className="truncate">Validasi Pendaftaran</span>
+                      </div>
+                      {pendingPendaftaranCount > 0 && (
+                        <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
+                          {pendingPendaftaranCount}
+                        </span>
+                      )}
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
           <div>
             <div className="text-[11px] font-semibold text-slate-400 tracking-wider uppercase mb-2 px-3">
               PEMANTAUAN
@@ -252,6 +362,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <Contact className={`w-5 h-5 shrink-0 ${activeTab === 'siswa' ? 'text-[#00B884]' : 'text-slate-500'}`} />
                 <span className="truncate text-left">Daftar Siswa</span>
               </button>
+
+              <button
+                onClick={() => handleTabClick('pembina-pendaftaran')}
+                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-xl font-medium text-sm transition-all relative cursor-pointer ${
+                  activeTab === 'pembina-pendaftaran'
+                    ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+                }`}
+              >
+                {activeTab === 'pembina-pendaftaran' && (
+                  <div className="absolute left-0 top-1.5 bottom-1.5 w-1.5 bg-[#00B884] rounded-r-md -ml-5" />
+                )}
+                <UserPlus className={`w-5 h-5 shrink-0 ${activeTab === 'pembina-pendaftaran' ? 'text-[#00B884]' : 'text-slate-500'}`} />
+                <span className="truncate text-left">Pendaftaran Siswa</span>
+              </button>
             </nav>
           </div>
 
@@ -261,6 +386,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-semibold">GURU</span>
             </div>
             <nav className="space-y-1">
+              {/* Alur Presensi Multi-Tahap (Utama) */}
+              <button
+                onClick={() => handleTabClick('alur-absensi')}
+                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-xl font-medium text-sm transition-all relative cursor-pointer ${
+                  activeTab === 'alur-absensi'
+                    ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+                }`}
+              >
+                {activeTab === 'alur-absensi' && (
+                  <div className="absolute left-0 top-1.5 bottom-1.5 w-1.5 bg-[#00B884] rounded-r-md -ml-5" />
+                )}
+                <ClipboardCheck className={`w-5 h-5 shrink-0 ${activeTab === 'alur-absensi' ? 'text-[#00B884]' : 'text-slate-500'}`} />
+                <div className="flex-1 flex items-center justify-between min-w-0">
+                  <span className="truncate text-left">Alur Presensi 4-Tahap</span>
+                  <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded-full ml-1 shrink-0">Resmi</span>
+                </div>
+              </button>
+
               <button
                 onClick={() => handleTabClick('dynamic-qr')}
                 className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-xl font-medium text-sm transition-all relative cursor-pointer ${

@@ -43,10 +43,12 @@ model Guru {
   updatedAt    DateTime  @updatedAt
 
   // Relations
-  eskulDiampu        Eskul[]
-  kelasWali          Kelas[]
-  sesiDibuat         SesiPertemuan[]
-  penilaianDiberikan Penilaian[]
+  eskulDiampu               Eskul[]
+  kelasWali                 Kelas[]
+  sesiDibuat                SesiPertemuan[]
+  penilaianDiberikan        Penilaian[]
+  pengajuanJadwalDibuat     PengajuanJadwal[] @relation("PengajuanPembina")
+  pengajuanJadwalDivalidasi PengajuanJadwal[] @relation("VerifikatorKoordinator")
 
   @@map("guru")
 }
@@ -86,6 +88,7 @@ model Siswa {
 
   // Relations
   keanggotaanEskul AnggotaEskul[]
+  pendaftaranEskul PendaftaranEskul[]
   presensiList     Presensi[]
   penilaianList    Penilaian[]
   prestasiList     PrestasiLomba[]
@@ -94,26 +97,28 @@ model Siswa {
 }
 
 model Eskul {
-  id          String    @id @default(uuid())
-  namaEskul   String    @unique
-  kategori    String    @default("Olahraga") // 'Olahraga' | 'Teknologi' | 'Seni & Budaya' | 'Keagamaan' | 'Kepemimpinan'
-  pembinaId   String
-  pembina     Guru      @relation(fields: [pembinaId], references: [id], onDelete: Restrict)
-  jadwalHari  String    // 'Senin', 'Kamis', dst.
-  jamMulai    String    // '15:30'
-  jamSelesai  String    // '17:00'
-  lokasi      String    // 'Plaza Upacara SMK Al Amanah'
-  kuota       Int       @default(40)
-  status      String    @default("Aktif") // 'Aktif' | 'Non-Aktif'
-  deskripsi   String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                  String            @id @default(uuid())
+  namaEskul           String            @unique
+  kategori            String            @default("Olahraga") // 'Olahraga' | 'Teknologi' | 'Seni & Budaya' | 'Keagamaan' | 'Kepemimpinan'
+  pembinaId           String
+  pembina             Guru              @relation(fields: [pembinaId], references: [id], onDelete: Restrict)
+  jadwalHari          String            // 'Senin', 'Kamis', dst.
+  jamMulai            String            // '15:30'
+  jamSelesai          String            // '17:00'
+  lokasi              String            // 'Plaza Upacara SMK Al Amanah'
+  kuota               Int               @default(40)
+  status              String            @default("Aktif") // 'Aktif' | 'Non-Aktif'
+  deskripsi           String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
 
   // Relations
-  anggota     AnggotaEskul[]
-  sesiList    SesiPertemuan[]
-  penilaian   Penilaian[]
-  prestasi    PrestasiLomba[]
+  anggota             AnggotaEskul[]
+  pendaftaranList     PendaftaranEskul[]
+  sesiList            SesiPertemuan[]
+  penilaian           Penilaian[]
+  prestasi            PrestasiLomba[]
+  pengajuanJadwalList PengajuanJadwal[]
 
   @@map("eskul")
 }
@@ -134,6 +139,31 @@ model AnggotaEskul {
   @@map("anggota_eskul")
 }
 
+model PendaftaranEskul {
+  id                 String    @id @default(uuid())
+  eskulId            String
+  siswaId            String
+  tahunAjaran        String    @default("2026/2027")
+  status             String    @default("MENUNGGU_SELEKSI") // 'MENUNGGU_SELEKSI' | 'DITERIMA_PEMBINA' | 'MENUNGGU_VALIDASI_KOORDINATOR' | 'RESMI_TERDAFTAR' | 'DITOLAK'
+  alasanDaftar       String?   @default("Berminat mengembangkan minat dan bakat")
+  catatanPembina     String?
+  catatanKoordinator String?
+  diajukanPada       DateTime?
+  divalidasiPada     DateTime?
+  divalidasiOlehId   String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  eskul              Eskul     @relation(fields: [eskulId], references: [id], onDelete: Cascade)
+  siswa              Siswa     @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+
+  @@unique([eskulId, siswaId, tahunAjaran])
+  @@index([eskulId])
+  @@index([siswaId])
+  @@index([status])
+  @@map("pendaftaran_eskul")
+}
+
 model SesiPertemuan {
   id             String     @id @default(uuid())
   eskulId        String
@@ -142,10 +172,16 @@ model SesiPertemuan {
   jamMulai       String     @default("15:30")
   jamSelesai     String     @default("17:00")
   lokasi         String?
+  judul          String?    // Judul pertemuan / topik latihan utama
+  deskripsi      String?    // Deskripsi rincian: hari ini membahas apa dan latihan apa
   materi         String?    // Agenda / materi latihan
   tokenAktif     String?
   tokenExpiresAt DateTime?
-  status         String     @default("BERLANGSUNG") // 'BELUM_DIMULAI' | 'BERLANGSUNG' | 'SELESAI'
+  status         String     @default("BERLANGSUNG") // 'BELUM_DIMULAI' | 'BERLANGSUNG' | 'SELESAI' | 'LIBUR'
+  isLibur        Boolean    @default(false)
+  alasanLibur    String?
+  isLocked       Boolean    @default(false)
+  lockedAt       DateTime?
   createdAt      DateTime   @default(now())
 
   eskul          Eskul      @relation(fields: [eskulId], references: [id], onDelete: Cascade)
@@ -156,17 +192,20 @@ model SesiPertemuan {
 }
 
 model Presensi {
-  id         String        @id @default(uuid())
-  sesiId     String
-  siswaId    String
-  waktuScan  DateTime      @default(now())
-  status     String        @default("HADIR") // 'HADIR' | 'IZIN' | 'SAKIT' | 'ALFA'
-  metode     String        @default("DYNAMIC_QR") // 'DYNAMIC_QR' | 'SCAN_QR_SISWA' | 'MANUAL_CHECKLIST'
-  keterangan String?
-  deviceInfo String?
+  id              String        @id @default(uuid())
+  sesiId          String
+  siswaId         String
+  waktuScan       DateTime      @default(now())
+  status          String        @default("HADIR") // 'HADIR' | 'IZIN' | 'SAKIT' | 'ALFA'
+  metode          String        @default("DYNAMIC_QR") // 'DYNAMIC_QR' | 'SCAN_QR_SISWA' | 'MANUAL_CHECKLIST'
+  keterangan      String?
+  nilaiKeaktifan  Float?        @default(85.0)
+  ratingKeaktifan String?       @default("Sangat Baik") // 'Kurang' | 'Cukup' | 'Baik' | 'Sangat Baik'
+  buktiSurat      String?
+  deviceInfo      String?
 
-  sesi       SesiPertemuan @relation(fields: [sesiId], references: [id], onDelete: Cascade)
-  siswa      Siswa         @relation(fields: [siswaId], references: [id], onDelete: Cascade)
+  sesi            SesiPertemuan @relation(fields: [sesiId], references: [id], onDelete: Cascade)
+  siswa           Siswa         @relation(fields: [siswaId], references: [id], onDelete: Cascade)
 
   @@unique([sesiId, siswaId])
   @@map("presensi")
@@ -223,3 +262,35 @@ model PrestasiLomba {
   @@index([eskulId])
   @@map("prestasi_lomba")
 }
+
+model PengajuanJadwal {
+  id                 String    @id @default(uuid())
+  eskulId            String
+  pembinaId          String
+  hariLama           String
+  jamMulaiLama       String
+  jamSelesaiLama     String
+  lokasiLama         String?
+  hariBaru           String
+  jamMulaiBaru       String
+  jamSelesaiBaru     String
+  lokasiBaru         String?
+  jenisPerubahan     String    @default("PERMANEN") // 'PERMANEN' | 'SEMENTARA'
+  tanggalEfektif     String?
+  alasan             String
+  status             String    @default("MENUNGGU_VALIDASI") // 'MENUNGGU_VALIDASI' | 'DISETUJUI' | 'DITOLAK'
+  catatanKoordinator String?
+  diverifikasiOlehId String?
+  diverifikasiPada   DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  eskul              Eskul     @relation(fields: [eskulId], references: [id], onDelete: Cascade)
+  pembina            Guru      @relation("PengajuanPembina", fields: [pembinaId], references: [id], onDelete: Cascade)
+  diverifikasiOleh   Guru?     @relation("VerifikatorKoordinator", fields: [diverifikasiOlehId], references: [id], onDelete: SetNull)
+
+  @@index([eskulId])
+  @@index([pembinaId])
+  @@map("pengajuan_jadwal")
+}
+

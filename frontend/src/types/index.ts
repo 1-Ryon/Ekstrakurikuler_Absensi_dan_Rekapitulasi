@@ -87,17 +87,84 @@ export interface SesiPertemuan {
   id: string;
   eskulId: string;
   namaEskul: string;
+  pembinaId?: string;
   pembinaNama: string;
   tanggal: string;
   jamMulai: string;
   jamSelesai: string;
   lokasi: string;
+  judul?: string;
+  deskripsi?: string;
   materi?: string;
   tokenAktif: string;
   tokenExpiresAt: number; // timestamp
-  status: 'BELUM_DIMULAI' | 'BERLANGSUNG' | 'SELESAI';
+  status: 'BELUM_DIMULAI' | 'BERLANGSUNG' | 'SELESAI' | 'LIBUR';
+  isLibur?: boolean;
+  alasanLibur?: string;
+  isLocked?: boolean;
+  lockedAt?: string;
   totalHadir: number;
   totalSiswa: number;
+}
+
+export interface PengajuanJadwal {
+  id: string;
+  eskulId: string;
+  namaEskul: string;
+  kategoriEskul?: string;
+  pembinaId: string;
+  pembinaNama: string;
+  pembinaAvatar?: string;
+  pembinaNip?: string;
+  hariLama: string;
+  jamMulaiLama: string;
+  jamSelesaiLama: string;
+  lokasiLama: string;
+  hariBaru: string;
+  jamMulaiBaru: string;
+  jamSelesaiBaru: string;
+  lokasiBaru?: string;
+  jenisPerubahan: 'PERMANEN' | 'SEMENTARA';
+  tanggalEfektif?: string;
+  alasan: string;
+  status: 'MENUNGGU_VALIDASI' | 'DISETUJUI' | 'DITOLAK';
+  catatanKoordinator?: string;
+  diverifikasiOlehId?: string;
+  diverifikasiOlehNama?: string;
+  diverifikasiPada?: string;
+  verifiedAt?: string;
+  verifikatorNama?: string;
+  verifikatorId?: string;
+  createdAt: string;
+}
+
+export interface PendaftaranEskul {
+  id: string;
+  eskulId: string;
+  namaEskul: string;
+  kategoriEskul?: string;
+  kuotaEskul: number;
+  jumlahAnggotaResmi: number;
+  totalPendaftarEskul?: number;
+  pembinaId?: string;
+  pembinaNama: string;
+  pembinaAvatar?: string;
+  siswaId: string;
+  namaSiswa: string;
+  nis: string;
+  nisn: string;
+  kelas: string;
+  jenisKelamin: 'L' | 'P' | string;
+  avatarUrl?: string;
+  eskulLain?: string[];
+  tahunAjaran: string;
+  status: 'MENUNGGU_SELEKSI' | 'DITERIMA_PEMBINA' | 'MENUNGGU_VALIDASI_KOORDINATOR' | 'RESMI_TERDAFTAR' | 'DITOLAK';
+  alasanDaftar?: string;
+  catatanPembina?: string;
+  catatanKoordinator?: string;
+  diajukanPada?: string;
+  divalidasiPada?: string;
+  createdAt: string;
 }
 
 export interface PresensiRecord {
@@ -108,9 +175,14 @@ export interface PresensiRecord {
   namaSiswa: string;
   nisn: string;
   kelas: string;
+  avatarUrl?: string;
   waktuScan: string;
   status: 'HADIR' | 'IZIN' | 'SAKIT' | 'ALPA';
-  metode: 'DYNAMIC_QR' | 'SCAN_KARTU_GURU' | 'MANUAL_DISPENSASI';
+  metode: 'DYNAMIC_QR' | 'SCAN_QR_SISWA' | 'SCAN_KARTU_GURU' | 'MANUAL_CHECKLIST' | 'MANUAL_DISPENSASI';
+  nilaiKeaktifan?: number;
+  ratingKeaktifan?: string;
+  buktiSurat?: string;
+  keterangan?: string;
   deviceInfo?: string;
 }
 

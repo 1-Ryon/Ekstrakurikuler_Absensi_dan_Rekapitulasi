@@ -16,7 +16,19 @@ import {
   ArrowRight,
   Sparkles,
   Layers,
-  GraduationCap
+  GraduationCap,
+  Calendar,
+  Clock,
+  MapPin,
+  Lock,
+  LayoutGrid,
+  FileSpreadsheet,
+  Award,
+  CreditCard,
+  ScanLine,
+  Phone,
+  CheckCircle2,
+  ShieldAlert
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Role, User, Eskul, StudentProfile, Guru, Kelas } from '../types';
@@ -45,6 +57,130 @@ interface HeaderProps {
   onSelectEskul?: (eskul: Eskul) => void;
   onSelectStudent?: (student: StudentProfile) => void;
 }
+
+interface SystemMenuItem {
+  id: string;
+  tab: NavItemKey;
+  label: string;
+  desc: string;
+  roles: Role[];
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+const SYSTEM_MENUS: SystemMenuItem[] = [
+  { 
+    id: 'menu-beranda', 
+    tab: 'beranda', 
+    label: 'Beranda / Dashboard', 
+    desc: 'Halaman ringkasan, jadwal, dan aktivitas utama',
+    roles: ['ADMIN', 'KOORDINATOR', 'PEMBINA', 'WALI_KELAS', 'SISWA'],
+    icon: Sparkles
+  },
+  { 
+    id: 'menu-eskul', 
+    tab: 'eskul', 
+    label: 'Kelola Ekstrakurikuler', 
+    desc: 'Pengaturan master eskul, kuota, pembina, dan jadwal latihan',
+    roles: ['ADMIN', 'KOORDINATOR'],
+    icon: Volleyball
+  },
+  { 
+    id: 'menu-pembina', 
+    tab: 'pembina', 
+    label: 'Data Guru Pembina', 
+    desc: 'Manajemen akun dan penugasan guru pembina eskul',
+    roles: ['ADMIN', 'KOORDINATOR'],
+    icon: UserCheck
+  },
+  { 
+    id: 'menu-guru', 
+    tab: 'guru', 
+    label: 'Data Guru & Wali Kelas', 
+    desc: 'Manajemen tenaga pendidik dan wali kelas rombel',
+    roles: ['ADMIN', 'KOORDINATOR'],
+    icon: Users
+  },
+  { 
+    id: 'menu-siswa', 
+    tab: 'siswa', 
+    label: 'Data Anggota & Siswa', 
+    desc: 'Daftar profil siswa, nomor induk, dan eskul pilihan',
+    roles: ['ADMIN', 'KOORDINATOR', 'PEMBINA', 'WALI_KELAS'],
+    icon: GraduationCap
+  },
+  { 
+    id: 'menu-kelas', 
+    tab: 'kelas', 
+    label: 'Kelas & Rombel', 
+    desc: 'Struktur kelas rombel dan penugasan wali kelas',
+    roles: ['ADMIN', 'KOORDINATOR'],
+    icon: Building2
+  },
+  { 
+    id: 'menu-laporan', 
+    tab: 'laporan', 
+    label: 'Laporan & Rekap Nilai', 
+    desc: 'Statistik kehadiran, rekapitulasi nilai rapor eskul',
+    roles: ['ADMIN', 'KOORDINATOR', 'PEMBINA', 'WALI_KELAS'],
+    icon: Layers
+  },
+  { 
+    id: 'menu-live', 
+    tab: 'live-presensi', 
+    label: 'Presensi Langsung (Live)', 
+    desc: 'Pemantauan absensi real-time kompleks sekolah',
+    roles: ['ADMIN', 'KOORDINATOR', 'PEMBINA'],
+    icon: Users
+  },
+  { 
+    id: 'menu-qr', 
+    tab: 'dynamic-qr', 
+    label: 'Dynamic QR Proyektor', 
+    desc: 'Generator QR code terenkripsi untuk presensi proyektor',
+    roles: ['ADMIN', 'KOORDINATOR', 'PEMBINA'],
+    icon: Sparkles
+  },
+  { 
+    id: 'menu-scanner-guru', 
+    tab: 'scanner-guru', 
+    label: 'Pindai Kartu Siswa (Kamera)', 
+    desc: 'Pemindai kamera pembina untuk scan ID Card fisik',
+    roles: ['ADMIN', 'KOORDINATOR', 'PEMBINA'],
+    icon: Sparkles
+  },
+  { 
+    id: 'menu-penilaian', 
+    tab: 'penilaian', 
+    label: 'Penilaian Rapor Ekstrakurikuler', 
+    desc: 'Input nilai predikat dan deskripsi capaian rapor',
+    roles: ['ADMIN', 'KOORDINATOR', 'PEMBINA'],
+    icon: Sparkles
+  },
+  { 
+    id: 'menu-scanner-siswa', 
+    tab: 'scanner-siswa', 
+    label: 'Pindai QR Presensi Siswa', 
+    desc: 'Kamera scanner siswa untuk scan QR proyektor',
+    roles: ['SISWA'],
+    icon: Smartphone
+  },
+  { 
+    id: 'menu-kartu-siswa', 
+    tab: 'kartu-siswa', 
+    label: 'Kartu Pelajar Digital Siswa', 
+    desc: 'ID Card digital siswa dengan barcode/QR identitas',
+    roles: ['SISWA'],
+    icon: Smartphone
+  },
+  { 
+    id: 'menu-khn-siswa', 
+    tab: 'khn-siswa', 
+    label: 'Kartu Hasil Nilai (KHN)', 
+    desc: 'Lembar hasil evaluasi dan nilai ekstrakurikuler siswa',
+    roles: ['SISWA'],
+    icon: Smartphone
+  },
+];
 
 function highlightMatch(text: string, query: string) {
   if (!query) return text;
@@ -89,21 +225,40 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [searchVal, setSearchVal] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [filterCategory, setFilterCategory] = useState<'all' | 'eskul' | 'guru' | 'siswa' | 'kelas'>('all');
+  const [filterCategory, setFilterCategory] = useState<'all' | 'menu' | 'eskul' | 'guru' | 'siswa' | 'kelas'>('all');
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [previewDetail, setPreviewDetail] = useState<{
+    type: 'eskul' | 'guru' | 'siswa' | 'kelas';
+    item: any;
+  } | null>(null);
+
+  const isKoordinator = currentRole === 'ADMIN' || currentRole === 'KOORDINATOR';
+  const isPembina = currentRole === 'PEMBINA';
+  const isWaliKelas = currentRole === 'WALI_KELAS';
+  const isSiswa = currentRole === 'SISWA';
 
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const query = searchVal.trim().toLowerCase();
 
-  // Search Results Calculation
+  // Search Results Calculation (Strictly Filtered by Current Role Access)
   const results = useMemo(() => {
     if (!query) {
-      return { eskuls: [], gurus: [], students: [], kelas: [], total: 0 };
+      return { menus: [], eskuls: [], gurus: [], students: [], kelas: [], total: 0 };
     }
+
+    // 0. System Menus: ONLY match menus permitted for the current user's role!
+    const matchedMenus = SYSTEM_MENUS.filter((m) => {
+      if (!m.roles.includes(currentRole)) return false;
+      return (
+        m.label.toLowerCase().includes(query) ||
+        m.desc.toLowerCase().includes(query) ||
+        m.tab.toLowerCase().includes(query)
+      );
+    });
 
     const matchedEskuls = eskulList.filter((e) =>
       e.namaEskul.toLowerCase().includes(query) ||
@@ -133,15 +288,16 @@ export const Header: React.FC<HeaderProps> = ({
       (k.waliKelas?.namaLengkap && k.waliKelas.namaLengkap.toLowerCase().includes(query))
     );
 
-    const total = matchedEskuls.length + matchedGurus.length + matchedStudents.length + matchedKelas.length;
+    const total = matchedMenus.length + matchedEskuls.length + matchedGurus.length + matchedStudents.length + matchedKelas.length;
     return {
+      menus: matchedMenus,
       eskuls: matchedEskuls,
       gurus: matchedGurus,
       students: matchedStudents,
       kelas: matchedKelas,
       total,
     };
-  }, [query, eskulList, guruList, students, kelasList]);
+  }, [query, currentRole, eskulList, guruList, students, kelasList]);
 
   // Keyboard shortcut Ctrl+K and Escape
   useEffect(() => {
@@ -297,7 +453,7 @@ export const Header: React.FC<HeaderProps> = ({
                       <button
                         type="button"
                         onClick={() => setFilterCategory('all')}
-                        className={`px-2 py-0.5 rounded-lg transition-colors cursor-pointer ${
+                        className={`px-2 py-0.5 rounded-lg transition-colors cursor-pointer shrink-0 ${
                           filterCategory === 'all'
                             ? 'bg-[#00B884] text-white shadow-2xs'
                             : 'bg-white text-slate-600 hover:bg-slate-200/70 border border-slate-200/70'
@@ -305,11 +461,24 @@ export const Header: React.FC<HeaderProps> = ({
                       >
                         Semua ({results.total})
                       </button>
+                      {results.menus.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setFilterCategory('menu')}
+                          className={`px-2 py-0.5 rounded-lg transition-colors cursor-pointer shrink-0 ${
+                            filterCategory === 'menu'
+                              ? 'bg-[#00B884] text-white shadow-2xs'
+                              : 'bg-white text-slate-600 hover:bg-slate-200/70 border border-slate-200/70'
+                          }`}
+                        >
+                          Menu ({results.menus.length})
+                        </button>
+                      )}
                       {results.eskuls.length > 0 && (
                         <button
                           type="button"
                           onClick={() => setFilterCategory('eskul')}
-                          className={`px-2 py-0.5 rounded-lg transition-colors cursor-pointer ${
+                          className={`px-2 py-0.5 rounded-lg transition-colors cursor-pointer shrink-0 ${
                             filterCategory === 'eskul'
                               ? 'bg-[#00B884] text-white shadow-2xs'
                               : 'bg-white text-slate-600 hover:bg-slate-200/70 border border-slate-200/70'
@@ -322,7 +491,7 @@ export const Header: React.FC<HeaderProps> = ({
                         <button
                           type="button"
                           onClick={() => setFilterCategory('guru')}
-                          className={`px-2 py-0.5 rounded-lg transition-colors cursor-pointer ${
+                          className={`px-2 py-0.5 rounded-lg transition-colors cursor-pointer shrink-0 ${
                             filterCategory === 'guru'
                               ? 'bg-[#00B884] text-white shadow-2xs'
                               : 'bg-white text-slate-600 hover:bg-slate-200/70 border border-slate-200/70'
@@ -335,7 +504,7 @@ export const Header: React.FC<HeaderProps> = ({
                         <button
                           type="button"
                           onClick={() => setFilterCategory('siswa')}
-                          className={`px-2 py-0.5 rounded-lg transition-colors cursor-pointer ${
+                          className={`px-2 py-0.5 rounded-lg transition-colors cursor-pointer shrink-0 ${
                             filterCategory === 'siswa'
                               ? 'bg-[#00B884] text-white shadow-2xs'
                               : 'bg-white text-slate-600 hover:bg-slate-200/70 border border-slate-200/70'
@@ -348,7 +517,7 @@ export const Header: React.FC<HeaderProps> = ({
                         <button
                           type="button"
                           onClick={() => setFilterCategory('kelas')}
-                          className={`px-2 py-0.5 rounded-lg transition-colors cursor-pointer ${
+                          className={`px-2 py-0.5 rounded-lg transition-colors cursor-pointer shrink-0 ${
                             filterCategory === 'kelas'
                               ? 'bg-[#00B884] text-white shadow-2xs'
                               : 'bg-white text-slate-600 hover:bg-slate-200/70 border border-slate-200/70'
@@ -370,11 +539,53 @@ export const Header: React.FC<HeaderProps> = ({
                       </div>
                       <p className="text-xs font-semibold text-slate-700">Tidak ada hasil untuk "{searchVal}"</p>
                       <p className="text-[11px] text-slate-400 mt-1 max-w-xs mx-auto">
-                        Coba cari berdasarkan nama eskul, nama pembina, nama siswa, NIS, atau kelas.
+                        Coba cari berdasarkan nama menu, cabang eskul, pembina, nama siswa, atau kelas.
                       </p>
                     </div>
                   ) : (
                     <>
+                      {/* 0. KATEGORI MENU SISTEM (Hanya menu yang diizinkan untuk role saat ini) */}
+                      {(filterCategory === 'all' || filterCategory === 'menu') && results.menus.length > 0 && (
+                        <div>
+                          <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                            <Layers className="w-3 h-3 text-[#00B884]" />
+                            <span>Menu & Navigasi Cepat ({results.menus.length})</span>
+                          </div>
+                          <div className="space-y-1 mt-1">
+                            {results.menus.map((menu) => {
+                              const MenuIcon = menu.icon || Sparkles;
+                              return (
+                                <button
+                                  key={menu.id}
+                                  type="button"
+                                  onClick={() => handleItemClick(() => {
+                                    onNavigateTab?.(menu.tab);
+                                  })}
+                                  className="w-full text-left p-2.5 rounded-xl hover:bg-emerald-50/70 border border-transparent hover:border-emerald-200/60 transition-all flex items-center justify-between gap-3 group cursor-pointer"
+                                >
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <div className="w-8 h-8 rounded-lg bg-emerald-100 text-[#00B884] flex items-center justify-center font-bold text-xs shrink-0 group-hover:scale-105 transition-transform">
+                                      <MenuIcon className="w-4 h-4" />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <div className="text-xs font-bold text-slate-800 group-hover:text-[#00B884] transition-colors truncate">
+                                        {highlightMatch(menu.label, query)}
+                                      </div>
+                                      <div className="text-[10px] text-slate-500 truncate mt-0.5">
+                                        {highlightMatch(menu.desc, query)}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <span className="text-[10px] font-semibold text-[#00B884] bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/70 shrink-0 flex items-center gap-1">
+                                    Buka Menu <ArrowRight className="w-2.5 h-2.5" />
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
                       {/* 1. KATEGORI ESKUL */}
                       {(filterCategory === 'all' || filterCategory === 'eskul') && results.eskuls.length > 0 && (
                         <div>
@@ -388,8 +599,12 @@ export const Header: React.FC<HeaderProps> = ({
                                 key={`eskul-${eskul.id}`}
                                 type="button"
                                 onClick={() => handleItemClick(() => {
-                                  onNavigateTab?.('eskul');
-                                  onSelectEskul?.(eskul);
+                                  if (isKoordinator) {
+                                    onNavigateTab?.('eskul');
+                                    onSelectEskul?.(eskul);
+                                  } else {
+                                    setPreviewDetail({ type: 'eskul', item: eskul });
+                                  }
                                 })}
                                 className="w-full text-left p-2.5 rounded-xl hover:bg-emerald-50/60 border border-transparent hover:border-emerald-100 transition-all flex items-center justify-between gap-3 group cursor-pointer"
                               >
@@ -409,7 +624,7 @@ export const Header: React.FC<HeaderProps> = ({
                                   </div>
                                 </div>
                                 <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0 flex items-center gap-1">
-                                  Buka Eskul <ArrowRight className="w-2.5 h-2.5" />
+                                  {isKoordinator ? 'Kelola Eskul' : 'Lihat Detail'} <ArrowRight className="w-2.5 h-2.5" />
                                 </span>
                               </button>
                             ))}
@@ -430,7 +645,11 @@ export const Header: React.FC<HeaderProps> = ({
                                 key={`guru-${guru.id}`}
                                 type="button"
                                 onClick={() => handleItemClick(() => {
-                                  onNavigateTab?.(guru.isPembina ? 'pembina' : 'guru');
+                                  if (isKoordinator) {
+                                    onNavigateTab?.(guru.isPembina ? 'pembina' : 'guru');
+                                  } else {
+                                    setPreviewDetail({ type: 'guru', item: guru });
+                                  }
                                 })}
                                 className="w-full text-left p-2.5 rounded-xl hover:bg-blue-50/60 border border-transparent hover:border-blue-100 transition-all flex items-center justify-between gap-3 group cursor-pointer"
                               >
@@ -454,7 +673,7 @@ export const Header: React.FC<HeaderProps> = ({
                                   </div>
                                 </div>
                                 <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 shrink-0 flex items-center gap-1">
-                                  {guru.isPembina ? 'Data Pembina' : 'Guru & Wali'} <ArrowRight className="w-2.5 h-2.5" />
+                                  {isKoordinator ? (guru.isPembina ? 'Kelola Pembina' : 'Kelola Guru') : 'Profil Guru'} <ArrowRight className="w-2.5 h-2.5" />
                                 </span>
                               </button>
                             ))}
@@ -475,8 +694,20 @@ export const Header: React.FC<HeaderProps> = ({
                                 key={`student-${student.id}`}
                                 type="button"
                                 onClick={() => handleItemClick(() => {
-                                  onNavigateTab?.('siswa');
-                                  onSelectStudent?.(student);
+                                  if (isKoordinator) {
+                                    onNavigateTab?.('siswa');
+                                    onSelectStudent?.(student);
+                                  } else if (isSiswa) {
+                                    if (student.nis === currentUser?.username || student.id === currentUser?.id) {
+                                      onNavigateTab?.('kartu-siswa');
+                                    } else {
+                                      setPreviewDetail({ type: 'siswa', item: student });
+                                    }
+                                  } else {
+                                    // Pembina & Wali Kelas: navigate to siswa (safe view) or preview
+                                    onNavigateTab?.('siswa');
+                                    onSelectStudent?.(student);
+                                  }
                                 })}
                                 className="w-full text-left p-2.5 rounded-xl hover:bg-amber-50/60 border border-transparent hover:border-amber-100 transition-all flex items-center justify-between gap-3 group cursor-pointer"
                               >
@@ -500,7 +731,7 @@ export const Header: React.FC<HeaderProps> = ({
                                   </div>
                                 </div>
                                 <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 shrink-0 flex items-center gap-1">
-                                  Profil Siswa <ArrowRight className="w-2.5 h-2.5" />
+                                  {isKoordinator || isPembina ? 'Profil Siswa' : 'Lihat Data'} <ArrowRight className="w-2.5 h-2.5" />
                                 </span>
                               </button>
                             ))}
@@ -521,7 +752,11 @@ export const Header: React.FC<HeaderProps> = ({
                                 key={`kelas-${kls.id}`}
                                 type="button"
                                 onClick={() => handleItemClick(() => {
-                                  onNavigateTab?.('kelas');
+                                  if (isKoordinator) {
+                                    onNavigateTab?.('kelas');
+                                  } else {
+                                    setPreviewDetail({ type: 'kelas', item: kls });
+                                  }
                                 })}
                                 className="w-full text-left p-2.5 rounded-xl hover:bg-purple-50/60 border border-transparent hover:border-purple-100 transition-all flex items-center justify-between gap-3 group cursor-pointer"
                               >
@@ -542,7 +777,7 @@ export const Header: React.FC<HeaderProps> = ({
                                   </div>
                                 </div>
                                 <span className="text-[10px] font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200 shrink-0 flex items-center gap-1">
-                                  Rombel <ArrowRight className="w-2.5 h-2.5" />
+                                  {isKoordinator ? 'Kelola Kelas' : 'Rincian Kelas'} <ArrowRight className="w-2.5 h-2.5" />
                                 </span>
                               </button>
                             ))}
@@ -555,7 +790,7 @@ export const Header: React.FC<HeaderProps> = ({
 
                 {/* Footer Tip */}
                 <div className="px-3 py-2 bg-slate-50 border-t border-slate-100 text-[10px] text-slate-400 flex items-center justify-between">
-                  <span>Klik hasil untuk langsung membuka modul terkait</span>
+                  <span>Hasil disaring otomatis berdasarkan hak akses peran aktif</span>
                   <span>Esc untuk menutup</span>
                 </div>
               </motion.div>
@@ -782,6 +1017,230 @@ export const Header: React.FC<HeaderProps> = ({
         currentRole={currentRole}
         onLogout={onLogout}
       />
+
+      {/* Read-Only Search Detail Preview Modal for Non-Admin */}
+      {previewDetail && (
+        <SearchDetailModal
+          preview={previewDetail}
+          onClose={() => setPreviewDetail(null)}
+        />
+      )}
     </header>
   );
 };
+
+// ==========================================
+// Read-Only Search Detail Preview Modal
+// Strictly prevents unauthorized navigation to Admin modules
+// ==========================================
+interface SearchDetailModalProps {
+  preview: {
+    type: 'eskul' | 'guru' | 'siswa' | 'kelas';
+    item: any;
+  };
+  onClose: () => void;
+}
+
+const SearchDetailModal: React.FC<SearchDetailModalProps> = ({ preview, onClose }) => {
+  const { type, item } = preview;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+      <div 
+        className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200"
+        role="dialog"
+        aria-modal="true"
+      >
+        {/* Modal Top Bar */}
+        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+          <div className="flex items-center gap-2">
+            <span className="p-2 rounded-xl bg-[#00B884]/10 text-[#00B884]">
+              {type === 'eskul' && <Volleyball className="w-5 h-5" />}
+              {type === 'guru' && <UserCheck className="w-5 h-5" />}
+              {type === 'siswa' && <GraduationCap className="w-5 h-5" />}
+              {type === 'kelas' && <Building2 className="w-5 h-5" />}
+            </span>
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Pratinjau Data Informasi
+              </span>
+              <h3 className="text-base font-bold text-slate-800">
+                {type === 'eskul' && 'Rincian Ekstrakurikuler'}
+                {type === 'guru' && 'Profil Tenaga Pendidik'}
+                {type === 'siswa' && 'Data Profil Siswa'}
+                {type === 'kelas' && 'Rombongan Belajar (Rombel)'}
+              </h3>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
+            aria-label="Tutup"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Modal Content */}
+        <div className="p-5 overflow-y-auto space-y-4 text-xs">
+          {type === 'eskul' && (
+            <div className="space-y-4">
+              <div className="bg-emerald-50/60 border border-emerald-200/80 rounded-2xl p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="text-base font-extrabold text-slate-900">{item.namaEskul}</h4>
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#00B884] text-white">
+                    {item.kategori || 'Ekstrakurikuler'}
+                  </span>
+                </div>
+                <p className="text-slate-600 mt-2 text-xs leading-relaxed">
+                  {item.deskripsi || 'Kegiatan ekstrakurikuler pembinaan bakat dan minat siswa SMK Al Amanah.'}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-[10px] text-slate-400 font-semibold uppercase">Guru Pembina</span>
+                  <div className="font-bold text-slate-800 text-sm mt-0.5 flex items-center gap-1.5">
+                    <UserCheck className="w-4 h-4 text-[#00B884]" />
+                    <span>{item.pembinaNama || '-'}</span>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-[10px] text-slate-400 font-semibold uppercase">Jadwal Latihan</span>
+                  <div className="font-bold text-slate-800 text-sm mt-0.5 flex items-center gap-1.5">
+                    <Clock className="w-4 h-4 text-amber-500" />
+                    <span>{item.jadwalHari}, {item.jamMulai} - {item.jamSelesai}</span>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 sm:col-span-2">
+                  <span className="text-[10px] text-slate-400 font-semibold uppercase">Lokasi Kegiatan</span>
+                  <div className="font-bold text-slate-800 text-sm mt-0.5 flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4 text-rose-500" />
+                    <span>{item.lokasi || 'Lingkungan SMK Al Amanah'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-900 flex items-start gap-2 text-[11px]">
+                <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <span>
+                  Pengaturan jadwal dan penetapan pembina eskul ini dikelola terpusat oleh Koordinator Ekstrakurikuler.
+                </span>
+              </div>
+            </div>
+          )}
+
+          {type === 'guru' && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3.5 p-4 bg-blue-50/50 border border-blue-100 rounded-2xl">
+                <UserAvatar name={item.namaLengkap} className="w-14 h-14 ring-2 ring-blue-300 text-base shrink-0" />
+                <div className="min-w-0">
+                  <h4 className="font-bold text-slate-900 text-base">{item.namaLengkap}</h4>
+                  <p className="text-xs text-blue-700 font-medium mt-0.5">{item.spesialisasi || 'Guru Pendidik'}</p>
+                  <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
+                    {item.isPembina ? 'Guru Pembina Eskul' : 'Wali Kelas / Guru Mata Pelajaran'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                  <span className="text-slate-500 font-medium">NIP Resmi:</span>
+                  <span className="font-mono font-bold text-slate-800">{item.nip || '-'}</span>
+                </div>
+                {item.email && (
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                    <span className="text-slate-500 font-medium">Email Satuan Pendidikan:</span>
+                    <span className="font-medium text-slate-800">{item.email}</span>
+                  </div>
+                )}
+                {item.noHp && (
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                    <span className="text-slate-500 font-medium">Kontak WhatsApp:</span>
+                    <span className="font-medium text-slate-800">{item.noHp}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {type === 'siswa' && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3.5 p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
+                <UserAvatar name={item.namaLengkap} className="w-14 h-14 ring-2 ring-emerald-300 text-base shrink-0" />
+                <div className="min-w-0">
+                  <h4 className="font-bold text-slate-900 text-base">{item.namaLengkap}</h4>
+                  <div className="flex items-center gap-2 text-xs text-slate-600 mt-0.5">
+                    <span className="font-semibold text-slate-800">{item.kelas || '-'}</span>
+                    <span>•</span>
+                    <span className="font-mono text-slate-500">NIS: {item.nis || item.nomorInduk || '-'}</span>
+                  </div>
+                  <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                    Siswa Aktif Terdaftar
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-[10px] text-slate-400 font-semibold uppercase">NISN</span>
+                  <div className="font-mono font-bold text-slate-800 text-xs mt-0.5">{item.nisn || '-'}</div>
+                </div>
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                  <span className="text-[10px] text-slate-400 font-semibold uppercase">Jenis Kelamin</span>
+                  <div className="font-bold text-slate-800 text-xs mt-0.5">
+                    {item.jenisKelamin === 'P' ? 'Perempuan' : 'Laki-Laki'}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-100/90 border border-slate-200 text-slate-600 text-[11px] flex items-center gap-2">
+                <Lock className="w-4 h-4 text-slate-400 shrink-0" />
+                <span>Kredensial dan sandi login dilindungi ketat demi privasi data siswa.</span>
+              </div>
+            </div>
+          )}
+
+          {type === 'kelas' && (
+            <div className="space-y-4">
+              <div className="p-4 bg-purple-50/50 border border-purple-100 rounded-2xl">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-lg font-black text-slate-900">{item.namaKelas}</h4>
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-purple-800">
+                    Tingkat {item.tingkat || 10}
+                  </span>
+                </div>
+                <p className="text-xs text-purple-700 font-medium mt-1">
+                  Kompetensi Keahlian: {item.jurusan || 'Teknologi & Bisnis'}
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <span className="text-[10px] text-slate-400 font-semibold uppercase">Wali Kelas</span>
+                <div className="font-bold text-slate-800 text-sm mt-0.5 flex items-center gap-2">
+                  <UserCheck className="w-4 h-4 text-purple-600" />
+                  <span>{item.waliKelas?.namaLengkap || 'Belum Ditugaskan'}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Modal Footer */}
+        <div className="p-4 border-t border-slate-100 bg-slate-50/70 flex justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-semibold text-xs transition-colors cursor-pointer shadow-xs"
+          >
+            Tutup Pratinjau
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+

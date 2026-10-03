@@ -15,16 +15,19 @@ import {
   SlidersHorizontal,
   X,
   Check,
-  RotateCcw
+  RotateCcw,
+  ShieldCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eskul } from '../../types';
+import { Eskul, PengajuanJadwal } from '../../types';
 import { UserAvatar } from '../common/UserAvatar';
 
 interface EskulManagementProps {
   eskulList: Eskul[];
+  jadwalProposals?: PengajuanJadwal[];
   onAddEskul: () => void;
   onAddPembina?: () => void;
+  onOpenValidasiJadwal?: () => void;
   onEditEskul: (eskul: Eskul) => void;
   onDeleteEskul: (id: string) => void;
   onToggleStatus: (id: string) => void;
@@ -33,8 +36,10 @@ interface EskulManagementProps {
 
 export const EskulManagement: React.FC<EskulManagementProps> = ({
   eskulList,
+  jadwalProposals,
   onAddEskul,
   onAddPembina,
+  onOpenValidasiJadwal,
   onEditEskul,
   onDeleteEskul,
   onToggleStatus,
@@ -84,7 +89,22 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {onOpenValidasiJadwal && (
+            <button
+              onClick={onOpenValidasiJadwal}
+              className="relative flex items-center gap-2 px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100/70 border-2 border-emerald-300 text-[#00B884] font-bold text-sm rounded-xl shadow-xs transition-all cursor-pointer"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span>Validasi Jadwal</span>
+              {jadwalProposals && jadwalProposals.filter(p => p.status === 'MENUNGGU_VALIDASI').length > 0 && (
+                <span className="w-5 h-5 rounded-full bg-amber-500 text-white font-black text-[10px] flex items-center justify-center animate-pulse">
+                  {jadwalProposals.filter(p => p.status === 'MENUNGGU_VALIDASI').length}
+                </span>
+              )}
+            </button>
+          )}
+
           {onAddPembina && (
             <button
               onClick={onAddPembina}

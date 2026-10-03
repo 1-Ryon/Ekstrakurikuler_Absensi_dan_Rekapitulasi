@@ -1,25 +1,40 @@
-import { Eskul, SesiPertemuan, PresensiRecord, PenilaianRecord, StudentProfile, Guru, Kelas } from '../types';
+import { Eskul, SesiPertemuan, PresensiRecord, PenilaianRecord, StudentProfile, Guru, Kelas, PengajuanJadwal } from '../types';
 import { 
   INITIAL_ESKUL_LIST, 
   INITIAL_SESSIONS, 
   INITIAL_STUDENTS, 
   INITIAL_PRESENSI_LOG, 
-  INITIAL_PENILAIAN 
+  INITIAL_PENILAIAN,
+  INITIAL_JADWAL_PROPOSALS
 } from '../data/mockData';
 
 const API_BASE_URL = '/api';
 
-// Helper for fetch with timeout
+// Helper for fetch with timeout and automatic authorization context
 async function fetchWithFallback<T>(url: string, options?: RequestInit, fallbackData?: T): Promise<T> {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+    const userSession = typeof window !== 'undefined' ? localStorage.getItem('al_amanah_user_session') : null;
+    const authToken = typeof window !== 'undefined' ? localStorage.getItem('al_amanah_auth_token') : null;
+    let userRole = '';
+    if (userSession) {
+      try {
+        const parsed = JSON.parse(userSession);
+        userRole = parsed?.role || '';
+      } catch {
+        // ignore parse error
+      }
+    }
 
     const res = await fetch(`${API_BASE_URL}${url}`, {
       ...options,
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
+        ...(userRole ? { 'X-User-Role': userRole } : {}),
+        ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}),
         ...(options?.headers || {}),
       },
     });
@@ -153,6 +168,11 @@ export const api = {
     fetchWithFallback<{ success: boolean; message: string }>(`/kelas/${id}`, {
       method: 'DELETE',
     }),
+  assignWaliKelas: (kelasId: string, waliKelasId: string) =>
+    fetchWithFallback<{ success: boolean; data: Kelas }>(`/kelas/${kelasId}/walikelas`, {
+      method: 'PATCH',
+      body: JSON.stringify({ waliKelasId }),
+    }),
 
   // Students & Import (NIS + Template Password al_amanah_<last 3 digits>)
   getStudents: () => fetchWithFallback<StudentProfile[]>('/students', undefined, INITIAL_STUDENTS),
@@ -169,15 +189,70 @@ export const api = {
 
   // Sessions & Dynamic QR
   getTodaySessions: () => fetchWithFallback<SesiPertemuan[]>('/sessions/today', undefined, INITIAL_SESSIONS),
+  createSession: (data: {
+    eskulId: string;
+    pembuatId?: string;
+    tanggal?: string;
+    jamMulai?: string;
+    jamSelesai?: string;
+    lokasi?: string;
+    judul: string;
+    deskripsi: string;
+    materi?: string;
+  }) =>
+    fetchWithFallback<SesiPertemuan>('/sessions', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
   generateDynamicToken: (sessionId: string) =>
     fetchWithFallback<{ success: boolean; token: string; expiresAt: number }>(`/sessions/${sessionId}/token`, {
       method: 'POST',
     }),
-  updateSessionStatus: (sessionId: string, status: string) =>
+  updateSessionStatus: (sessionId: string, status: string, additionalData?: { judul?: string; deskripsi?: string; materi?: string }) =>
     fetchWithFallback<SesiPertemuan>(`/sessions/${sessionId}/status`, {
       method: 'PATCH',
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, ...(additionalData || {}) }),
     }),
+
+  // Permohonan Perubahan Jadwal (Pembina & Koordinator)
+  getJadwalProposals: (params?: { pembinaId?: string; status?: string; eskulId?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.pembinaId) query.append('pembinaId', params.pembinaId);
+    if (params?.status) query.append('status', params.status);
+    if (params?.eskulId) query.append('eskulId', params.eskulId);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return fetchWithFallback<PengajuanJadwal[]>(`/jadwal-proposals${qs}`, undefined, INITIAL_JADWAL_PROPOSALS);
+  },
+  createJadwalProposal: (data: {
+    eskulId: string;
+    pembinaId: string;
+    hariBaru: string;
+    jamMulaiBaru: string;
+    jamSelesaiBaru: string;
+    lokasiBaru?: string;
+    jenisPerubahan?: 'PERMANEN' | 'SEMENTARA';
+    tanggalEfektif?: string;
+    alasan: string;
+  }) =>
+    fetchWithFallback<PengajuanJadwal>('/jadwal-proposals', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  validateJadwalProposal: (
+    id: string,
+    data: {
+      status: 'DISETUJUI' | 'DITOLAK';
+      catatanKoordinator?: string;
+      koordinatorId?: string;
+    }
+  ) =>
+    fetchWithFallback<{ success: boolean; message: string; data: PengajuanJadwal; updatedEskul?: Eskul }>(
+      `/jadwal-proposals/${id}/validate`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }
+    ),
 
   // Presensi & Scan
   getPresensiLogs: () => fetchWithFallback<PresensiRecord[]>('/presensi', undefined, INITIAL_PRESENSI_LOG),

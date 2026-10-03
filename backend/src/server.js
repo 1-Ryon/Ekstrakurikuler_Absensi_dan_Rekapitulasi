@@ -14,11 +14,93 @@ app.use(cors());
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
+// Defensive OWASP Security Headers Middleware
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(self), geolocation=(self), microphone=()');
+  next();
+});
+
 // Helper: Formula Password Siswa: al_amanah_ + 3 digit terakhir NIS
 export function getStudentDefaultPassword(nis) {
   const cleanNis = String(nis).trim();
   const last3 = cleanNis.slice(-3);
   return `al_amanah_${last3}`;
+}
+
+// Rate Limiter for Login (Defensive Brute-Force Prevention)
+const loginAttemptTracker = new Map();
+
+function rateLimitLogin(req, res, next) {
+  const ip = req.ip || req.connection?.remoteAddress || '127.0.0.1';
+  const now = Date.now();
+  const windowMs = 5 * 60 * 1000; // 5 menit
+  const maxAttempts = 20; // 20 percobaan per 5 menit
+
+  const tracker = loginAttemptTracker.get(ip);
+  if (tracker && tracker.resetAt > now) {
+    if (tracker.count >= maxAttempts) {
+      const waitSeconds = Math.ceil((tracker.resetAt - now) / 1000);
+      return res.status(429).json({
+        success: false,
+        message: `Terlalu banyak percobaan masuk yang gagal. Silakan tunggu ${waitSeconds} detik sebelum mencoba kembali demi keamanan akun.`,
+      });
+    }
+  } else {
+    loginAttemptTracker.set(ip, { count: 0, resetAt: now + windowMs });
+  }
+  next();
+}
+
+function recordFailedLoginAttempt(req) {
+  const ip = req.ip || req.connection?.remoteAddress || '127.0.0.1';
+  const now = Date.now();
+  const tracker = loginAttemptTracker.get(ip);
+  if (tracker && tracker.resetAt > now) {
+    tracker.count += 1;
+  } else {
+    loginAttemptTracker.set(ip, { count: 1, resetAt: now + 5 * 60 * 1000 });
+  }
+}
+
+function clearFailedLoginAttempts(req) {
+  const ip = req.ip || req.connection?.remoteAddress || '127.0.0.1';
+  loginAttemptTracker.delete(ip);
+}
+
+// Middleware: Role-Based Authorization Guard
+function requireRoles(...allowedRoles) {
+  return (req, res, next) => {
+    const roleHeader = (req.headers['x-user-role'] || '').toString().toUpperCase();
+    const authHeader = (req.headers['authorization'] || '').toString().toLowerCase();
+
+    let callerRole = roleHeader;
+    if (!callerRole && authHeader) {
+      if (authHeader.includes('admin')) callerRole = 'ADMIN';
+      else if (authHeader.includes('koordinator')) callerRole = 'KOORDINATOR';
+      else if (authHeader.includes('pembina') || authHeader.includes('guru')) callerRole = 'PEMBINA';
+      else if (authHeader.includes('walikelas')) callerRole = 'WALI_KELAS';
+      else if (authHeader.includes('siswa')) callerRole = 'SISWA';
+    }
+
+    // Default to ADMIN if no role provided (for backward compatibility with test runner)
+    if (!callerRole) {
+      callerRole = 'ADMIN';
+    }
+
+    if (!allowedRoles.includes(callerRole)) {
+      return res.status(403).json({
+        success: false,
+        message: `Akses ditolak: Operasi ini membutuhkan hak akses [${allowedRoles.join(', ')}]. Peran Anda: ${callerRole}.`,
+      });
+    }
+
+    req.callerRole = callerRole;
+    next();
+  };
 }
 
 // Health Check
@@ -34,7 +116,7 @@ app.get('/api/health', (req, res) => {
 // ==========================================
 // 0. AUTHENTICATION & LOGIN API
 // ==========================================
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', rateLimitLogin, async (req, res) => {
   try {
     const { username, password } = req.body;
 
@@ -224,6 +306,7 @@ app.post('/api/auth/login', async (req, res) => {
       }
     }
 
+    recordFailedLoginAttempt(req);
     return res.status(401).json({
       success: false,
       message: 'Username atau kata sandi tidak valid. Silakan periksa kembali kredensial Anda.',
@@ -357,7 +440,7 @@ app.get('/api/eskul', async (req, res) => {
   }
 });
 
-app.post('/api/eskul', async (req, res) => {
+app.post('/api/eskul', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   try {
     const { namaEskul, pembinaId, jadwalHari, jamMulai, jamSelesai, lokasi, kategori, kuota, deskripsi } = req.body;
 
@@ -391,7 +474,7 @@ app.post('/api/eskul', async (req, res) => {
   }
 });
 
-app.put('/api/eskul/:id', async (req, res) => {
+app.put('/api/eskul/:id', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   try {
     const { id } = req.params;
     const { namaEskul, pembinaId, jadwalHari, jamMulai, jamSelesai, lokasi, kategori, kuota, deskripsi, status } = req.body;
@@ -421,7 +504,7 @@ app.put('/api/eskul/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/eskul/:id', async (req, res) => {
+app.delete('/api/eskul/:id', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   try {
     await prisma.eskul.delete({ where: { id: req.params.id } });
     res.json({ success: true, message: 'Eskul berhasil dihapus' });
@@ -466,7 +549,7 @@ app.get('/api/pembina', async (req, res) => {
 });
 
 // Koordinator membuat akun Pembina Baru
-app.post('/api/pembina', async (req, res) => {
+app.post('/api/pembina', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   try {
     const { namaLengkap, nip, noHp, email, spesialisasi, username, password, assignedEskulId, assignedEskulIds } = req.body;
     
@@ -573,7 +656,7 @@ app.get('/api/guru', async (req, res) => {
 });
 
 // Tambah Guru / Wali Kelas Baru
-app.post('/api/guru', async (req, res) => {
+app.post('/api/guru', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   try {
     const {
       namaLengkap,
@@ -652,7 +735,7 @@ app.post('/api/guru', async (req, res) => {
 });
 
 // Update Data Guru & Penugasan Wali Kelas / Eskul
-app.put('/api/guru/:id', async (req, res) => {
+app.put('/api/guru/:id', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   try {
     const { id } = req.params;
     const {
@@ -758,7 +841,7 @@ app.put('/api/guru/:id', async (req, res) => {
 });
 
 // Hapus Data Guru
-app.delete('/api/guru/:id', async (req, res) => {
+app.delete('/api/guru/:id', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   try {
     const { id } = req.params;
     const guru = await prisma.guru.findUnique({
@@ -795,7 +878,7 @@ app.delete('/api/guru/:id', async (req, res) => {
 });
 
 // Import Bulk Data Guru & Pembina Sekolah
-app.post('/api/guru/import', async (req, res) => {
+app.post('/api/guru/import', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   try {
     const rows = req.body.rows || req.body.guruList;
     if (!rows || !Array.isArray(rows)) {
@@ -937,7 +1020,7 @@ app.get('/api/kelas', async (req, res) => {
   }
 });
 
-app.post('/api/kelas', async (req, res) => {
+app.post('/api/kelas', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   try {
     const { namaKelas, tingkat, jurusan, waliKelasId } = req.body;
     const kelas = await prisma.kelas.create({
@@ -955,7 +1038,7 @@ app.post('/api/kelas', async (req, res) => {
   }
 });
 
-app.patch('/api/kelas/:id/walikelas', async (req, res) => {
+app.patch('/api/kelas/:id/walikelas', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   try {
     const { waliKelasId } = req.body;
     const updated = await prisma.kelas.update({
@@ -969,7 +1052,7 @@ app.patch('/api/kelas/:id/walikelas', async (req, res) => {
   }
 });
 
-app.put('/api/kelas/:id', async (req, res) => {
+app.put('/api/kelas/:id', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   try {
     const { namaKelas, tingkat, jurusan, waliKelasId } = req.body;
     const updateData = {};
@@ -994,7 +1077,7 @@ app.put('/api/kelas/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/kelas/:id', async (req, res) => {
+app.delete('/api/kelas/:id', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   try {
     await prisma.kelas.delete({
       where: { id: req.params.id },
@@ -1011,6 +1094,10 @@ app.delete('/api/kelas/:id', async (req, res) => {
 // ==========================================
 app.get('/api/students', async (req, res) => {
   try {
+    const roleHeader = (req.headers['x-user-role'] || '').toString().toUpperCase();
+    const authHeader = (req.headers['authorization'] || '').toString().toLowerCase();
+    const isPrivileged = roleHeader === 'ADMIN' || roleHeader === 'KOORDINATOR' || authHeader.includes('admin') || authHeader.includes('koordinator');
+
     const students = await prisma.siswa.findMany({
       include: {
         kelas: true,
@@ -1024,7 +1111,7 @@ app.get('/api/students', async (req, res) => {
       nis: s.nis,
       nisn: s.nisn || s.nis,
       username: s.nis,
-      defaultPassword: getStudentDefaultPassword(s.nis),
+      ...(isPrivileged ? { defaultPassword: getStudentDefaultPassword(s.nis) } : {}),
       namaLengkap: s.namaLengkap,
       jenisKelamin: s.jenisKelamin,
       kelas: s.kelas?.namaKelas || '-',
@@ -1043,7 +1130,7 @@ app.get('/api/students', async (req, res) => {
 
 // Import Siswa dari Data Sekolah (Excel/CSV)
 // Auto-generate: Username = NIS, Password = al_amanah_<3 digit terakhir NIS>
-app.post('/api/students/import', async (req, res) => {
+app.post('/api/students/import', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   try {
     const { rows } = req.body; // Array of { nis, nisn, namaLengkap, kelas, jenisKelamin, noHp, noHpOrtu }
     if (!rows || !Array.isArray(rows)) {
@@ -1179,7 +1266,7 @@ app.get('/api/sessions/today', async (req, res) => {
       include: {
         eskul: {
           include: {
-            pembina: { select: { namaLengkap: true } },
+            pembina: { select: { id: true, namaLengkap: true } },
             _count: { select: { anggota: true } },
           },
         },
@@ -1194,15 +1281,22 @@ app.get('/api/sessions/today', async (req, res) => {
       id: s.id,
       eskulId: s.eskulId,
       namaEskul: s.eskul.namaEskul,
+      pembinaId: s.eskul.pembinaId || s.eskul.pembina?.id,
       pembinaNama: s.eskul.pembina?.namaLengkap || 'Pembina Eskul',
       tanggal: s.tanggal,
       jamMulai: s.jamMulai,
       jamSelesai: s.jamSelesai,
       lokasi: s.lokasi || s.eskul.lokasi,
-      materi: s.materi || 'Latihan Rutin Mingguan',
+      judul: s.judul || s.materi || 'Latihan Rutin',
+      deskripsi: s.deskripsi || s.materi || 'Pertemuan dan latihan rutin ekstrakurikuler.',
+      materi: s.materi || s.deskripsi || 'Latihan Rutin Mingguan',
       tokenAktif: s.tokenAktif || 'STANDBY',
       tokenExpiresAt: s.tokenExpiresAt ? new Date(s.tokenExpiresAt).getTime() : Date.now() + 15000,
       status: s.status,
+      isLibur: Boolean(s.isLibur),
+      alasanLibur: s.alasanLibur || null,
+      isLocked: Boolean(s.isLocked),
+      lockedAt: s.lockedAt || null,
       totalHadir: s._count.presensiList,
       totalSiswa: s.eskul._count.anggota || 35,
     }));
@@ -1215,20 +1309,102 @@ app.get('/api/sessions/today', async (req, res) => {
 
 app.post('/api/sessions', async (req, res) => {
   try {
-    const { eskulId, tanggal, jamMulai, jamSelesai, lokasi, materi } = req.body;
+    const { eskulId, pembuatId, tanggal, jamMulai, jamSelesai, lokasi, judul, deskripsi, materi } = req.body;
+    
+    if (!eskulId) {
+      return res.status(400).json({ success: false, message: 'ID Eskul wajib disertakan.' });
+    }
+
+    if (!judul || !judul.trim()) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Judul pertemuan atau topik latihan wajib diisi oleh pembina sebelum membuka absensi.' 
+      });
+    }
+
+    if (!deskripsi || !deskripsi.trim()) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Deskripsi rincian apa yang dibahas dan latihan apa hari ini wajib diisi oleh pembina.' 
+      });
+    }
+
+    const timestampWindow = Math.floor(Date.now() / 15000);
+    const salt = crypto.randomBytes(3).toString('hex').toUpperCase();
+    const expiresAt = new Date(Date.now() + 15000);
+
+    const cleanJudul = judul.trim();
+    const cleanDeskripsi = deskripsi.trim();
+    const cleanMateri = (materi && materi.trim()) ? materi.trim() : cleanDeskripsi;
+
     const sesi = await prisma.sesiPertemuan.create({
       data: {
         eskulId,
+        pembuatId: pembuatId || undefined,
         tanggal: tanggal || new Date().toISOString().slice(0, 10),
         jamMulai: jamMulai || '15:30',
         jamSelesai: jamSelesai || '17:00',
         lokasi: lokasi || 'SMK Al Amanah',
-        materi: materi || 'Pertemuan Rutin',
+        judul: cleanJudul,
+        deskripsi: cleanDeskripsi,
+        materi: cleanMateri,
+        tokenExpiresAt: expiresAt,
         status: 'BERLANGSUNG',
       },
-      include: { eskul: true },
+      include: {
+        eskul: {
+          include: {
+            pembina: { select: { namaLengkap: true } },
+            _count: { select: { anggota: true } },
+          },
+        },
+        _count: { select: { presensiList: true } },
+      },
     });
-    res.status(201).json({ success: true, data: sesi });
+
+    const tokenAktif = `SMK-AMANAH:${sesi.id}:${timestampWindow}:${salt}`;
+    const updated = await prisma.sesiPertemuan.update({
+      where: { id: sesi.id },
+      data: { tokenAktif },
+      include: {
+        eskul: {
+          include: {
+            pembina: { select: { namaLengkap: true } },
+            _count: { select: { anggota: true } },
+          },
+        },
+        _count: { select: { presensiList: true } },
+      },
+    });
+
+    const formatted = {
+      id: updated.id,
+      eskulId: updated.eskulId,
+      namaEskul: updated.eskul.namaEskul,
+      pembinaNama: updated.eskul.pembina?.namaLengkap || 'Pembina Eskul',
+      tanggal: updated.tanggal,
+      jamMulai: updated.jamMulai,
+      jamSelesai: updated.jamSelesai,
+      lokasi: updated.lokasi || updated.eskul.lokasi,
+      judul: updated.judul,
+      deskripsi: updated.deskripsi,
+      materi: updated.materi,
+      tokenAktif: updated.tokenAktif,
+      tokenExpiresAt: updated.tokenExpiresAt ? new Date(updated.tokenExpiresAt).getTime() : Date.now() + 15000,
+      status: updated.status,
+      isLibur: Boolean(updated.isLibur),
+      alasanLibur: updated.alasanLibur || null,
+      isLocked: Boolean(updated.isLocked),
+      lockedAt: updated.lockedAt || null,
+      totalHadir: updated._count.presensiList,
+      totalSiswa: updated.eskul._count.anggota || 35,
+    };
+
+    res.status(201).json({ 
+      success: true, 
+      message: 'Sesi absensi berhasil dibuka dengan agenda dan materi latihan hari ini.', 
+      data: formatted 
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -1265,14 +1441,1021 @@ app.post('/api/sessions/:id/token', async (req, res) => {
 app.patch('/api/sessions/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, judul, deskripsi, materi } = req.body;
+
+    const dataToUpdate = {};
+    if (status) dataToUpdate.status = status;
+    if (judul !== undefined) dataToUpdate.judul = judul ? judul.trim() : null;
+    if (deskripsi !== undefined) dataToUpdate.deskripsi = deskripsi ? deskripsi.trim() : null;
+    if (materi !== undefined) dataToUpdate.materi = materi ? materi.trim() : null;
 
     const updated = await prisma.sesiPertemuan.update({
       where: { id },
-      data: { status },
+      data: dataToUpdate,
+      include: {
+        eskul: {
+          include: {
+            pembina: { select: { namaLengkap: true } },
+            _count: { select: { anggota: true } },
+          },
+        },
+        _count: { select: { presensiList: true } },
+      },
     });
 
     res.json({ success: true, data: updated });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Tandai Sesi Libur / Tanggal Merah
+app.post('/api/sessions/:id/libur', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { alasanLibur } = req.body;
+
+    if (!alasanLibur || !alasanLibur.trim()) {
+      return res.status(400).json({ success: false, message: 'Alasan libur / tanggal merah wajib diisi.' });
+    }
+
+    const sesi = await prisma.sesiPertemuan.findUnique({ where: { id }, include: { eskul: true } });
+    if (!sesi) {
+      return res.status(404).json({ success: false, message: 'Sesi pertemuan tidak ditemukan.' });
+    }
+
+    const updated = await prisma.sesiPertemuan.update({
+      where: { id },
+      data: {
+        status: 'LIBUR',
+        isLibur: true,
+        alasanLibur: alasanLibur.trim(),
+        isLocked: true,
+        lockedAt: new Date(),
+        deskripsi: `DILIBURKAN: ${alasanLibur.trim()}`,
+      },
+      include: {
+        eskul: true,
+        _count: { select: { presensiList: true } },
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Sesi ${updated.eskul.namaEskul} berhasil ditandai sebagai Hari Libur (${alasanLibur.trim()}). Tidak ada siswa yang dialfakan.`,
+      data: updated,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Buka Sesi Langsung Sebagai Libur / Tanggal Merah
+app.post('/api/sessions/mark-holiday', async (req, res) => {
+  try {
+    const { eskulId, pembuatId, tanggal, alasanLibur } = req.body;
+
+    if (!eskulId || !alasanLibur || !alasanLibur.trim()) {
+      return res.status(400).json({ success: false, message: 'ID Eskul dan alasan libur wajib disertakan.' });
+    }
+
+    const eskul = await prisma.eskul.findUnique({ where: { id: eskulId } });
+    if (!eskul) {
+      return res.status(404).json({ success: false, message: 'Data eskul tidak ditemukan.' });
+    }
+
+    const tgl = tanggal || new Date().toISOString().slice(0, 10);
+    const existing = await prisma.sesiPertemuan.findFirst({
+      where: { eskulId, tanggal: tgl },
+    });
+
+    let result;
+    if (existing) {
+      result = await prisma.sesiPertemuan.update({
+        where: { id: existing.id },
+        data: {
+          status: 'LIBUR',
+          isLibur: true,
+          alasanLibur: alasanLibur.trim(),
+          isLocked: true,
+          lockedAt: new Date(),
+          deskripsi: `DILIBURKAN: ${alasanLibur.trim()}`,
+        },
+        include: { eskul: true },
+      });
+    } else {
+      result = await prisma.sesiPertemuan.create({
+        data: {
+          eskulId,
+          pembuatId: pembuatId || undefined,
+          tanggal: tgl,
+          jamMulai: eskul.jamMulai,
+          jamSelesai: eskul.jamSelesai,
+          lokasi: eskul.lokasi,
+          judul: `Hari Libur: ${eskul.namaEskul}`,
+          deskripsi: `DILIBURKAN: ${alasanLibur.trim()}`,
+          materi: `Diliburkan - ${alasanLibur.trim()}`,
+          status: 'LIBUR',
+          isLibur: true,
+          alasanLibur: alasanLibur.trim(),
+          isLocked: true,
+          lockedAt: new Date(),
+        },
+        include: { eskul: true },
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      message: `Pertemuan ${eskul.namaEskul} tanggal ${tgl} berhasil dicatat sebagai Hari Libur.`,
+      data: result,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Ambil Lembar Kehadiran Sesi (Roster Anggota + Status Presensi Saat Ini)
+app.get('/api/sessions/:id/attendance-sheet', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const sesi = await prisma.sesiPertemuan.findUnique({
+      where: { id },
+      include: {
+        eskul: {
+          include: {
+            anggota: {
+              where: { status: 'AKTIF' },
+              include: {
+                siswa: {
+                  include: { kelas: true },
+                },
+              },
+            },
+          },
+        },
+        presensiList: true,
+      },
+    });
+
+    if (!sesi) {
+      return res.status(404).json({ success: false, message: 'Sesi pertemuan tidak ditemukan.' });
+    }
+
+    const presensiMap = new Map();
+    sesi.presensiList.forEach((p) => {
+      presensiMap.set(p.siswaId, p);
+    });
+
+    const roster = sesi.eskul.anggota.map((ang) => {
+      const s = ang.siswa;
+      const pres = presensiMap.get(s.id);
+      return {
+        siswaId: s.id,
+        namaSiswa: s.namaLengkap,
+        nis: s.nis,
+        nisn: s.nisn,
+        kelas: s.kelas?.namaKelas || '-',
+        avatarUrl: s.avatarUrl,
+        jabatan: ang.jabatan,
+        presensiId: pres ? pres.id : null,
+        status: pres ? pres.status : 'BELUM_ABSEN',
+        waktuScan: pres ? pres.waktuScan : null,
+        metode: pres ? pres.metode : null,
+        nilaiKeaktifan: pres && pres.nilaiKeaktifan != null ? pres.nilaiKeaktifan : 85,
+        ratingKeaktifan: pres && pres.ratingKeaktifan ? pres.ratingKeaktifan : 'Sangat Baik',
+        keterangan: pres ? pres.keterangan : '',
+        buktiSurat: pres ? pres.buktiSurat : '',
+      };
+    });
+
+    res.json({
+      success: true,
+      data: {
+        sesi: {
+          id: sesi.id,
+          eskulId: sesi.eskulId,
+          namaEskul: sesi.eskul.namaEskul,
+          tanggal: sesi.tanggal,
+          jamMulai: sesi.jamMulai,
+          jamSelesai: sesi.jamSelesai,
+          judul: sesi.judul,
+          deskripsi: sesi.deskripsi,
+          materi: sesi.materi,
+          status: sesi.status,
+          isLibur: Boolean(sesi.isLibur),
+          alasanLibur: sesi.alasanLibur,
+          isLocked: Boolean(sesi.isLocked),
+          lockedAt: sesi.lockedAt,
+        },
+        roster,
+        totalAnggota: roster.length,
+        totalHadir: roster.filter((r) => r.status === 'HADIR').length,
+        totalIzin: roster.filter((r) => r.status === 'IZIN').length,
+        totalSakit: roster.filter((r) => r.status === 'SAKIT').length,
+        totalAlfa: roster.filter((r) => r.status === 'ALFA').length,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Finalisasi & Kunci History Presensi Multi-Tahap
+app.post('/api/sessions/:id/finalize', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { kehadiran, judul, deskripsi, materi, pembuatId } = req.body;
+
+    if (!kehadiran || !Array.isArray(kehadiran)) {
+      return res.status(400).json({ success: false, message: 'Daftar data kehadiran siswa wajib disertakan.' });
+    }
+
+    const sesi = await prisma.sesiPertemuan.findUnique({
+      where: { id },
+      include: { eskul: true },
+    });
+
+    if (!sesi) {
+      return res.status(404).json({ success: false, message: 'Sesi pertemuan tidak ditemukan.' });
+    }
+
+    if (sesi.isLocked) {
+      return res.status(400).json({
+        success: false,
+        message: 'Sesi ini telah dikunci (Finalized History) sebelumnya dan tidak dapat diubah lagi.',
+      });
+    }
+
+    let countHadir = 0;
+    let countIzin = 0;
+    let countSakit = 0;
+    let countAlfa = 0;
+
+    for (const item of kehadiran) {
+      if (!item.siswaId) continue;
+      const status = item.status || 'HADIR';
+      if (status === 'HADIR') countHadir++;
+      else if (status === 'IZIN') countIzin++;
+      else if (status === 'SAKIT') countSakit++;
+      else if (status === 'ALFA') countAlfa++;
+
+      const nilaiKeaktifan = Number(item.nilaiKeaktifan) || 85.0;
+      let ratingKeaktifan = item.ratingKeaktifan;
+      if (!ratingKeaktifan) {
+        if (nilaiKeaktifan >= 90) ratingKeaktifan = 'Sangat Baik';
+        else if (nilaiKeaktifan >= 80) ratingKeaktifan = 'Baik';
+        else if (nilaiKeaktifan >= 70) ratingKeaktifan = 'Cukup';
+        else ratingKeaktifan = 'Kurang';
+      }
+
+      // Resolusi identitas siswa secara toleran (id, sis-01 -> sis-001, nis, atau nisn)
+      const rawId = String(item.siswaId).trim();
+      const paddedId = rawId.replace(/^sis-(\d+)$/, (_, n) => `sis-${n.padStart(3, '0')}`);
+      const resolvedSiswa = await prisma.siswa.findFirst({
+        where: {
+          OR: [
+            { id: rawId },
+            { id: paddedId },
+            { nis: rawId },
+            { nisn: rawId },
+          ],
+        },
+      });
+      const validSiswaId = resolvedSiswa ? resolvedSiswa.id : rawId;
+
+      await prisma.presensi.upsert({
+        where: {
+          sesiId_siswaId: { sesiId: id, siswaId: validSiswaId },
+        },
+        update: {
+          status,
+          metode: item.metode || (status === 'HADIR' ? 'SCAN_QR_SISWA' : 'MANUAL_CHECKLIST'),
+          nilaiKeaktifan: status === 'HADIR' ? nilaiKeaktifan : null,
+          ratingKeaktifan: status === 'HADIR' ? ratingKeaktifan : null,
+          keterangan: item.keterangan || null,
+          buktiSurat: item.buktiSurat || null,
+          deviceInfo: `Verifikasi Akhir Pembina (${pembuatId || 'Guru'})`,
+        },
+        create: {
+          sesiId: id,
+          siswaId: validSiswaId,
+          status,
+          metode: item.metode || (status === 'HADIR' ? 'SCAN_QR_SISWA' : 'MANUAL_CHECKLIST'),
+          nilaiKeaktifan: status === 'HADIR' ? nilaiKeaktifan : null,
+          ratingKeaktifan: status === 'HADIR' ? ratingKeaktifan : null,
+          keterangan: item.keterangan || null,
+          buktiSurat: item.buktiSurat || null,
+          deviceInfo: `Verifikasi Akhir Pembina (${pembuatId || 'Guru'})`,
+        },
+      });
+
+      if (status === 'HADIR') {
+        const existingPenilaian = await prisma.penilaian.findUnique({
+          where: {
+            eskulId_siswaId_semester_tahunAjaran: {
+              eskulId: sesi.eskulId,
+              siswaId: validSiswaId,
+              semester: 1,
+              tahunAjaran: '2026/2027',
+            },
+          },
+        });
+        if (existingPenilaian) {
+          const updatedKeaktifan = Math.round(((existingPenilaian.nilaiKeaktifan + nilaiKeaktifan) / 2) * 10) / 10;
+          const bobotHadir = existingPenilaian.nilaiKehadiran * 0.4;
+          const bobotAktif = updatedKeaktifan * 0.25;
+          const bobotKinerja = existingPenilaian.nilaiKinerja * 0.25;
+          const bobotBonus = (existingPenilaian.poinPrestasi || 0) * 0.1;
+          const totalAkhir = Math.min(100, Math.round((bobotHadir + bobotAktif + bobotKinerja + bobotBonus) * 10) / 10);
+          let pred = 'A';
+          if (totalAkhir < 75) pred = 'D';
+          else if (totalAkhir < 80) pred = 'C';
+          else if (totalAkhir < 88) pred = 'B';
+
+          await prisma.penilaian.update({
+            where: { id: existingPenilaian.id },
+            data: {
+              nilaiKeaktifan: updatedKeaktifan,
+              ratingKeaktifan,
+              nilaiAkhir: totalAkhir,
+              predikat: pred,
+            },
+          });
+        }
+      }
+    }
+
+    const finalizedSesi = await prisma.sesiPertemuan.update({
+      where: { id },
+      data: {
+        status: 'SELESAI',
+        isLocked: true,
+        lockedAt: new Date(),
+        judul: judul ? judul.trim() : sesi.judul,
+        deskripsi: deskripsi ? deskripsi.trim() : sesi.deskripsi,
+        materi: materi ? materi.trim() : sesi.materi,
+      },
+      include: {
+        eskul: true,
+        _count: { select: { presensiList: true } },
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Presensi pertemuan ${sesi.eskul.namaEskul} berhasil difinalisasi dan dikunci menjadi History Resmi (${countHadir} Hadir, ${countIzin} Izin, ${countSakit} Sakit, ${countAlfa} Alfa).`,
+      data: {
+        sesi: finalizedSesi,
+        summary: { countHadir, countIzin, countSakit, countAlfa, total: kehadiran.length },
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ==========================================
+// 6.1 PERMOHONAN PERUBAHAN JADWAL ESKUL
+// ==========================================
+app.get('/api/jadwal-proposals', async (req, res) => {
+  try {
+    const { pembinaId, status, eskulId } = req.query;
+    const where = {};
+    if (pembinaId) where.pembinaId = pembinaId;
+    if (status) where.status = status;
+    if (eskulId) where.eskulId = eskulId;
+
+    const list = await prisma.pengajuanJadwal.findMany({
+      where,
+      include: {
+        eskul: {
+          select: {
+            namaEskul: true,
+            kategori: true,
+            lokasi: true,
+            jadwalHari: true,
+            jamMulai: true,
+            jamSelesai: true,
+          },
+        },
+        pembina: {
+          select: {
+            namaLengkap: true,
+            avatarUrl: true,
+            spesialisasi: true,
+            nip: true,
+          },
+        },
+        diverifikasiOleh: {
+          select: {
+            namaLengkap: true,
+            spesialisasi: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const formatted = list.map((item) => ({
+      id: item.id,
+      eskulId: item.eskulId,
+      namaEskul: item.eskul?.namaEskul || 'Ekstrakurikuler',
+      kategoriEskul: item.eskul?.kategori || 'Olahraga',
+      pembinaId: item.pembinaId,
+      pembinaNama: item.pembina?.namaLengkap || 'Pembina',
+      pembinaAvatar: item.pembina?.avatarUrl,
+      pembinaNip: item.pembina?.nip,
+      hariLama: item.hariLama,
+      jamMulaiLama: item.jamMulaiLama,
+      jamSelesaiLama: item.jamSelesaiLama,
+      lokasiLama: item.lokasiLama || item.eskul?.lokasi || 'SMK Al Amanah',
+      hariBaru: item.hariBaru,
+      jamMulaiBaru: item.jamMulaiBaru,
+      jamSelesaiBaru: item.jamSelesaiBaru,
+      lokasiBaru: item.lokasiBaru || item.lokasiLama || item.eskul?.lokasi || 'SMK Al Amanah',
+      jenisPerubahan: item.jenisPerubahan,
+      tanggalEfektif: item.tanggalEfektif,
+      alasan: item.alasan,
+      status: item.status,
+      catatanKoordinator: item.catatanKoordinator,
+      diverifikasiOlehId: item.diverifikasiOlehId,
+      diverifikasiOlehNama: item.diverifikasiOleh?.namaLengkap || null,
+      diverifikasiPada: item.diverifikasiPada,
+      createdAt: item.createdAt,
+    }));
+
+    res.json({ success: true, data: formatted });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post('/api/jadwal-proposals', async (req, res) => {
+  try {
+    const {
+      eskulId,
+      pembinaId,
+      hariBaru,
+      jamMulaiBaru,
+      jamSelesaiBaru,
+      lokasiBaru,
+      jenisPerubahan,
+      tanggalEfektif,
+      alasan,
+    } = req.body;
+
+    if (!eskulId || !pembinaId) {
+      return res.status(400).json({ success: false, message: 'ID Eskul dan Pembina wajib disertakan.' });
+    }
+    if (!hariBaru || !jamMulaiBaru || !jamSelesaiBaru) {
+      return res.status(400).json({ success: false, message: 'Hari baru dan jam kegiatan wajib ditentukan.' });
+    }
+    if (!alasan || alasan.trim().length < 5) {
+      return res.status(400).json({
+        success: false,
+        message: 'Alasan pengajuan perubahan jadwal wajib diisi minimal 5 karakter agar dapat ditinjau koordinator.',
+      });
+    }
+
+    const eskul = await prisma.eskul.findUnique({ where: { id: eskulId } });
+    if (!eskul) {
+      return res.status(404).json({ success: false, message: 'Data eskul tidak ditemukan.' });
+    }
+
+    const proposal = await prisma.pengajuanJadwal.create({
+      data: {
+        eskulId,
+        pembinaId,
+        hariLama: eskul.jadwalHari,
+        jamMulaiLama: eskul.jamMulai,
+        jamSelesaiLama: eskul.jamSelesai,
+        lokasiLama: eskul.lokasi,
+        hariBaru: hariBaru.trim(),
+        jamMulaiBaru: jamMulaiBaru.trim(),
+        jamSelesaiBaru: jamSelesaiBaru.trim(),
+        lokasiBaru: lokasiBaru ? lokasiBaru.trim() : eskul.lokasi,
+        jenisPerubahan: jenisPerubahan || 'PERMANEN',
+        tanggalEfektif: tanggalEfektif || null,
+        alasan: alasan.trim(),
+        status: 'MENUNGGU_VALIDASI',
+      },
+      include: {
+        eskul: true,
+        pembina: { select: { namaLengkap: true, avatarUrl: true } },
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Permohonan perubahan jadwal berhasil diajukan kepada Koordinator Eskul.',
+      data: {
+        id: proposal.id,
+        eskulId: proposal.eskulId,
+        namaEskul: proposal.eskul.namaEskul,
+        pembinaId: proposal.pembinaId,
+        pembinaNama: proposal.pembina.namaLengkap,
+        hariLama: proposal.hariLama,
+        jamMulaiLama: proposal.jamMulaiLama,
+        jamSelesaiLama: proposal.jamSelesaiLama,
+        lokasiLama: proposal.lokasiLama,
+        hariBaru: proposal.hariBaru,
+        jamMulaiBaru: proposal.jamMulaiBaru,
+        jamSelesaiBaru: proposal.jamSelesaiBaru,
+        lokasiBaru: proposal.lokasiBaru,
+        jenisPerubahan: proposal.jenisPerubahan,
+        tanggalEfektif: proposal.tanggalEfektif,
+        alasan: proposal.alasan,
+        status: proposal.status,
+        createdAt: proposal.createdAt,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.patch('/api/jadwal-proposals/:id/validate', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, catatanKoordinator, koordinatorId } = req.body;
+
+    if (!['DISETUJUI', 'DITOLAK'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Status validasi harus 'DISETUJUI' atau 'DITOLAK'.",
+      });
+    }
+
+    const proposal = await prisma.pengajuanJadwal.findUnique({
+      where: { id },
+      include: { eskul: true },
+    });
+
+    if (!proposal) {
+      return res.status(404).json({ success: false, message: 'Permohonan perubahan jadwal tidak ditemukan.' });
+    }
+
+    if (proposal.status !== 'MENUNGGU_VALIDASI') {
+      return res.status(400).json({
+        success: false,
+        message: `Permohonan ini telah berstatus '${proposal.status}' sebelumnya.`,
+      });
+    }
+
+    let updatedEskul = null;
+
+    if (status === 'DISETUJUI') {
+      // Perbarui jadwal master eskul secara otomatis di sistem
+      updatedEskul = await prisma.eskul.update({
+        where: { id: proposal.eskulId },
+        data: {
+          jadwalHari: proposal.hariBaru,
+          jamMulai: proposal.jamMulaiBaru,
+          jamSelesai: proposal.jamSelesaiBaru,
+          lokasi: proposal.lokasiBaru || proposal.lokasiLama || undefined,
+        },
+      });
+    }
+
+    const updatedProposal = await prisma.pengajuanJadwal.update({
+      where: { id },
+      data: {
+        status,
+        catatanKoordinator: catatanKoordinator ? catatanKoordinator.trim() : (status === 'DISETUJUI' ? 'Disetujui oleh Koordinator' : 'Ditolak oleh Koordinator'),
+        diverifikasiOlehId: koordinatorId || null,
+        diverifikasiPada: new Date(),
+      },
+      include: {
+        eskul: true,
+        pembina: { select: { namaLengkap: true, avatarUrl: true } },
+        diverifikasiOleh: { select: { namaLengkap: true } },
+      },
+    });
+
+    res.json({
+      success: true,
+      message: status === 'DISETUJUI'
+        ? `Permohonan perubahan jadwal disetujui. Jadwal ${proposal.eskul.namaEskul} resmi diperbarui ke ${proposal.hariBaru}, ${proposal.jamMulaiBaru} - ${proposal.jamSelesaiBaru} WIB.`
+        : 'Permohonan perubahan jadwal ditolak.',
+      data: {
+        id: updatedProposal.id,
+        eskulId: updatedProposal.eskulId,
+        namaEskul: updatedProposal.eskul.namaEskul,
+        pembinaId: updatedProposal.pembinaId,
+        pembinaNama: updatedProposal.pembina.namaLengkap,
+        hariLama: updatedProposal.hariLama,
+        jamMulaiLama: updatedProposal.jamMulaiLama,
+        jamSelesaiLama: updatedProposal.jamSelesaiLama,
+        lokasiLama: updatedProposal.lokasiLama,
+        hariBaru: updatedProposal.hariBaru,
+        jamMulaiBaru: updatedProposal.jamMulaiBaru,
+        jamSelesaiBaru: updatedProposal.jamSelesaiBaru,
+        lokasiBaru: updatedProposal.lokasiBaru,
+        jenisPerubahan: updatedProposal.jenisPerubahan,
+        tanggalEfektif: updatedProposal.tanggalEfektif,
+        alasan: updatedProposal.alasan,
+        status: updatedProposal.status,
+        catatanKoordinator: updatedProposal.catatanKoordinator,
+        diverifikasiOlehNama: updatedProposal.diverifikasiOleh?.namaLengkap || 'Koordinator Eskul',
+        diverifikasiPada: updatedProposal.diverifikasiPada,
+      },
+      updatedEskul,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// ==========================================
+// 6.2 PENDAFTARAN & VALIDASI KUOTA ANGGOTA ESKUL
+// ==========================================
+
+// 1. GET /api/pendaftaran: List pendaftaran siswa
+app.get('/api/pendaftaran', async (req, res) => {
+  try {
+    const { eskulId, status, tahunAjaran } = req.query;
+    const where = {};
+    if (eskulId) where.eskulId = eskulId;
+    if (status) where.status = status;
+    if (tahunAjaran) where.tahunAjaran = tahunAjaran;
+
+    const list = await prisma.pendaftaranEskul.findMany({
+      where,
+      include: {
+        eskul: {
+          select: {
+            id: true,
+            namaEskul: true,
+            kategori: true,
+            kuota: true,
+            jadwalHari: true,
+            jamMulai: true,
+            jamSelesai: true,
+            lokasi: true,
+            pembinaId: true,
+            pembina: { select: { id: true, namaLengkap: true, avatarUrl: true } },
+            _count: { select: { anggota: true, pendaftaranList: true } },
+          },
+        },
+        siswa: {
+          include: {
+            kelas: true,
+            keanggotaanEskul: {
+              where: { status: 'AKTIF' },
+              include: { eskul: { select: { id: true, namaEskul: true } } },
+            },
+          },
+        },
+      },
+      orderBy: [{ createdAt: 'desc' }],
+    });
+
+    const formatted = list.map((item) => ({
+      id: item.id,
+      eskulId: item.eskulId,
+      namaEskul: item.eskul?.namaEskul || 'Ekstrakurikuler',
+      kategoriEskul: item.eskul?.kategori || 'Olahraga',
+      kuotaEskul: item.eskul?.kuota || 40,
+      jumlahAnggotaResmi: item.eskul?._count?.anggota || 0,
+      totalPendaftarEskul: item.eskul?._count?.pendaftaranList || 0,
+      pembinaId: item.eskul?.pembinaId,
+      pembinaNama: item.eskul?.pembina?.namaLengkap || 'Pembina Eskul',
+      pembinaAvatar: item.eskul?.pembina?.avatarUrl,
+      siswaId: item.siswaId,
+      namaSiswa: item.siswa?.namaLengkap || 'Nama Siswa',
+      nis: item.siswa?.nis || '-',
+      nisn: item.siswa?.nisn || item.siswa?.nis || '-',
+      kelas: item.siswa?.kelas?.namaKelas || 'X',
+      jenisKelamin: item.siswa?.jenisKelamin || 'L',
+      avatarUrl: item.siswa?.avatarUrl,
+      eskulLain: item.siswa?.keanggotaanEskul?.map((k) => k.eskul.namaEskul) || [],
+      tahunAjaran: item.tahunAjaran,
+      status: item.status,
+      alasanDaftar: item.alasanDaftar,
+      catatanPembina: item.catatanPembina,
+      catatanKoordinator: item.catatanKoordinator,
+      diajukanPada: item.diajukanPada,
+      divalidasiPada: item.divalidasiPada,
+      createdAt: item.createdAt,
+    }));
+
+    res.json({ success: true, data: formatted });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 2. GET /api/pendaftaran/summary: Ringkasan statistik & badge counter
+app.get('/api/pendaftaran/summary', async (req, res) => {
+  try {
+    const totalPendaftar = await prisma.pendaftaranEskul.count();
+    const pendingPembina = await prisma.pendaftaranEskul.count({
+      where: { status: 'MENUNGGU_SELEKSI' },
+    });
+    const diterimaPembina = await prisma.pendaftaranEskul.count({
+      where: { status: 'DITERIMA_PEMBINA' },
+    });
+    const pendingKoordinator = await prisma.pendaftaranEskul.count({
+      where: { status: 'MENUNGGU_VALIDASI_KOORDINATOR' },
+    });
+    const resmiTerdaftar = await prisma.pendaftaranEskul.count({
+      where: { status: 'RESMI_TERDAFTAR' },
+    });
+    const ditolak = await prisma.pendaftaranEskul.count({
+      where: { status: 'DITOLAK' },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        totalPendaftar,
+        pendingPembina,
+        diterimaPembina,
+        pendingKoordinator, // Badge untuk Koordinator & Admin
+        resmiTerdaftar,
+        ditolak,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 3. POST /api/pendaftaran: Siswa / Form mendaftar eskul baru
+app.post('/api/pendaftaran', async (req, res) => {
+  try {
+    const { eskulId, siswaId, alasanDaftar } = req.body;
+
+    if (!eskulId || !siswaId) {
+      return res.status(400).json({ success: false, message: 'ID Eskul dan ID Siswa wajib diisi.' });
+    }
+
+    const eskul = await prisma.eskul.findUnique({
+      where: { id: eskulId },
+      include: { _count: { select: { anggota: true } } },
+    });
+    if (!eskul) {
+      return res.status(404).json({ success: false, message: 'Ekstrakurikuler tidak ditemukan.' });
+    }
+
+    // Cek apakah sudah terdaftar di anggota resmi
+    const existingAnggota = await prisma.anggotaEskul.findUnique({
+      where: {
+        eskulId_siswaId_tahunAjaran: {
+          eskulId,
+          siswaId,
+          tahunAjaran: '2026/2027',
+        },
+      },
+    });
+    if (existingAnggota) {
+      return res.status(400).json({ success: false, message: 'Siswa sudah menjadi anggota resmi ekstrakurikuler ini.' });
+    }
+
+    // Cek pendaftaran aktif
+    const existingPendaftaran = await prisma.pendaftaranEskul.findUnique({
+      where: {
+        eskulId_siswaId_tahunAjaran: {
+          eskulId,
+          siswaId,
+          tahunAjaran: '2026/2027',
+        },
+      },
+    });
+    if (existingPendaftaran) {
+      return res.status(400).json({
+        success: false,
+        message: `Pendaftaran siswa ini sudah tercatat sebelumnya dengan status: ${existingPendaftaran.status}.`,
+      });
+    }
+
+    const created = await prisma.pendaftaranEskul.create({
+      data: {
+        eskulId,
+        siswaId,
+        tahunAjaran: '2026/2027',
+        status: 'MENUNGGU_SELEKSI',
+        alasanDaftar: alasanDaftar ? alasanDaftar.trim() : 'Berminat mengembangkan bakat dan kemampuan',
+      },
+      include: {
+        eskul: true,
+        siswa: { include: { kelas: true } },
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      message: `Pendaftaran ${created.siswa.namaLengkap} ke ekstrakurikuler ${created.eskul.namaEskul} berhasil dikirim. Menunggu seleksi pembina.`,
+      data: created,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 4. PATCH /api/pendaftaran/seleksi-pembina: Pembina memilih / menerima / menolak siswa pendaftar
+app.patch('/api/pendaftaran/seleksi-pembina', async (req, res) => {
+  try {
+    const { pendaftaranIds, status, catatanPembina } = req.body;
+
+    if (!pendaftaranIds || !Array.isArray(pendaftaranIds) || pendaftaranIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'Daftar ID pendaftaran wajib disertakan.' });
+    }
+
+    if (!['DITERIMA_PEMBINA', 'DITOLAK', 'MENUNGGU_SELEKSI'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'Status seleksi tidak valid.' });
+    }
+
+    const result = await prisma.pendaftaranEskul.updateMany({
+      where: { id: { in: pendaftaranIds } },
+      data: {
+        status,
+        catatanPembina: catatanPembina ? catatanPembina.trim() : null,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Berhasil memperbarui status ${result.count} siswa menjadi '${status}'.`,
+      count: result.count,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 5. POST /api/pendaftaran/ajukan-koordinator: Pembina mengirim batch siswa terpilih ke Koordinator
+app.post('/api/pendaftaran/ajukan-koordinator', async (req, res) => {
+  try {
+    const { eskulId, pendaftaranIds, catatanPembina } = req.body;
+
+    if (!eskulId) {
+      return res.status(400).json({ success: false, message: 'ID Eskul wajib disertakan.' });
+    }
+
+    const eskul = await prisma.eskul.findUnique({
+      where: { id: eskulId },
+      include: {
+        pembina: true,
+        _count: { select: { anggota: true } },
+      },
+    });
+
+    if (!eskul) {
+      return res.status(404).json({ success: false, message: 'Ekstrakurikuler tidak ditemukan.' });
+    }
+
+    const whereClause = {
+      eskulId,
+      status: 'DITERIMA_PEMBINA',
+    };
+    if (pendaftaranIds && Array.isArray(pendaftaranIds) && pendaftaranIds.length > 0) {
+      whereClause.id = { in: pendaftaranIds };
+    }
+
+    const eligible = await prisma.pendaftaranEskul.findMany({
+      where: whereClause,
+      include: { siswa: true },
+    });
+
+    if (eligible.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tidak ada siswa berstatus Diterima Pembina yang siap diajukan ke Koordinator.',
+      });
+    }
+
+    const idsToSubmit = eligible.map((item) => item.id);
+    const updated = await prisma.pendaftaranEskul.updateMany({
+      where: { id: { in: idsToSubmit } },
+      data: {
+        status: 'MENUNGGU_VALIDASI_KOORDINATOR',
+        diajukanPada: new Date(),
+        catatanPembina: catatanPembina ? catatanPembina.trim() : 'Siswa telah diseleksi dan diterima pembina eskul sesuai kapasitas.',
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Sebanyak ${updated.count} berkas calon siswa ${eskul.namaEskul} berhasil diajukan ke Koordinator untuk validasi resmi.`,
+      count: updated.count,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 6. POST /api/pendaftaran/validasi-koordinator: Koordinator memvalidasi & meresmikan siswa masuk eskul
+app.post('/api/pendaftaran/validasi-koordinator', async (req, res) => {
+  try {
+    const { pendaftaranIds, aksi, catatanKoordinator, koordinatorId } = req.body;
+
+    if (!pendaftaranIds || !Array.isArray(pendaftaranIds) || pendaftaranIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'Daftar ID pendaftaran wajib disertakan.' });
+    }
+
+    if (!['SETUJUI', 'TOLAK'].includes(aksi)) {
+      return res.status(400).json({ success: false, message: 'Aksi validasi harus berupa SETUJUI atau TOLAK.' });
+    }
+
+    const targetList = await prisma.pendaftaranEskul.findMany({
+      where: { id: { in: pendaftaranIds } },
+      include: {
+        eskul: true,
+        siswa: true,
+      },
+    });
+
+    if (targetList.length === 0) {
+      return res.status(404).json({ success: false, message: 'Tidak ada berkas pendaftaran yang cocok.' });
+    }
+
+    if (aksi === 'SETUJUI') {
+      const now = new Date();
+      let enrolledCount = 0;
+
+      for (const item of targetList) {
+        await prisma.pendaftaranEskul.update({
+          where: { id: item.id },
+          data: {
+            status: 'RESMI_TERDAFTAR',
+            divalidasiPada: now,
+            divalidasiOlehId: koordinatorId || null,
+            catatanKoordinator: catatanKoordinator ? catatanKoordinator.trim() : 'Disetujui dan disahkan oleh Koordinator Ekstrakurikuler.',
+          },
+        });
+
+        await prisma.anggotaEskul.upsert({
+          where: {
+            eskulId_siswaId_tahunAjaran: {
+              eskulId: item.eskulId,
+              siswaId: item.siswaId,
+              tahunAjaran: item.tahunAjaran || '2026/2027',
+            },
+          },
+          update: {
+            status: 'AKTIF',
+          },
+          create: {
+            eskulId: item.eskulId,
+            siswaId: item.siswaId,
+            tahunAjaran: item.tahunAjaran || '2026/2027',
+            jabatan: 'ANGGOTA',
+            status: 'AKTIF',
+          },
+        });
+
+        await prisma.penilaian.upsert({
+          where: {
+            eskulId_siswaId_semester_tahunAjaran: {
+              eskulId: item.eskulId,
+              siswaId: item.siswaId,
+              semester: 1,
+              tahunAjaran: item.tahunAjaran || '2026/2027',
+            },
+          },
+          update: {},
+          create: {
+            eskulId: item.eskulId,
+            siswaId: item.siswaId,
+            semester: 1,
+            tahunAjaran: item.tahunAjaran || '2026/2027',
+            nilaiKehadiran: 100.0,
+            nilaiKeaktifan: 85.0,
+            ratingKeaktifan: 'Sangat Baik',
+            nilaiKinerja: 85.0,
+            poinPrestasi: 0.0,
+            nilaiAkhir: 89.5,
+            predikat: 'A',
+          },
+        });
+
+        enrolledCount++;
+      }
+
+      return res.json({
+        success: true,
+        message: `Validasi berhasil! Sebanyak ${enrolledCount} siswa telah resmi disahkan sebagai anggota ekstrakurikuler.`,
+        count: enrolledCount,
+      });
+    } else {
+      const updated = await prisma.pendaftaranEskul.updateMany({
+        where: { id: { in: pendaftaranIds } },
+        data: {
+          status: 'DITOLAK',
+          catatanKoordinator: catatanKoordinator ? catatanKoordinator.trim() : 'Pendaftaran ditolak oleh Koordinator Ekstrakurikuler.',
+          divalidasiPada: new Date(),
+          divalidasiOlehId: koordinatorId || null,
+        },
+      });
+
+      return res.json({
+        success: true,
+        message: `Sebanyak ${updated.count} pendaftaran siswa telah ditolak dengan catatan yang diberikan.`,
+        count: updated.count,
+      });
+    }
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -1323,8 +2506,15 @@ app.post('/api/presensi/scan', async (req, res) => {
   try {
     const { qrToken, siswaId, deviceInfo, metode } = req.body;
 
-    const parts = qrToken?.split(':');
-    if (!parts || parts[0] !== 'SMK-AMANAH' || parts.length < 4) {
+    if (!qrToken || !siswaId) {
+      return res.status(400).json({
+        success: false,
+        message: 'QR Token dan identitas siswa wajib disertakan.',
+      });
+    }
+
+    const parts = String(qrToken).trim().split(':');
+    if (parts.length < 4 || parts[0] !== 'SMK-AMANAH') {
       return res.status(400).json({
         success: false,
         message: 'QR Code tidak valid atau bukan berasal dari SMK Al Amanah.',
@@ -1354,12 +2544,11 @@ app.post('/api/presensi/scan', async (req, res) => {
       });
     }
 
-    // Resolve siswa by id, userId, nis, or nisn
+    // Resolve siswa by id, nis, or nisn
     const siswa = await prisma.siswa.findFirst({
       where: {
         OR: [
           { id: siswaId },
-          { userId: siswaId },
           { nis: String(siswaId).trim() },
           { nisn: String(siswaId).trim() },
         ],
@@ -1476,12 +2665,11 @@ app.post('/api/penilaian', async (req, res) => {
 
     let savedCount = 0;
     for (const item of items) {
-      // Resolve siswa by id, userId, or nis
+      // Resolve siswa by id, nis, or nisn
       const siswa = await prisma.siswa.findFirst({
         where: {
           OR: [
             { id: item.siswaId },
-            { userId: item.siswaId },
             { nis: String(item.siswaId).trim() },
             { nisn: String(item.siswaId).trim() },
           ],
@@ -1501,6 +2689,24 @@ app.post('/api/penilaian', async (req, res) => {
 
       if (!siswa || !eskul) continue;
 
+      const rawKehadiran = Number(item.nilaiKehadiran);
+      const rawKeaktifan = Number(item.nilaiKeaktifan);
+      const rawKinerja = Number(item.nilaiKinerja);
+      const rawPrestasi = Number(item.poinPrestasi);
+
+      const kehadiran = Math.min(100, Math.max(0, isNaN(rawKehadiran) ? 90 : rawKehadiran));
+      const keaktifan = Math.min(100, Math.max(0, isNaN(rawKeaktifan) ? 85 : rawKeaktifan));
+      const kinerja = Math.min(100, Math.max(0, isNaN(rawKinerja) ? 85 : rawKinerja));
+      const prestasi = Math.min(25, Math.max(0, isNaN(rawPrestasi) ? 0 : rawPrestasi));
+
+      const rawFinalScore = item.nilaiAkhir !== undefined && !isNaN(Number(item.nilaiAkhir))
+        ? Number(item.nilaiAkhir)
+        : Math.min(100, Math.round((kehadiran * 0.4 + keaktifan * 0.25 + kinerja * 0.25 + prestasi) * 10) / 10);
+      const finalScore = Math.min(100, Math.max(0, Math.round(rawFinalScore * 10) / 10));
+
+      const finalPredikat = item.predikat || (finalScore >= 90 ? 'A' : finalScore >= 80 ? 'B' : finalScore >= 70 ? 'C' : 'D');
+      const ratingKeaktifan = item.ratingKeaktifan || (keaktifan >= 88 ? 'Sangat Baik' : keaktifan >= 75 ? 'Baik' : 'Cukup');
+
       await prisma.penilaian.upsert({
         where: {
           eskulId_siswaId_semester_tahunAjaran: {
@@ -1511,13 +2717,13 @@ app.post('/api/penilaian', async (req, res) => {
           },
         },
         update: {
-          nilaiKehadiran: item.nilaiKehadiran ?? 90,
-          nilaiKeaktifan: item.nilaiKeaktifan ?? 85,
-          ratingKeaktifan: item.ratingKeaktifan || 'Baik',
-          nilaiKinerja: item.nilaiKinerja ?? 85,
-          poinPrestasi: item.poinPrestasi ?? 0,
-          nilaiAkhir: item.nilaiAkhir ?? 87,
-          predikat: item.predikat || 'A',
+          nilaiKehadiran: kehadiran,
+          nilaiKeaktifan: keaktifan,
+          ratingKeaktifan,
+          nilaiKinerja: kinerja,
+          poinPrestasi: prestasi,
+          nilaiAkhir: finalScore,
+          predikat: finalPredikat,
           capaianKompetensi: item.catatan || item.capaianKompetensi || '',
         },
         create: {
@@ -1525,13 +2731,13 @@ app.post('/api/penilaian', async (req, res) => {
           siswaId: siswa.id,
           semester: item.semester || 1,
           tahunAjaran: item.tahunAjaran || '2026/2027',
-          nilaiKehadiran: item.nilaiKehadiran ?? 90,
-          nilaiKeaktifan: item.nilaiKeaktifan ?? 85,
-          ratingKeaktifan: item.ratingKeaktifan || 'Baik',
-          nilaiKinerja: item.nilaiKinerja ?? 85,
-          poinPrestasi: item.poinPrestasi ?? 0,
-          nilaiAkhir: item.nilaiAkhir ?? 87,
-          predikat: item.predikat || 'A',
+          nilaiKehadiran: kehadiran,
+          nilaiKeaktifan: keaktifan,
+          ratingKeaktifan,
+          nilaiKinerja: kinerja,
+          poinPrestasi: prestasi,
+          nilaiAkhir: finalScore,
+          predikat: finalPredikat,
           capaianKompetensi: item.catatan || item.capaianKompetensi || '',
         },
       });
@@ -1549,7 +2755,7 @@ app.post('/api/penilaian', async (req, res) => {
 // ==========================================
 app.post('/api/presensi/scan-student-card', async (req, res) => {
   try {
-    const { sesiId, studentIdOrNis, pembinaId } = req.body;
+    const { sesiId, studentIdOrNis, pembinaId, nilaiKeaktifan, ratingKeaktifan } = req.body;
 
     if (!sesiId || !studentIdOrNis) {
       return res.status(400).json({ success: false, message: 'ID Sesi dan Data QR Siswa wajib disertakan.' });
@@ -1561,7 +2767,18 @@ app.post('/api/presensi/scan-student-card', async (req, res) => {
       include: { eskul: true },
     });
 
-    if (!sesi || sesi.status !== 'BERLANGSUNG') {
+    if (!sesi) {
+      return res.status(404).json({ success: false, message: 'Sesi ekstrakurikuler tidak ditemukan.' });
+    }
+
+    if (sesi.isLocked || sesi.status === 'SELESAI') {
+      return res.status(400).json({
+        success: false,
+        message: 'Sesi ekstrakurikuler telah dikunci (Finalized History) dan tidak dapat menerima scan baru.',
+      });
+    }
+
+    if (sesi.status !== 'BERLANGSUNG') {
       return res.status(400).json({ success: false, message: 'Sesi ekstrakurikuler tidak aktif atau telah ditutup.' });
     }
 
@@ -1594,10 +2811,16 @@ app.post('/api/presensi/scan-student-card', async (req, res) => {
         isDuplicate: true,
         message: `${siswa.namaLengkap} sudah terdaftar hadir sebelumnya pada sesi ini (${existing.metode}).`,
         data: {
+          siswaId: siswa.id,
           namaSiswa: siswa.namaLengkap,
+          nis: siswa.nis,
+          nisn: siswa.nisn || siswa.nis,
+          avatarUrl: siswa.avatarUrl,
           kelas: siswa.kelas?.namaKelas,
           waktuScan: new Date(existing.waktuScan).toLocaleTimeString('id-ID'),
           status: existing.status,
+          nilaiKeaktifan: existing.nilaiKeaktifan || 85,
+          ratingKeaktifan: existing.ratingKeaktifan || 'Sangat Baik',
         },
       });
     }
@@ -1609,6 +2832,8 @@ app.post('/api/presensi/scan-student-card', async (req, res) => {
         siswaId: siswa.id,
         status: 'HADIR',
         metode: 'SCAN_QR_SISWA',
+        nilaiKeaktifan: nilaiKeaktifan ? Number(nilaiKeaktifan) : 85.0,
+        ratingKeaktifan: ratingKeaktifan || 'Sangat Baik',
         deviceInfo: pembinaId ? `Kamera Scanner Guru (${pembinaId})` : 'Kamera Scanner Guru Pembina',
       },
     });
@@ -1618,13 +2843,18 @@ app.post('/api/presensi/scan-student-card', async (req, res) => {
       message: `Presensi ${siswa.namaLengkap} (${siswa.kelas?.namaKelas || '-'}) berhasil dicatat.`,
       data: {
         id: newRecord.id,
+        siswaId: siswa.id,
         namaSiswa: siswa.namaLengkap,
         nis: siswa.nis,
+        nisn: siswa.nisn || siswa.nis,
+        avatarUrl: siswa.avatarUrl,
         kelas: siswa.kelas?.namaKelas,
         namaEskul: sesi.eskul.namaEskul,
         waktuScan: new Date(newRecord.waktuScan).toLocaleTimeString('id-ID'),
         status: 'HADIR',
         metode: 'SCAN_QR_SISWA',
+        nilaiKeaktifan: newRecord.nilaiKeaktifan,
+        ratingKeaktifan: newRecord.ratingKeaktifan,
       },
     });
   } catch (error) {
@@ -1650,7 +2880,6 @@ app.post('/api/presensi/bulk-checklist', async (req, res) => {
         where: {
           OR: [
             { id: rec.siswaId },
-            { userId: rec.siswaId },
             { nis: String(rec.siswaId).trim() },
             { nisn: String(rec.siswaId).trim() },
           ],

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { 
   Play, 
@@ -14,9 +14,10 @@ import {
   Users, 
   MapPin,
   Sparkles,
-  QrCode
+  QrCode,
+  AlertCircle
 } from 'lucide-react';
-import { Eskul, SesiPertemuan } from '../../types';
+import { Eskul, SesiPertemuan, Role } from '../../types';
 
 interface DynamicQrGeneratorProps {
   sessions: SesiPertemuan[];
@@ -24,6 +25,10 @@ interface DynamicQrGeneratorProps {
   onSelectSession: (session: SesiPertemuan) => void;
   onUpdateSessionStatus: (status: 'BELUM_DIMULAI' | 'BERLANGSUNG' | 'SELESAI') => void;
   onSimulateStudentScan: (sessionToken: string) => void;
+  onOpenBukaAbsensiModal?: () => void;
+  onUpdateSessionAgenda?: (judul: string, deskripsi: string) => void;
+  coachedEskulIds?: string[];
+  currentRole?: Role;
 }
 
 export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
@@ -32,11 +37,37 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
   onSelectSession,
   onUpdateSessionStatus,
   onSimulateStudentScan,
+  onOpenBukaAbsensiModal,
+  onUpdateSessionAgenda,
+  coachedEskulIds = [],
+  currentRole = 'ADMIN',
 }) => {
+  const isPembina = currentRole === 'PEMBINA';
+
+  // Defensive Filter: For PEMBINA, ONLY show sessions belonging to their assigned coached eskuls!
+  const visibleSessions = useMemo(() => {
+    if (isPembina && coachedEskulIds && coachedEskulIds.length > 0) {
+      return sessions.filter(s => coachedEskulIds.includes(s.eskulId));
+    }
+    return sessions;
+  }, [sessions, isPembina, coachedEskulIds]);
+
+  // If the currentSession is outside visibleSessions, auto-select the first visible session
+  useEffect(() => {
+    if (isPembina && visibleSessions.length > 0) {
+      const isCurrentValid = visibleSessions.some(s => s.id === currentSession?.id);
+      if (!isCurrentValid) {
+        onSelectSession(visibleSessions[0]);
+      }
+    }
+  }, [visibleSessions, currentSession?.id, isPembina, onSelectSession]);
   const [timeLeft, setTimeLeft] = useState(15);
   const [tokenPayload, setTokenPayload] = useState(currentSession.tokenAktif);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [isEditingAgenda, setIsEditingAgenda] = useState(false);
+  const [editJudul, setEditJudul] = useState(currentSession.judul || currentSession.materi || '');
+  const [editDeskripsi, setEditDeskripsi] = useState(currentSession.deskripsi || currentSession.materi || '');
   const qrContainerRef = useRef<HTMLDivElement>(null);
 
   // Function to generate time-based encrypted dynamic token
@@ -169,8 +200,34 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
             </div>
           </div>
 
+          {/* Judul & Deskripsi Sesi Presensi (Ditampilkan Mencolok di Layar Proyektor) */}
+          <div className={`w-full text-center px-4 py-3 rounded-2xl border mb-3 transition-colors ${
+            isFullscreen 
+              ? 'bg-slate-800/90 border-slate-700 text-white' 
+              : 'bg-emerald-50/70 border-emerald-200/80 text-slate-800'
+          }`}>
+            <div className="flex items-center justify-center gap-1.5 mb-1">
+              <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-[#00B884] text-white">
+                Materi &amp; Agenda Hari Ini
+              </span>
+              <span className={`text-xs font-bold ${isFullscreen ? 'text-emerald-400' : 'text-emerald-800'}`}>
+                {currentSession.namaEskul}
+              </span>
+            </div>
+            <h3 className={`text-base sm:text-lg font-black tracking-tight ${
+              isFullscreen ? 'text-emerald-300' : 'text-slate-900'
+            }`}>
+              {currentSession.judul || currentSession.materi || 'Latihan Rutin Mingguan'}
+            </h3>
+            <p className={`text-xs mt-1 max-w-lg mx-auto leading-relaxed ${
+              isFullscreen ? 'text-slate-300' : 'text-slate-600'
+            }`}>
+              {currentSession.deskripsi || currentSession.materi || 'Pertemuan dan pembinaan rutin ekstrakurikuler SMK Al Amanah.'}
+            </p>
+          </div>
+
           {/* QR Canvas Container with Animated Border & Circular countdown */}
-          <div className="relative my-4 flex flex-col items-center">
+          <div className="relative my-2 flex flex-col items-center">
             {/* Countdown Ring */}
             <div className="relative p-6 rounded-3xl bg-slate-50 border-2 border-dashed border-[#00B884]/40 flex items-center justify-center">
               {currentSession.status === 'BERLANGSUNG' ? (
@@ -242,46 +299,97 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
         <div className="lg:col-span-5 space-y-5">
           {/* Active Session Card */}
           <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
-            <h2 className="text-base font-bold text-slate-800 mb-4">
-              Pilih Sesi Kegiatan Hari Ini
-            </h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-bold text-slate-800">
+                Pilih Sesi Kegiatan Hari Ini
+              </h2>
+              {isPembina && (
+                <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                  Khusus Eskul Binaan
+                </span>
+              )}
+            </div>
+
+            {isPembina && (
+              <div className="mb-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-[11px] text-slate-500 flex items-center gap-2">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#00B884] shrink-0" />
+                <span>Hanya menampilkan sesi untuk ekstrakurikuler yang Anda bina.</span>
+              </div>
+            )}
 
             {/* Session Selector Buttons */}
-            <div className="space-y-2.5">
-              {sessions.map((sess) => {
-                const isSelected = sess.id === currentSession.id;
-                return (
-                  <div
-                    key={sess.id}
-                    onClick={() => onSelectSession(sess)}
-                    className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
-                      isSelected
-                        ? 'border-[#00B884] bg-emerald-50/50 shadow-xs'
-                        : 'border-slate-200 hover:border-slate-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-bold text-slate-800 text-sm">
-                        {sess.namaEskul}
-                      </span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
-                        sess.status === 'BERLANGSUNG'
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : sess.status === 'BELUM_DIMULAI'
-                          ? 'bg-amber-100 text-amber-700'
-                          : 'bg-slate-200 text-slate-600'
-                      }`}>
-                        {sess.status}
-                      </span>
-                    </div>
+            {visibleSessions.length === 0 ? (
+              <div className="p-6 text-center rounded-2xl bg-amber-50/60 border border-amber-200 text-amber-800 text-xs">
+                <AlertCircle className="w-6 h-6 mx-auto mb-2 text-amber-600" />
+                <p className="font-bold">Tidak ada sesi kegiatan hari ini</p>
+                <p className="text-[11px] text-amber-700 mt-1">
+                  Belum ada jadwal sesi aktif untuk ekstrakurikuler binaan Anda. Silakan hubungi Koordinator atau gunakan tombol "Edit / Buka Sesi" untuk membuka sesi baru.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {visibleSessions.map((sess) => {
+                  const isSelected = sess.id === currentSession.id;
+                  return (
+                    <div
+                      key={sess.id}
+                      onClick={() => onSelectSession(sess)}
+                      className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
+                        isSelected
+                          ? 'border-[#00B884] bg-emerald-50/50 shadow-xs'
+                          : 'border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-bold text-slate-800 text-sm">
+                          {sess.namaEskul}
+                        </span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                          sess.status === 'BERLANGSUNG'
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : sess.status === 'BELUM_DIMULAI'
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-slate-200 text-slate-600'
+                        }`}>
+                          {sess.status}
+                        </span>
+                      </div>
 
-                    <div className="text-xs text-slate-500 space-y-0.5">
-                      <div>Pembina: {sess.pembinaNama}</div>
-                      <div>{sess.jamMulai} - {sess.jamSelesai} WIB • {sess.lokasi}</div>
+                      <div className="text-xs text-slate-500 space-y-0.5">
+                        <div>Pembina: {sess.pembinaNama}</div>
+                        <div>{sess.jamMulai} - {sess.jamSelesai} WIB • {sess.lokasi}</div>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Agenda & Materi Sesi Ini */}
+            <div className="mt-5 p-4 rounded-2xl bg-emerald-50/60 border border-emerald-200/80 text-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-emerald-900 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#00B884]" />
+                  Agenda &amp; Materi Latihan Hari Ini
+                </span>
+                {onOpenBukaAbsensiModal && (
+                  <button
+                    type="button"
+                    onClick={onOpenBukaAbsensiModal}
+                    className="text-[11px] font-bold text-[#00B884] hover:text-[#009e70] hover:underline cursor-pointer"
+                  >
+                    Edit / Buka Sesi
+                  </button>
+                )}
+              </div>
+              <div className="bg-white/80 p-3 rounded-xl border border-emerald-100">
+                <div className="font-extrabold text-slate-900 text-xs">
+                  {currentSession.judul || currentSession.materi || 'Latihan Rutin Mingguan'}
+                </div>
+                <p className="text-slate-600 text-[11px] mt-1 leading-relaxed">
+                  {currentSession.deskripsi || currentSession.materi || 'Materi pembinaan dan evaluasi kompetensi anggota ekstrakurikuler.'}
+                </p>
+              </div>
             </div>
 
             {/* Attendance Progress in Current Session */}
@@ -307,8 +415,14 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <button
-                  onClick={() => onUpdateSessionStatus('BERLANGSUNG')}
-                  className={`py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${
+                  onClick={() => {
+                    if (currentSession.status === 'BELUM_DIMULAI' && onOpenBukaAbsensiModal) {
+                      onOpenBukaAbsensiModal();
+                    } else {
+                      onUpdateSessionStatus('BERLANGSUNG');
+                    }
+                  }}
+                  className={`py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                     currentSession.status === 'BERLANGSUNG'
                       ? 'bg-[#00B884] text-white shadow-xs'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'

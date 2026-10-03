@@ -2,6 +2,8 @@ import React from 'react';
 
 interface UserAvatarProps {
   name?: string;
+  avatarUrl?: string;
+  src?: string;
   className?: string;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
   title?: string;
@@ -71,13 +73,29 @@ const SIZE_CLASSES = {
 
 export const UserAvatar: React.FC<UserAvatarProps> = ({
   name = 'User',
+  avatarUrl,
+  src,
   className = '',
   size = 'md',
   title,
 }) => {
+  const [imageError, setImageError] = React.useState(false);
   const initials = getInitials(name);
   const bgColor = getAvatarColor(name);
   const sizeClass = SIZE_CLASSES[size] || SIZE_CLASSES.md;
+  const imageSource = avatarUrl || src;
+
+  if (imageSource && !imageError) {
+    return (
+      <img
+        src={imageSource}
+        alt={name}
+        title={title || name}
+        onError={() => setImageError(true)}
+        className={`rounded-full object-cover shrink-0 select-none shadow-2xs ${sizeClass} ${className}`}
+      />
+    );
+  }
 
   return (
     <div

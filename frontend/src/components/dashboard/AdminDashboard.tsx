@@ -7,17 +7,19 @@ import {
   Clock, 
   ExternalLink, 
   CalendarDays, 
+  Calendar,
   MapPin, 
   ShieldCheck, 
   ChevronRight, 
   Building2, 
   QrCode,
   BarChart2,
-  LineChart
+  LineChart,
+  UserCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PEMBINA_LIST, INITIAL_ESKUL_LIST, INITIAL_STUDENTS, INITIAL_SESSIONS } from '../../data/mockData';
-import { Eskul, SesiPertemuan, PresensiRecord, StudentProfile, Guru } from '../../types';
+import { Eskul, SesiPertemuan, PresensiRecord, StudentProfile, Guru, PengajuanJadwal } from '../../types';
 import { NavItemKey } from '../Sidebar';
 import { UserAvatar } from '../common/UserAvatar';
 
@@ -27,8 +29,11 @@ interface AdminDashboardProps {
   pembinaList?: Guru[];
   sessions?: SesiPertemuan[];
   presensiLog?: PresensiRecord[];
+  jadwalProposals?: PengajuanJadwal[];
+  pendingPendaftaranCount?: number;
   onOpenAddEskul: () => void;
   onOpenImport: () => void;
+  onOpenValidasiJadwal?: () => void;
   onNavigate: (tab: NavItemKey) => void;
   onOpenSession?: (eskul: Eskul) => void;
 }
@@ -42,8 +47,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   pembinaList,
   sessions,
   presensiLog: _presensiLog,
+  jadwalProposals,
+  pendingPendaftaranCount = 0,
   onOpenAddEskul,
   onOpenImport,
+  onOpenValidasiJadwal,
   onNavigate,
   onOpenSession,
 }) => {
@@ -248,6 +256,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=00B884&color=fff&bold=true`;
   };
 
+  const pendingProposalsCount = useMemo(() => {
+    if (!jadwalProposals) return 0;
+    return jadwalProposals.filter((p) => p.status === 'MENUNGGU_VALIDASI').length;
+  }, [jadwalProposals]);
+
   return (
     <div className="space-y-5 sm:space-y-6 pb-12">
       {/* Title & Top Action Buttons */}
@@ -261,7 +274,35 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 sm:gap-3 self-stretch sm:self-auto">
+        <div className="flex items-center gap-2.5 sm:gap-3 self-stretch sm:self-auto flex-wrap">
+          {/* Validasi Jadwal */}
+          <button
+            onClick={() => onNavigate('validasi-jadwal')}
+            className="relative flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 bg-amber-50 hover:bg-amber-100/70 border-2 border-amber-300 active:scale-[0.98] text-amber-800 font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer"
+          >
+            <ShieldCheck className="w-4 h-4 stroke-[2.2] text-amber-600" />
+            <span>Validasi Jadwal</span>
+            {pendingProposalsCount > 0 && (
+              <span className="w-5 h-5 rounded-full bg-amber-500 text-white font-black text-[10px] flex items-center justify-center animate-pulse">
+                {pendingProposalsCount}
+              </span>
+            )}
+          </button>
+
+          {/* Validasi Pendaftaran Siswa */}
+          <button
+            onClick={() => onNavigate('validasi-pendaftaran')}
+            className="relative flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 bg-blue-50 hover:bg-blue-100/70 border-2 border-blue-300 active:scale-[0.98] text-blue-700 font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer"
+          >
+            <UserCheck className="w-4 h-4 stroke-[2.2] text-blue-600" />
+            <span>Validasi Pendaftaran</span>
+            {pendingPendaftaranCount > 0 && (
+              <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-black text-[10px] flex items-center justify-center animate-pulse">
+                {pendingPendaftaranCount}
+              </span>
+            )}
+          </button>
+
           {/* + Tambah Eskul */}
           <button
             onClick={onOpenAddEskul}
@@ -281,6 +322,58 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Alert Banner for Pending Schedule Proposals */}
+      {pendingProposalsCount > 0 && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-600 to-orange-500 text-white shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
+              <Calendar className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <div className="font-extrabold text-sm sm:text-base">
+                Terdapat {pendingProposalsCount} Permohonan Perubahan Jadwal Menunggu Validasi!
+              </div>
+              <div className="text-xs text-amber-100 mt-0.5">
+                Guru pembina mengajukan penyesuaian hari, jam, atau lokasi eskul. Silakan tinjau dan lakukan validasi.
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => onNavigate('validasi-jadwal')}
+            className="px-4 py-2 bg-white text-amber-900 hover:bg-amber-50 active:scale-[0.98] font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer shrink-0"
+          >
+            Tinjau &amp; Validasi Sekarang
+          </button>
+        </div>
+      )}
+
+      {/* Alert Banner for Pending Student Registrations */}
+      {pendingPendaftaranCount > 0 && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600 text-white shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
+              <UserCheck className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <div className="font-extrabold text-sm sm:text-base">
+                Terdapat {pendingPendaftaranCount} Siswa Pendaftar Menunggu Pengesahan Koordinator!
+              </div>
+              <div className="text-xs text-blue-100 mt-0.5">
+                Pembina telah menyeleksi siswa sesuai kuota maksimal eskul dan mengajukan batch siswa terpilih untuk disahkan.
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => onNavigate('validasi-pendaftaran')}
+            className="px-4 py-2 bg-white text-blue-900 hover:bg-blue-50 active:scale-[0.98] font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer shrink-0"
+          >
+            Validasi Pendaftar Sekarang
+          </button>
+        </div>
+      )}
 
       {/* 4 Stat Cards Grid: Eskul, Siswa, Guru Pembina, Sesi Hari Ini */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">

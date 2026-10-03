@@ -28,7 +28,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { StudentProfile, Eskul } from '../../types';
+import { StudentProfile, Eskul, Role } from '../../types';
 import { StudentCardModal } from '../modals/StudentCardModal';
 import { UserAvatar } from '../common/UserAvatar';
 
@@ -39,6 +39,7 @@ interface StudentManagementProps {
   onAddStudent: () => void;
   defaultClasses?: string[];
   defaultEskuls?: string[];
+  currentRole?: Role;
 }
 
 type QuickFilterType = 'ALL' | 'WITH_ESKUL' | 'WITHOUT_ESKUL' | 'LOW_ATTENDANCE';
@@ -51,7 +52,9 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   onAddStudent,
   defaultClasses = [],
   defaultEskuls = [],
+  currentRole = 'ADMIN',
 }) => {
+  const isKoordinator = currentRole === 'ADMIN' || currentRole === 'KOORDINATOR';
   // Search & Filter States
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClasses, setSelectedClasses] = useState<string[]>(defaultClasses);
@@ -270,14 +273,16 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
             <span>Cetak Kartu Massal ({filteredStudents.length})</span>
           </button>
 
-          <button
-            type="button"
-            onClick={onAddStudent}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#00B884] hover:bg-[#009e70] active:scale-[0.98] text-white font-semibold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>Impor / Tambah Siswa</span>
-          </button>
+          {isKoordinator && (
+            <button
+              type="button"
+              onClick={onAddStudent}
+              className="flex items-center gap-2 px-4 py-2.5 bg-[#00B884] hover:bg-[#009e70] active:scale-[0.98] text-white font-semibold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>Impor / Tambah Siswa</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -567,7 +572,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                   <th className="py-3.5 px-4 whitespace-nowrap">Kelas</th>
                   <th className="py-3.5 px-4">Eskul Terdaftar</th>
                   <th className="py-3.5 px-4 whitespace-nowrap">Presensi</th>
-                  <th className="py-3.5 px-4 whitespace-nowrap">Kredensial Login</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">{isKoordinator ? 'Kredensial Login' : 'Status Akun'}</th>
                   <th className="py-3.5 px-4 text-center whitespace-nowrap">Status</th>
                   <th className="py-3.5 px-4 text-right whitespace-nowrap">Aksi</th>
                 </tr>
@@ -690,56 +695,65 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                         </div>
                       </td>
 
-                      {/* Kredensial Login (Clean & Discreet) */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] text-slate-400 font-medium">Akun:</span>
-                            <span className="font-mono text-xs font-semibold text-slate-700">
-                              {student.username || studentNis}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleCopyText(student.username || studentNis, `usr-${student.id}`)}
-                              className="text-slate-400 hover:text-slate-700 cursor-pointer p-0.5"
-                              title="Salin Nama Pengguna"
-                            >
-                              {copiedKey === `usr-${student.id}` ? (
-                                <CheckCheck className="w-3 h-3 text-emerald-600" />
-                              ) : (
-                                <Copy className="w-3 h-3" />
-                              )}
-                            </button>
+                      {/* Kredensial Login (Khusus Koordinator/Admin) atau Status Akun (Untuk Pembina) */}
+                      {isKoordinator ? (
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] text-slate-400 font-medium">Akun:</span>
+                              <span className="font-mono text-xs font-semibold text-slate-700">
+                                {student.username || studentNis}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleCopyText(student.username || studentNis, `usr-${student.id}`)}
+                                className="text-slate-400 hover:text-slate-700 cursor-pointer p-0.5"
+                                title="Salin Nama Pengguna"
+                              >
+                                {copiedKey === `usr-${student.id}` ? (
+                                  <CheckCheck className="w-3 h-3 text-emerald-600" />
+                                ) : (
+                                  <Copy className="w-3 h-3" />
+                                )}
+                              </button>
+                            </div>
+                            
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] text-slate-400 font-medium">Sandi:</span>
+                              <span className="font-mono text-xs text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                                {isPassVisible ? defaultPass : '••••••••'}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => togglePasswordVisibility(student.id)}
+                                className="text-slate-400 hover:text-slate-700 cursor-pointer p-0.5"
+                                title={isPassVisible ? 'Sembunyikan Sandi' : 'Lihat Sandi'}
+                              >
+                                {isPassVisible ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleCopyText(defaultPass, `pwd-${student.id}`)}
+                                className="text-slate-400 hover:text-slate-700 cursor-pointer p-0.5"
+                                title="Salin Sandi"
+                              >
+                                {copiedKey === `pwd-${student.id}` ? (
+                                  <CheckCheck className="w-3 h-3 text-emerald-600" />
+                                ) : (
+                                  <Copy className="w-3 h-3" />
+                                )}
+                              </button>
+                            </div>
                           </div>
-                          
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] text-slate-400 font-medium">Sandi:</span>
-                            <span className="font-mono text-xs text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
-                              {isPassVisible ? defaultPass : '••••••••'}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => togglePasswordVisibility(student.id)}
-                              className="text-slate-400 hover:text-slate-700 cursor-pointer p-0.5"
-                              title={isPassVisible ? 'Sembunyikan Sandi' : 'Lihat Sandi'}
-                            >
-                              {isPassVisible ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleCopyText(defaultPass, `pwd-${student.id}`)}
-                              className="text-slate-400 hover:text-slate-700 cursor-pointer p-0.5"
-                              title="Salin Sandi"
-                            >
-                              {copiedKey === `pwd-${student.id}` ? (
-                                <CheckCheck className="w-3 h-3 text-emerald-600" />
-                              ) : (
-                                <Copy className="w-3 h-3" />
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      </td>
+                        </td>
+                      ) : (
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <span>Siswa Aktif</span>
+                          </span>
+                        </td>
+                      )}
 
                       {/* Status */}
                       <td className="py-3.5 px-4 text-center whitespace-nowrap">
