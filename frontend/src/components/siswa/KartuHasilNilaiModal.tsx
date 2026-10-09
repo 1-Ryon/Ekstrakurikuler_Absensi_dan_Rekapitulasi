@@ -110,9 +110,9 @@ export const KartuHasilNilaiModal: React.FC<KartuHasilNilaiModalProps> = ({
           {/* Certificate / Document Card */}
           <div className="mt-5 p-6 rounded-2xl border-2 border-emerald-600/30 bg-gradient-to-b from-emerald-50/30 to-white relative shadow-inner">
             {/* Header Document */}
-            <div className="flex items-center justify-center gap-3.5 border-b border-slate-200 pb-4 mb-5">
-              <img src="/logo-smk.png" alt="Logo SMK Al Amanah" className="w-12 h-12 object-contain shrink-0 drop-shadow-xs" />
-              <div className="text-center">
+            <div className="flex flex-col items-center justify-center text-center print:flex-row print:items-center print:text-left print:justify-start print:gap-4 border-b border-slate-200 pb-4 mb-5">
+              <img src="/logo-smk.png" alt="Logo SMK Al Amanah" className="w-14 h-14 object-contain shrink-0 drop-shadow-xs mb-2 print:mb-0" />
+              <div>
                 <h3 className="font-extrabold text-sm uppercase text-slate-900 tracking-wider">
                   SMK AL AMANAH KOTA TANGERANG SELATAN
                 </h3>
@@ -138,8 +138,8 @@ export const KartuHasilNilaiModal: React.FC<KartuHasilNilaiModalProps> = ({
             </div>
 
             {/* Grade Results Table */}
-            <div className="overflow-hidden rounded-xl border border-slate-200 mb-5 shadow-2xs">
-              <table className="w-full text-xs text-left">
+            <div className="overflow-x-auto w-full rounded-xl border border-slate-200 mb-5 shadow-2xs">
+              <table className="w-full text-xs text-left min-w-[480px]">
                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold">
                   <tr>
                     <th className="p-2.5">Ekstrakurikuler</th>

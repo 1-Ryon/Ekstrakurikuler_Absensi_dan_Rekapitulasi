@@ -18,7 +18,9 @@ import {
   ExternalLink,
   Layers,
   LayoutGrid,
-  List
+  List,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { Guru, Eskul } from '../../types';
 import { UserAvatar } from '../common/UserAvatar';
@@ -45,6 +47,11 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('ALL');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+
+  const togglePasswordVisibility = (id: string) => {
+    setVisiblePasswords((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   // Compute statistics
   const totalPembina = pembinaList.length;
@@ -388,9 +395,25 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
                               {pembina.username}
                             </span>
                           </div>
-                          <div className="flex items-center gap-1 text-[10px] text-slate-400">
-                            <KeyRound className="w-3 h-3 text-slate-400" />
-                            <span>Pass: pembina_{pembina.username}</span>
+                          <div className="flex items-center gap-1 text-[10px] text-slate-600 font-mono">
+                            <KeyRound className="w-3 h-3 text-slate-400 shrink-0" />
+                            <span className="bg-slate-50 border border-slate-200/80 px-1.5 py-0.5 rounded">
+                              {visiblePasswords[pembina.id]
+                                ? (pembina.defaultPassword || pembina.password || `pembina_${pembina.username}`)
+                                : '••••••••'}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => togglePasswordVisibility(pembina.id)}
+                              className="p-0.5 text-slate-400 hover:text-slate-700 cursor-pointer"
+                              title={visiblePasswords[pembina.id] ? "Sembunyikan Kata Sandi" : "Tampilkan Kata Sandi"}
+                            >
+                              {visiblePasswords[pembina.id] ? (
+                                <EyeOff className="w-3 h-3" />
+                              ) : (
+                                <Eye className="w-3 h-3" />
+                              )}
+                            </button>
                           </div>
                         </div>
                       </td>
@@ -544,6 +567,23 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
                       <span className="font-mono font-bold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded">
                         {pembina.username}
                       </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Sandi:</span>
+                      <div className="flex items-center gap-1 font-mono text-[10px]">
+                        <span className="bg-slate-50 border border-slate-200/80 px-1.5 py-0.5 rounded font-bold text-slate-700">
+                          {visiblePasswords[pembina.id]
+                            ? (pembina.defaultPassword || pembina.password || `pembina_${pembina.username}`)
+                            : '••••••••'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => togglePasswordVisibility(pembina.id)}
+                          className="p-0.5 text-slate-400 hover:text-slate-700 cursor-pointer"
+                        >
+                          {visiblePasswords[pembina.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                        </button>
+                      </div>
                     </div>
                     {pembina.noHp && pembina.noHp !== '-' && (
                       <div className="flex items-center justify-between">

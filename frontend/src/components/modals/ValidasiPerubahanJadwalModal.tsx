@@ -264,25 +264,25 @@ export const ValidasiPerubahanJadwalModal: React.FC<ValidasiPerubahanJadwalModal
                       </div>
                     )}
 
-                    {/* Action Buttons for Pending */}
+                    {/* Action Buttons for Pending - Equal 50/50 Width */}
                     {prop.status === 'MENUNGGU_VALIDASI' && (
-                      <div className="pt-2 flex items-center justify-end gap-2">
+                      <div className="grid grid-cols-2 gap-2.5 pt-2 border-t border-slate-100">
                         <button
                           type="button"
-                          onClick={() => handleOpenAction(prop, 'REJECT')}
-                          className="flex items-center gap-1.5 px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl border border-rose-200 transition-colors cursor-pointer"
+                          onClick={() => handleOpenAction(prop, 'APPROVE')}
+                          className="w-full flex items-center justify-center gap-1.5 py-2.5 px-3 bg-[#00B884] hover:bg-[#009e70] active:scale-98 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
                         >
-                          <XCircle className="w-4 h-4 text-rose-600" />
-                          <span>Tolak Permohonan</span>
+                          <CheckCircle2 className="w-4 h-4 fill-white" />
+                          <span>Setujui Jadwal</span>
                         </button>
 
                         <button
                           type="button"
-                          onClick={() => handleOpenAction(prop, 'APPROVE')}
-                          className="flex items-center gap-1.5 px-4 py-2 bg-[#00B884] hover:bg-[#009e70] text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
+                          onClick={() => handleOpenAction(prop, 'REJECT')}
+                          className="w-full flex items-center justify-center gap-1.5 py-2.5 px-3 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 rounded-xl font-bold text-xs transition-all cursor-pointer"
                         >
-                          <CheckCircle2 className="w-4 h-4 fill-white" />
-                          <span>Setujui &amp; Terapkan Jadwal</span>
+                          <XCircle className="w-4 h-4 text-rose-600" />
+                          <span>Tolak Jadwal</span>
                         </button>
                       </div>
                     )}
@@ -346,11 +346,11 @@ export const ValidasiPerubahanJadwalModal: React.FC<ValidasiPerubahanJadwalModal
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-1">
+                <div className="grid grid-cols-2 gap-2.5 pt-1">
                   <button
                     type="button"
                     onClick={() => { setSelectedProposal(null); setActionType(null); }}
-                    className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
+                    className="w-full py-2.5 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
                   >
                     Batal
                   </button>
@@ -358,13 +358,13 @@ export const ValidasiPerubahanJadwalModal: React.FC<ValidasiPerubahanJadwalModal
                     type="button"
                     disabled={isProcessing}
                     onClick={handleConfirmAction}
-                    className={`px-4 py-1.5 rounded-xl text-xs font-bold text-white shadow-xs cursor-pointer ${
+                    className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold text-white shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                       actionType === 'APPROVE'
                         ? 'bg-[#00B884] hover:bg-[#009e70]'
                         : 'bg-rose-600 hover:bg-rose-700'
                     }`}
                   >
-                    {isProcessing ? 'Memproses...' : actionType === 'APPROVE' ? 'Sahkan Perubahan Jadwal' : 'Kirim Penolakan'}
+                    {isProcessing ? 'Memproses...' : actionType === 'APPROVE' ? 'Setujui Jadwal' : 'Tolak Jadwal'}
                   </button>
                 </div>
               </div>

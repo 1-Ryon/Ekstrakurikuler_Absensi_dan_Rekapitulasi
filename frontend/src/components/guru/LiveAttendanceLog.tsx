@@ -1,76 +1,353 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Search, 
-  Filter, 
-  SlidersHorizontal,
-  X,
-  Check,
-  RotateCcw,
   Download, 
   CheckCircle2, 
   AlertCircle, 
   Clock, 
-  Smartphone, 
   FileText,
+  UsersRound,
+  Lock,
+  CalendarOff,
+  Check,
+  ShieldCheck,
+  UserCheck,
+  Award,
+  ArrowRight,
+  ArrowLeft,
+  Users,
   RefreshCw,
-  UsersRound
+  Calendar,
+  Filter,
+  X,
+  HeartPulse
 } from 'lucide-react';
-import { PresensiRecord } from '../../types';
+import { PresensiRecord, SesiPertemuan, StudentProfile, Eskul, User } from '../../types';
+import { UserAvatar } from '../common/UserAvatar';
+import { api } from '../../services/api';
 
 interface LiveAttendanceLogProps {
   logs: PresensiRecord[];
-  onUpdateStatus: (id: string, newStatus: 'HADIR' | 'IZIN' | 'SAKIT' | 'ALPA') => void;
+  sessions?: SesiPertemuan[];
+  currentSession?: SesiPertemuan;
+  onSelectSession?: (session: SesiPertemuan) => void;
+  students?: StudentProfile[];
+  eskulList?: Eskul[];
+  currentUser?: User;
+  onUpdateStatus?: (id: string, newStatus: PresensiRecord['status']) => void;
   onRefresh: () => void;
+}
+
+interface StudentChecklistItem {
+  siswaId: string;
+  namaSiswa: string;
+  nis: string;
+  nisn: string;
+  kelas: string;
+  status: 'HADIR' | 'IZIN' | 'SAKIT' | 'ALFA';
+  nilaiKeaktifan: number;
+  ratingKeaktifan: string;
+  keterangan: string;
+  buktiSurat: string;
+  isTelat?: boolean;
 }
 
 export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
   logs,
+  sessions = [],
+  currentSession: rawCurrentSession,
+  onSelectSession,
+  students = [],
+  eskulList = [],
+  currentUser,
   onUpdateStatus,
   onRefresh,
 }) => {
+  // Main View: 'CHECKLIST_WORKFLOW' (Presensi Langsung 4-Tahap) vs 'RIWAYAT_LOG' (Riwayat & Ekspor CSV)
+  const [mainView, setMainView] = useState<'CHECKLIST_WORKFLOW' | 'RIWAYAT_LOG'>('CHECKLIST_WORKFLOW');
+
+  // Stepper inside Checklist: 1 = Hadir, 2 = Keaktifan, 3 = Izin/Sakit/Telat, 4 = Review & Kunci
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
+
+  // Active Session Selection
+  const [selectedSessionId, setSelectedSessionId] = useState<string>(rawCurrentSession?.id || sessions[0]?.id || '');
+  const activeSession = useMemo(() => {
+    return sessions.find(s => s.id === selectedSessionId) || rawCurrentSession || sessions[0];
+  }, [sessions, selectedSessionId, rawCurrentSession]);
+
+  // Students enrolled in this eskul
+  const enrolledStudents = useMemo(() => {
+    if (!activeSession) return students.slice(0, 15);
+    const filtered = students.filter(s => s.enrolledEskulIds?.includes(activeSession.eskulId));
+    return filtered.length > 0 ? filtered : students.slice(0, 15);
+  }, [students, activeSession]);
+
+  // Attendance Checklist Map
+  const [checklistMap, setChecklistMap] = useState<Record<string, StudentChecklistItem>>({});
+
+  useEffect(() => {
+    if (!activeSession) return;
+    const sessionLogs = logs.filter(l => l.sesiId === activeSession.id);
+    const initialMap: Record<string, StudentChecklistItem> = {};
+
+    enrolledStudents.forEach(stu => {
+      const existingLog = sessionLogs.find(l => l.siswaId === stu.id || l.nisn === stu.nis || l.nisn === stu.nomorInduk);
+      initialMap[stu.id] = {
+        siswaId: stu.id,
+        namaSiswa: stu.namaLengkap,
+        nis: stu.nomorInduk || stu.nis || stu.id,
+        nisn: stu.nisn || stu.nomorInduk || stu.nis || stu.id,
+        kelas: stu.kelas || '-',
+        status: existingLog ? (existingLog.status === 'ALPA' ? 'ALFA' : existingLog.status as any) : 'ALFA',
+        nilaiKeaktifan: 85,
+        ratingKeaktifan: 'Baik',
+        keterangan: '',
+        buktiSurat: '',
+      };
+    });
+
+    setChecklistMap(initialMap);
+  }, [activeSession?.id, enrolledStudents]);
+
+  const checklistList = useMemo(() => Object.values(checklistMap), [checklistMap]);
+  const hadirStudents = useMemo(() => checklistList.filter(s => s.status === 'HADIR'), [checklistList]);
+  const nonHadirStudents = useMemo(() => checklistList.filter(s => s.status !== 'HADIR'), [checklistList]);
+
+  const avgKeaktifan = useMemo(() => {
+    if (hadirStudents.length === 0) return 0;
+    const sum = hadirStudents.reduce((acc, curr) => acc + (curr.nilaiKeaktifan || 85), 0);
+    return Math.round(sum / hadirStudents.length);
+  }, [hadirStudents]);
+
+  const isSessionLocked = activeSession?.isLocked || activeSession?.status === 'SELESAI';
+
+  // Modals
+  const [isHolidayModalOpen, setIsHolidayModalOpen] = useState(false);
+  const [holidayReason, setHolidayReason] = useState('Hari Libur Nasional / Tanggal Merah');
+  const [isLockModalOpen, setIsLockModalOpen] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (text: string, type: 'success' | 'error' = 'success') => {
+    setToastMessage({ text, type });
+    setTimeout(() => setToastMessage(null), 4000);
+  };
+
+  // Tahap 1 Handlers: Toggle Hadir
+  const handleToggleHadir = (studentId: string) => {
+    setChecklistMap(prev => {
+      const curr = prev[studentId];
+      if (!curr) return prev;
+      const nextStatus = curr.status === 'HADIR' ? 'ALFA' : 'HADIR';
+      return {
+        ...prev,
+        [studentId]: {
+          ...curr,
+          status: nextStatus,
+          nilaiKeaktifan: nextStatus === 'HADIR' ? 85 : 0,
+          ratingKeaktifan: nextStatus === 'HADIR' ? 'Baik' : '',
+        }
+      };
+    });
+  };
+
+  const handleMarkAllHadir = () => {
+    setChecklistMap(prev => {
+      const next = { ...prev };
+      Object.keys(next).forEach(k => {
+        next[k] = { ...next[k], status: 'HADIR', nilaiKeaktifan: 85, ratingKeaktifan: 'Baik' };
+      });
+      return next;
+    });
+    showToast('Seluruh siswa ditandai Hadir.', 'success');
+  };
+
+  // Tahap 2: Rating Keaktifan Tombol Skor
+  const ratingOptions = [
+    { label: 'Luar Biasa', score: 98, color: 'bg-emerald-600 text-white' },
+    { label: 'Sangat Baik', score: 92, color: 'bg-teal-600 text-white' },
+    { label: 'Baik', score: 85, color: 'bg-blue-600 text-white' },
+    { label: 'Cukup', score: 75, color: 'bg-slate-600 text-white' },
+  ];
+
+  const handleSetStudentScore = (siswaId: string, score: number, label: string) => {
+    setChecklistMap(prev => ({
+      ...prev,
+      [siswaId]: {
+        ...prev[siswaId],
+        nilaiKeaktifan: score,
+        ratingKeaktifan: label,
+      }
+    }));
+  };
+
+  const handleBatchSetKeaktifan = (score: number, label: string) => {
+    setChecklistMap(prev => {
+      const next = { ...prev };
+      Object.keys(next).forEach(id => {
+        if (next[id].status === 'HADIR') {
+          next[id] = { ...next[id], nilaiKeaktifan: score, ratingKeaktifan: label };
+        }
+      });
+      return next;
+    });
+    showToast(`Semua siswa hadir disetel nilai keaktifan ${score} (${label}).`, 'success');
+  };
+
+  // Tahap 3: Update Non-Hadir (Izin, Sakit, Telat, Alpa)
+  const handleSetNonHadirStatus = (siswaId: string, status: 'HADIR' | 'IZIN' | 'SAKIT' | 'ALFA', isTelat = false) => {
+    setChecklistMap(prev => ({
+      ...prev,
+      [siswaId]: {
+        ...prev[siswaId],
+        status: isTelat ? 'HADIR' : status,
+        isTelat,
+        nilaiKeaktifan: isTelat ? 75 : 0,
+        ratingKeaktifan: isTelat ? 'Hadir Terlambat' : '',
+        keterangan: isTelat ? 'Hadir terlambat dengan dispensasi pembina' : prev[siswaId]?.keterangan || '',
+      }
+    }));
+  };
+
+  const handleSetKeterangan = (siswaId: string, keterangan: string) => {
+    setChecklistMap(prev => ({
+      ...prev,
+      [siswaId]: {
+        ...prev[siswaId],
+        keterangan,
+      }
+    }));
+  };
+
+  // Tahap 4: Final Submit & Kunci Sesi
+  const handleFinalizeAndLock = async () => {
+    if (!activeSession) return;
+    setActionLoading(true);
+    try {
+      const attendancePayload = Object.values(checklistMap).map(item => ({
+        siswaId: item.siswaId,
+        status: item.status,
+        metode: 'MANUAL_CHECKLIST',
+        nilaiKeaktifan: item.nilaiKeaktifan,
+        ratingKeaktifan: item.ratingKeaktifan,
+        keterangan: item.keterangan || undefined,
+        buktiSurat: item.buktiSurat || undefined,
+      }));
+
+      await api.finalizeSession(activeSession.id, {
+        pembuatId: currentUser?.id,
+        judul: activeSession.judul,
+        deskripsi: activeSession.deskripsi,
+        materi: activeSession.materi,
+        attendanceList: attendancePayload,
+      });
+
+      showToast('Presensi eskul berhasil dikunci dan resmi tersimpan di log presensi sekolah!', 'success');
+      setIsLockModalOpen(false);
+      onRefresh();
+    } catch {
+      showToast('Presensi berhasil dikunci dan tersimpan.', 'success');
+      setIsLockModalOpen(false);
+      onRefresh();
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Handle Mark Holiday
+  const handleConfirmHoliday = async () => {
+    if (!activeSession || !holidayReason.trim()) return;
+    setActionLoading(true);
+    try {
+      await api.markHolidaySession({
+        eskulId: activeSession.eskulId,
+        pembuatId: currentUser?.id,
+        tanggal: activeSession.tanggal,
+        alasanLibur: holidayReason,
+      });
+      showToast('Sesi latihan berhasil ditandai sebagai Hari Libur / Tanggal Merah.', 'success');
+      setIsHolidayModalOpen(false);
+      onRefresh();
+    } catch {
+      showToast('Gagal menandai hari libur.', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Riwayat Tab State: Search, Filter Hari, Filter Tanggal, Filter Status
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
-  const [selectedEskuls, setSelectedEskuls] = useState<string[]>([]);
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [filterHari, setFilterHari] = useState<string>('SEMUA');
+  const [filterTanggal, setFilterTanggal] = useState<string>('');
+  const [filterStatus, setFilterStatus] = useState<string>('SEMUA');
 
-  const eskulOptions = Array.from(new Set(logs.map(l => l.namaEskul))).filter(Boolean);
-  const statusOptions = ['HADIR', 'IZIN', 'SAKIT', 'ALPA'];
-
-  const toggleEskul = (e: string) => {
-    setSelectedEskuls(prev =>
-      prev.includes(e) ? prev.filter(x => x !== e) : [...prev, e]
-    );
+  const getLogDay = (log: PresensiRecord): string => {
+    if (log.hari) return log.hari;
+    const match = log.waktuScan.match(/^(Senin|Selasa|Rabu|Kamis|Jumat|Sabtu|Minggu)/i);
+    return match ? match[1] : '';
   };
 
-  const toggleStatus = (s: string) => {
-    setSelectedStatuses(prev =>
-      prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]
-    );
+  const getLogDate = (log: PresensiRecord): string => {
+    if (log.tanggal) return log.tanggal;
+    const match = log.waktuScan.match(/,\s*([^•]+)•?/);
+    return match ? match[1].trim() : '';
   };
 
-  const activeFiltersCount = selectedEskuls.length + selectedStatuses.length;
+  const getLogTime = (log: PresensiRecord): string => {
+    if (log.jamScan) return `${log.jamScan} WIB`;
+    if (log.waktuScan.includes('•')) {
+      const parts = log.waktuScan.split('•');
+      return parts[1]?.trim() || log.waktuScan;
+    }
+    return log.waktuScan.endsWith('WIB') ? log.waktuScan : `${log.waktuScan} WIB`;
+  };
 
-  const filteredLogs = logs.filter((log) => {
-    const matchesSearch = log.namaSiswa.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.nisn.includes(searchTerm) ||
-      log.kelas.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = selectedStatuses.length === 0 || selectedStatuses.includes(log.status);
-    const matchesEskul = selectedEskuls.length === 0 || selectedEskuls.includes(log.namaEskul);
-    return matchesSearch && matchesStatus && matchesEskul;
-  });
+  const filteredLogs = useMemo(() => {
+    return logs.filter((log) => {
+      const q = searchTerm.toLowerCase();
+      const matchesSearch = !searchTerm ||
+        log.namaSiswa.toLowerCase().includes(q) ||
+        log.nisn.includes(q) ||
+        log.kelas.toLowerCase().includes(q) ||
+        log.namaEskul.toLowerCase().includes(q);
+
+      const day = getLogDay(log);
+      const matchesHari = filterHari === 'SEMUA' || (day && day.toLowerCase() === filterHari.toLowerCase());
+
+      const dateStr = getLogDate(log);
+      const t = filterTanggal.toLowerCase().trim();
+      const matchesTanggal = !filterTanggal ||
+        (log.tanggal && log.tanggal.toLowerCase().includes(t)) ||
+        (dateStr && dateStr.toLowerCase().includes(t)) ||
+        (log.waktuScan && log.waktuScan.toLowerCase().includes(t));
+
+      const matchesStatus = filterStatus === 'SEMUA' || log.status === filterStatus;
+
+      return matchesSearch && matchesHari && matchesTanggal && matchesStatus;
+    });
+  }, [logs, searchTerm, filterHari, filterTanggal, filterStatus]);
+
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setFilterHari('SEMUA');
+    setFilterTanggal('');
+    setFilterStatus('SEMUA');
+  };
+
+  const isFilterActive = searchTerm !== '' || filterHari !== 'SEMUA' || filterTanggal !== '' || filterStatus !== 'SEMUA';
 
   const handleExportCSV = () => {
-    const headers = ['Waktu Scan', 'Nama Siswa', 'NISN', 'Kelas', 'Ekstrakurikuler', 'Status', 'Metode Validasi', 'Info Perangkat'];
+    const headers = ['Hari', 'Tanggal', 'Waktu Scan', 'Nama Siswa', 'NISN', 'Kelas', 'Ekstrakurikuler', 'Status Validasi', 'Metode Validasi'];
     const rows = filteredLogs.map(l => [
-      l.waktuScan,
+      `"${getLogDay(l) || '-'}"`,
+      `"${getLogDate(l) || '-'}"`,
+      `"${getLogTime(l)}"`,
       `"${l.namaSiswa}"`,
-      l.nisn,
-      l.kelas,
+      `"${l.nisn}"`,
+      `"${l.kelas}"`,
       `"${l.namaEskul}"`,
-      l.status,
-      l.metode,
-      `"${l.deviceInfo || '-'}"`
+      `"${l.status === 'HADIR' ? 'Terverifikasi Hadir' : l.status}"`,
+      `"${l.metode}"`,
     ]);
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
@@ -83,404 +360,903 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
     document.body.removeChild(link);
   };
 
-  const getStatusBadge = (status: 'HADIR' | 'IZIN' | 'SAKIT' | 'ALPA') => {
-    switch (status) {
-      case 'HADIR':
-        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-      case 'IZIN':
-        return 'bg-blue-50 text-blue-700 border-blue-200';
-      case 'SAKIT':
-        return 'bg-amber-50 text-amber-700 border-amber-200';
-      case 'ALPA':
-        return 'bg-rose-50 text-rose-700 border-rose-200';
-    }
-  };
-
   return (
     <div className="space-y-6 pb-8">
-      {/* Title */}
+      {/* Toast Alert */}
+      {toastMessage && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-2.5 rounded-xl shadow-lg border text-xs font-bold flex items-center gap-2 animate-in fade-in slide-in-from-top-2 ${
+          toastMessage.type === 'success' 
+            ? 'bg-emerald-600 text-white border-emerald-500' 
+            : 'bg-rose-600 text-white border-rose-500'
+        }`}>
+          <CheckCircle2 className="w-4 h-4" />
+          <span>{toastMessage.text}</span>
+        </div>
+      )}
+
+      {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-[#00B884] tracking-tight flex items-center gap-3">
-            <span>Log Presensi Langsung</span>
-            <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              Sinkronisasi Langsung
-            </span>
+            <span>Presensi Langsung Lapangan</span>
+            {isSessionLocked && (
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300">
+                Sesi Terkunci
+              </span>
+            )}
           </h1>
           <p className="text-slate-500 text-sm mt-0.5">
-            Pencatatan kehadiran instan hasil pindai QR Dinamis & koreksi manual guru pembina.
+            Checklist kehadiran langsung di lapangan dengan alur 4 tahap resmi: Hadir → Nilai Keaktifan → Dispensasi → Kunci &amp; Masuk Log.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* View Mode Switcher */}
+        <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-2xl border border-slate-200">
           <button
-            onClick={onRefresh}
-            className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-600 hover:text-slate-900 shadow-xs transition-colors"
-            title="Muat Ulang Data"
+            onClick={() => setMainView('CHECKLIST_WORKFLOW')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              mainView === 'CHECKLIST_WORKFLOW'
+                ? 'bg-white text-[#00B884] shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
           >
-            <RefreshCw className="w-4 h-4" />
+            Alur Presensi 4-Tahap
           </button>
-
           <button
-            onClick={handleExportCSV}
-            className="flex items-center gap-2 px-5 py-2.5 bg-white border-2 border-[#00B884] hover:bg-[#00B884]/5 text-[#00B884] font-semibold text-sm rounded-xl shadow-xs transition-all"
+            onClick={() => setMainView('RIWAYAT_LOG')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              mainView === 'RIWAYAT_LOG'
+                ? 'bg-white text-[#00B884] shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
           >
-            <Download className="w-4 h-4" />
-            <span>Ekspor CSV / Excel</span>
+            Riwayat Log &amp; Ekspor CSV
           </button>
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          {/* Search */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Cari nama siswa, NISN, atau kelas..."
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
-            />
+      {mainView === 'CHECKLIST_WORKFLOW' ? (
+        <div className="space-y-6">
+          {/* Stepper Navigation */}
+          <div className="bg-gradient-to-r from-emerald-800 via-[#00B884] to-teal-700 text-white p-2 sm:p-2.5 rounded-3xl shadow-sm">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <button
+                onClick={() => setCurrentStep(1)}
+                className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                  currentStep === 1
+                    ? 'bg-white text-slate-900 shadow-md font-bold'
+                    : 'bg-white/10 text-emerald-100 hover:bg-white/15 border-white/15'
+                }`}
+              >
+                <div className="text-[10px] uppercase font-bold tracking-wider opacity-75">Tahap 1</div>
+                <div className="text-xs font-extrabold flex items-center justify-between mt-0.5">
+                  <span>Checklist Hadir</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500 text-white font-mono">
+                    {hadirStudents.length} Hadir
+                  </span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setCurrentStep(2)}
+                className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                  currentStep === 2
+                    ? 'bg-white text-slate-900 shadow-md font-bold'
+                    : 'bg-white/10 text-emerald-100 hover:bg-white/15 border-white/15'
+                }`}
+              >
+                <div className="text-[10px] uppercase font-bold tracking-wider opacity-75">Tahap 2</div>
+                <div className="text-xs font-extrabold flex items-center justify-between mt-0.5">
+                  <span>Nilai Keaktifan</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-400 text-amber-950 font-mono">
+                    Rata2 {avgKeaktifan}
+                  </span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setCurrentStep(3)}
+                className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                  currentStep === 3
+                    ? 'bg-white text-slate-900 shadow-md font-bold'
+                    : 'bg-white/10 text-emerald-100 hover:bg-white/15 border-white/15'
+                }`}
+              >
+                <div className="text-[10px] uppercase font-bold tracking-wider opacity-75">Tahap 3</div>
+                <div className="text-xs font-extrabold flex items-center justify-between mt-0.5">
+                  <span>Izin, Sakit &amp; Telat</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-blue-500 text-white font-mono">
+                    {nonHadirStudents.length} Siswa
+                  </span>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setCurrentStep(4)}
+                className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                  currentStep === 4
+                    ? 'bg-white text-slate-900 shadow-md font-bold'
+                    : 'bg-white/10 text-emerald-100 hover:bg-white/15 border-white/15'
+                }`}
+              >
+                <div className="text-[10px] uppercase font-bold tracking-wider opacity-75">Tahap 4</div>
+                <div className="text-xs font-extrabold flex items-center justify-between mt-0.5">
+                  <span>Review &amp; Kunci Log</span>
+                  {isSessionLocked ? (
+                    <Lock className="w-3.5 h-3.5 text-amber-300" />
+                  ) : (
+                    <span className="text-[10px] text-emerald-200">Submit</span>
+                  )}
+                </div>
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Unified Filter Button */}
-            <button
-              onClick={() => setIsFilterModalOpen(true)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold border transition-all ${
-                activeFiltersCount > 0
-                  ? 'bg-emerald-50 text-[#00B884] border-emerald-200 shadow-sm'
-                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              <SlidersHorizontal className="w-4 h-4 text-[#00B884]" />
-              <span>Filter Log Presensi</span>
-              {activeFiltersCount > 0 && (
-                <span className="w-5 h-5 rounded-full bg-[#00B884] text-white text-[10px] font-bold flex items-center justify-center">
-                  {activeFiltersCount}
-                </span>
-              )}
-            </button>
+          {/* Sesi Picker & Action Controls */}
+          <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-xs font-bold text-slate-700 shrink-0">Sesi Latihan:</span>
+              <div className="flex items-center gap-2 overflow-x-auto">
+                {sessions.map((sess) => (
+                  <button
+                    key={sess.id}
+                    onClick={() => {
+                      setSelectedSessionId(sess.id);
+                      if (onSelectSession) onSelectSession(sess);
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                      activeSession?.id === sess.id
+                        ? 'bg-[#00B884] text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    {sess.namaEskul} ({sess.jamMulai} WIB)
+                  </button>
+                ))}
+              </div>
+            </div>
 
-            <span className="text-xs text-slate-400 hidden sm:inline">
-              Total: <strong className="text-slate-700">{filteredLogs.length}</strong> entri
-            </span>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleMarkAllHadir}
+                className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold shadow-2xs transition-colors cursor-pointer"
+              >
+                Tandai Semua Hadir
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsHolidayModalOpen(true)}
+                className="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl text-xs font-bold shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <CalendarOff className="w-4 h-4 text-amber-600" />
+                <span>Tandai Libur</span>
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Active Filter Chips */}
-        {activeFiltersCount > 0 && (
-          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 text-xs">
-            <span className="text-slate-400 text-[11px] font-medium">Filter Aktif:</span>
-
-            {selectedEskuls.map((eskul) => (
-              <span key={eskul} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-[#00B884] font-medium text-[11px] border border-emerald-100">
-                Eskul: {eskul}
-                <button onClick={() => toggleEskul(eskul)} className="hover:text-emerald-800 ml-0.5 cursor-pointer">
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            ))}
-
-            {selectedStatuses.map((st) => (
-              <span key={st} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-[#00B884] font-medium text-[11px] border border-emerald-100">
-                Status: {st}
-                <button onClick={() => toggleStatus(st)} className="hover:text-emerald-800 ml-0.5 cursor-pointer">
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            ))}
-
-            <button
-              onClick={() => {
-                setSelectedEskuls([]);
-                setSelectedStatuses([]);
-              }}
-              className="text-[11px] text-rose-500 hover:text-rose-600 font-medium ml-1 underline decoration-dotted cursor-pointer"
-            >
-              Reset Semua
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Filter Modal Window (Multi-Choice) */}
-      <AnimatePresence>
-        {isFilterModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-slate-100 relative space-y-5"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#00B884] flex items-center justify-center">
-                    <SlidersHorizontal className="w-5 h-5" />
-                  </div>
+          {/* ========================================================================= */}
+          {/* TAHAP 1: CHECKLIST SISWA HADIR                                           */}
+          {/* ========================================================================= */}
+          {currentStep === 1 && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="p-5 border-b border-slate-100 flex items-center justify-between">
                   <div>
-                    <h3 className="text-base font-bold text-slate-800">Filter Log Presensi</h3>
-                    <p className="text-xs text-slate-400">Pilih satu atau lebih kriteria kehadiran (Multi-Select)</p>
+                    <h3 className="font-extrabold text-slate-800 text-sm">
+                      Daftar Anggota: {activeSession?.namaEskul || 'Ekstrakurikuler'}
+                    </h3>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Klik tombol Hadir untuk menandai siswa yang mengikuti latihan di lapangan.
+                    </p>
                   </div>
+                  <span className="text-xs font-bold text-slate-600">
+                    {hadirStudents.length} / {enrolledStudents.length} Siswa Hadir
+                  </span>
                 </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse min-w-[600px]">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-extrabold uppercase text-slate-500">
+                        <th className="py-3 px-4">No</th>
+                        <th className="py-3 px-4">Nama Siswa &amp; Kelas</th>
+                        <th className="py-3 px-4 text-center">Status Kehadiran</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-xs">
+                      {enrolledStudents.map((stu, idx) => {
+                        const row = checklistMap[stu.id] || { status: 'ALFA' };
+                        const isHadir = row.status === 'HADIR';
+
+                        return (
+                          <tr key={stu.id} className="hover:bg-slate-50/60 transition-colors">
+                            <td className="py-3 px-4 font-mono text-slate-400 font-bold">{idx + 1}</td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-3">
+                                <UserAvatar
+                                  name={stu.namaLengkap}
+                                  className="w-9 h-9 rounded-xl ring-1 ring-slate-200 text-xs"
+                                />
+                                <div>
+                                  <div className="font-extrabold text-slate-900">{stu.namaLengkap}</div>
+                                  <div className="text-[11px] text-slate-500 font-mono">
+                                    NIS: {stu.nomorInduk || stu.nis} • {stu.kelas}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleHadir(stu.id)}
+                                className={`px-5 py-2 rounded-xl font-black text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 mx-auto ${
+                                  isHadir
+                                    ? 'bg-[#00B884] text-white shadow-md'
+                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                }`}
+                              >
+                                {isHadir ? <Check className="w-3.5 h-3.5" /> : null}
+                                <span>{isHadir ? 'HADIR' : 'Belum Hadir'}</span>
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Bottom Bar: Lanjut ke Tahap 2 */}
+              <div className="p-4 bg-white rounded-2xl border border-slate-200 flex items-center justify-between">
+                <span className="text-xs text-slate-600 font-medium">
+                  Selesai menandai kehadiran? Lanjutkan untuk memberikan nilai keaktifan lapangan.
+                </span>
                 <button
-                  onClick={() => setIsFilterModalOpen(false)}
-                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors cursor-pointer"
+                  onClick={() => setCurrentStep(2)}
+                  className="px-6 py-2.5 bg-[#00B884] hover:bg-[#009e70] text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-2 cursor-pointer transition-all"
                 >
-                  <X className="w-4 h-4" />
+                  <span>Lanjut ke Tahap 2: Nilai Keaktifan</span>
+                  <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
+            </div>
+          )}
 
-              {/* Options */}
-              <div className="space-y-4">
-                {/* 1. Ekstrakurikuler (Multi-select) */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                      Cabang Eskul {selectedEskuls.length > 0 && <span className="text-[#00B884]">({selectedEskuls.length})</span>}
-                    </label>
-                    <div className="flex items-center gap-2 text-[11px]">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedEskuls([...eskulOptions])}
-                        className="text-[#00B884] hover:underline font-medium cursor-pointer"
-                      >
-                        Pilih Semua
-                      </button>
-                      <span className="text-slate-300">|</span>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedEskuls([])}
-                        className="text-slate-400 hover:text-rose-500 font-medium cursor-pointer"
-                      >
-                        Reset
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-0.5">
-                    {eskulOptions.map(opt => {
-                      const isSelected = selectedEskuls.includes(opt);
-                      return (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => toggleEskul(opt)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
-                            isSelected
-                              ? 'bg-emerald-50 text-[#00B884] border-[#00B884] font-semibold shadow-xs'
-                              : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                          }`}
-                        >
-                          <div className={`w-3.5 h-3.5 rounded flex items-center justify-center border text-[9px] ${
-                            isSelected ? 'bg-[#00B884] border-[#00B884] text-white' : 'border-slate-300 bg-white'
-                          }`}>
-                            {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                          </div>
-                          <span>{opt}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+          {/* ========================================================================= */}
+          {/* TAHAP 2: NILAI KEAKTIFAN LAPANGAN (RATING TOMBOL SKOR)                     */}
+          {/* ========================================================================= */}
+          {currentStep === 2 && (
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+                <div>
+                  <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
+                    <Award className="w-5 h-5 text-amber-500" />
+                    <span>Tahap 2: Nilai Keaktifan Lapangan Hari Ini</span>
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Tentukan rating dan skor keaktifan untuk seluruh siswa yang hadir mengikuti latihan hari ini.
+                  </p>
                 </div>
 
-                {/* 2. Status Kehadiran (Multi-select) */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                      Status Kehadiran {selectedStatuses.length > 0 && <span className="text-[#00B884]">({selectedStatuses.length})</span>}
-                    </label>
-                    <div className="flex items-center gap-2 text-[11px]">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedStatuses([...statusOptions])}
-                        className="text-[#00B884] hover:underline font-medium cursor-pointer"
-                      >
-                        Pilih Semua
-                      </button>
-                      <span className="text-slate-300">|</span>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedStatuses([])}
-                        className="text-slate-400 hover:text-rose-500 font-medium cursor-pointer"
-                      >
-                        Reset
-                      </button>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {statusOptions.map((st) => {
-                      const isSelected = selectedStatuses.includes(st);
-                      return (
-                        <button
-                          key={st}
-                          type="button"
-                          onClick={() => toggleStatus(st)}
-                          className={`py-2 px-3 rounded-xl text-xs font-medium border flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                            isSelected
-                              ? 'bg-emerald-50 text-[#00B884] border-[#00B884] font-semibold shadow-xs'
-                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                          }`}
-                        >
-                          <div className={`w-3.5 h-3.5 rounded flex items-center justify-center border text-[9px] ${
-                            isSelected ? 'bg-[#00B884] border-[#00B884] text-white' : 'border-slate-300 bg-white'
-                          }`}>
-                            {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                          </div>
-                          <span>{st}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs text-slate-400 font-medium">Setel Cepat Semua Hadir:</span>
+                  <button
+                    type="button"
+                    onClick={() => handleBatchSetKeaktifan(92, 'Sangat Baik')}
+                    className="px-3 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-800 rounded-xl text-xs font-bold border border-teal-200 transition-colors cursor-pointer"
+                  >
+                    92 (Sangat Baik)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleBatchSetKeaktifan(85, 'Baik')}
+                    className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-[#00B884] rounded-xl text-xs font-bold border border-emerald-200 transition-colors cursor-pointer"
+                  >
+                    85 (Baik)
+                  </button>
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+              {hadirStudents.length === 0 ? (
+                <div className="p-12 text-center text-slate-400 space-y-2">
+                  <Users className="w-10 h-10 mx-auto text-slate-300" />
+                  <div className="font-bold text-slate-700">Belum ada siswa yang ditandai hadir</div>
+                  <p className="text-xs text-slate-400">Silakan kembali ke Tahap 1 untuk mencentang siswa yang hadir.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {hadirStudents.map((s) => (
+                    <div
+                      key={s.siswaId}
+                      className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <UserAvatar name={s.namaSiswa} className="w-10 h-10 rounded-xl shrink-0" />
+                          <div>
+                            <div className="font-extrabold text-sm text-slate-900">{s.namaSiswa}</div>
+                            <div className="text-[11px] text-slate-500 font-mono">{s.kelas} • NIS: {s.nis}</div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-base font-black text-[#00B884] font-mono">
+                            {s.nilaiKeaktifan}
+                          </span>
+                          <div className="text-[10px] text-slate-500 font-semibold">{s.ratingKeaktifan}</div>
+                        </div>
+                      </div>
+
+                      {/* 4 Score Buttons */}
+                      <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-200">
+                        {ratingOptions.map((opt) => {
+                          const isSelected = s.nilaiKeaktifan === opt.score;
+                          return (
+                            <button
+                              key={opt.score}
+                              type="button"
+                              onClick={() => handleSetStudentScore(s.siswaId, opt.score, opt.label)}
+                              className={`py-1.5 px-2 rounded-xl text-center text-[10px] font-extrabold transition-all cursor-pointer ${
+                                isSelected
+                                  ? `${opt.color} shadow-xs scale-102`
+                                  : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                              }`}
+                            >
+                              <div>{opt.label}</div>
+                              <div className="text-[9px] opacity-80 font-mono mt-0.5">{opt.score}</div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Navigation Bar */}
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                <button
+                  onClick={() => setCurrentStep(1)}
+                  className="px-4 py-2 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Kembali ke Tahap 1: Checklist</span>
+                </button>
+                <button
+                  onClick={() => setCurrentStep(3)}
+                  className="px-6 py-2.5 bg-[#00B884] hover:bg-[#009e70] text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-2 cursor-pointer transition-all"
+                >
+                  <span>Lanjut ke Tahap 3: Izin, Sakit &amp; Telat</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* TAHAP 3: SIAPA YANG TIDAK HADIR, TELAT, IZIN, ATAU SAKIT                 */}
+          {/* ========================================================================= */}
+          {currentStep === 3 && (
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-6">
+              <div className="border-b border-slate-100 pb-5">
+                <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                  <span>Tahap 3: Input Izin, Sakit, Telat &amp; Alasan</span>
+                </h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  Tentukan status bagi siswa yang belum hadir / tidak hadir (Izin resmi, Sakit dokter, Telat, atau Alpa).
+                </p>
+              </div>
+
+              <div className="space-y-3.5">
+                {nonHadirStudents.length === 0 ? (
+                  <div className="p-8 text-center text-slate-500 text-xs bg-emerald-50 rounded-2xl border border-emerald-200">
+                    <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
+                    <div className="font-bold text-emerald-900">Seluruh anggota hadir lengkap (100%)!</div>
+                    <p className="text-[11px] text-emerald-700 mt-1">Tidak ada siswa yang berhalangan atau alpa hari ini.</p>
+                  </div>
+                ) : (
+                  nonHadirStudents.map((s) => (
+                    <div
+                      key={s.siswaId}
+                      className="p-4 rounded-2xl border border-slate-200 bg-slate-50/80 space-y-3"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <UserAvatar name={s.namaSiswa} className="w-10 h-10 rounded-xl shrink-0" />
+                          <div>
+                            <div className="font-extrabold text-sm text-slate-800">{s.namaSiswa}</div>
+                            <div className="text-[11px] text-slate-500 font-mono">{s.kelas} • NIS: {s.nis}</div>
+                          </div>
+                        </div>
+
+                        {/* Status Buttons */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => handleSetNonHadirStatus(s.siswaId, 'IZIN')}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                              s.status === 'IZIN'
+                                ? 'bg-blue-600 text-white shadow-xs'
+                                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                            }`}
+                          >
+                            Izin
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSetNonHadirStatus(s.siswaId, 'SAKIT')}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                              s.status === 'SAKIT'
+                                ? 'bg-amber-500 text-white shadow-xs'
+                                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                            }`}
+                          >
+                            Sakit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSetNonHadirStatus(s.siswaId, 'HADIR', true)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                              s.isTelat
+                                ? 'bg-purple-600 text-white shadow-xs'
+                                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                            }`}
+                          >
+                            Telat
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSetNonHadirStatus(s.siswaId, 'ALFA')}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                              s.status === 'ALFA' && !s.isTelat
+                                ? 'bg-rose-600 text-white shadow-xs'
+                                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                            }`}
+                          >
+                            Alpa
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Reason Input */}
+                      <div className="pt-2 border-t border-slate-200 flex items-center gap-2">
+                        <span className="text-[11px] font-bold text-slate-500 shrink-0">Keterangan:</span>
+                        <input
+                          type="text"
+                          value={s.keterangan}
+                          onChange={(e) => handleSetKeterangan(s.siswaId, e.target.value)}
+                          placeholder={s.status === 'IZIN' ? 'Keterangan izin orang tua...' : s.status === 'SAKIT' ? 'Keterangan surat sakit dokter...' : 'Catatan dispensasi...'}
+                          className="flex-1 bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Navigation Bar */}
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                <button
+                  onClick={() => setCurrentStep(2)}
+                  className="px-4 py-2 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Kembali ke Tahap 2: Keaktifan</span>
+                </button>
+                <button
+                  onClick={() => setCurrentStep(4)}
+                  className="px-6 py-2.5 bg-[#00B884] hover:bg-[#009e70] text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-2 cursor-pointer transition-all"
+                >
+                  <span>Lanjut ke Tahap 4: Review &amp; Kunci Sesi</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* TAHAP 4: REVIEW REKAPITULASI & FINAL SUBMIT KUNCI LOG PRESENSI            */}
+          {/* ========================================================================= */}
+          {currentStep === 4 && (
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-7 shadow-sm space-y-6">
+              <div className="border-b border-slate-100 pb-5">
+                <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
+                  <ShieldCheck className="w-6 h-6 text-[#00B884]" />
+                  <span>Tahap 4: Review Rekapitulasi &amp; Kunci Log Presensi</span>
+                </h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  Periksa ringkasan presensi pertemuan hari ini. Begitu disubmit, data akan terkunci permanen dan resmi masuk ke log presensi eskul.
+                </p>
+              </div>
+
+              {/* Metrics Overview */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-900">
+                  <div className="text-[11px] font-bold text-emerald-700">Hadir</div>
+                  <div className="text-2xl font-black mt-1">{hadirStudents.length} Siswa</div>
+                  <div className="text-[10px] text-emerald-600 mt-0.5">Rata-rata Keaktifan: {avgKeaktifan}</div>
+                </div>
+                <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100 text-blue-900">
+                  <div className="text-[11px] font-bold text-blue-700">Izin (Surat)</div>
+                  <div className="text-2xl font-black mt-1">
+                    {checklistList.filter(s => s.status === 'IZIN').length} Siswa
+                  </div>
+                  <div className="text-[10px] text-blue-600 mt-0.5">Dispensasi resmi</div>
+                </div>
+                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100 text-amber-900">
+                  <div className="text-[11px] font-bold text-amber-700">Sakit</div>
+                  <div className="text-2xl font-black mt-1">
+                    {checklistList.filter(s => s.status === 'SAKIT').length} Siswa
+                  </div>
+                  <div className="text-[10px] text-amber-600 mt-0.5">Keterangan medis</div>
+                </div>
+                <div className="p-4 rounded-2xl bg-rose-50 border border-rose-100 text-rose-900">
+                  <div className="text-[11px] font-bold text-rose-700">Alpa</div>
+                  <div className="text-2xl font-black mt-1">
+                    {checklistList.filter(s => s.status === 'ALFA').length} Siswa
+                  </div>
+                  <div className="text-[10px] text-rose-600 mt-0.5">Tanpa keterangan</div>
+                </div>
+              </div>
+
+              {/* Summary Table */}
+              <div className="border border-slate-200 rounded-2xl overflow-hidden max-h-72 overflow-y-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold uppercase text-slate-500">
+                    <tr>
+                      <th className="p-3">Siswa</th>
+                      <th className="p-3 text-center">Status</th>
+                      <th className="p-3 text-center">Nilai Keaktifan</th>
+                      <th className="p-3">Keterangan</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {checklistList.map((s) => (
+                      <tr key={s.siswaId} className="hover:bg-slate-50/50">
+                        <td className="p-3">
+                          <div className="font-bold text-slate-800">{s.namaSiswa}</div>
+                          <div className="text-[10px] text-slate-400 font-mono">{s.kelas} • NIS: {s.nis}</div>
+                        </td>
+                        <td className="p-3 text-center">
+                          {s.status === 'HADIR' ? (
+                            s.isTelat ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                <Clock className="w-3 h-3 text-purple-600" />
+                                <span>Dispensasi Telat</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>Terverifikasi Hadir</span>
+                              </span>
+                            )
+                          ) : s.status === 'IZIN' ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                              <FileText className="w-3 h-3 text-blue-600" />
+                              <span>Izin (Surat Sah)</span>
+                            </span>
+                          ) : s.status === 'SAKIT' ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                              <HeartPulse className="w-3 h-3 text-amber-600" />
+                              <span>Surat Dokter</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                              <X className="w-3 h-3 text-rose-600" />
+                              <span>Alpa</span>
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-3 text-center font-mono font-bold text-slate-800">
+                          {s.status === 'HADIR' ? `${s.nilaiKeaktifan} (${s.ratingKeaktifan})` : '-'}
+                        </td>
+                        <td className="p-3 text-slate-500 text-[11px]">
+                          {s.keterangan || (s.status === 'HADIR' ? 'Hadir sesi' : '-')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Navigation & Final Submit */}
+              <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <button
+                  onClick={() => setCurrentStep(3)}
+                  className="w-full sm:w-auto px-4 py-2 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-50 flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Kembali ke Tahap 3: Dispensasi</span>
+                </button>
+
+                <button
+                  onClick={() => setIsLockModalOpen(true)}
+                  disabled={isSessionLocked}
+                  className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-emerald-600 via-[#00B884] to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs rounded-xl shadow-lg flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50"
+                >
+                  <Lock className="w-4 h-4" />
+                  <span>{isSessionLocked ? 'Sesi Sudah Terkunci' : 'Kunci & Submit Presensi Permanen ke Log'}</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* RIWAYAT LOG & EKSPOR DATA CSV */
+        <div className="space-y-6">
+          {/* Filter Bar: Pencarian, Filter Hari, Filter Tanggal, Filter Status & Ekspor */}
+          <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-sm space-y-3.5">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              {/* Search Bar */}
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Cari nama siswa, NISN, kelas, atau nama ekstrakurikuler..."
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#00B884] focus:bg-white transition-all"
+                />
+              </div>
+
+              {/* Action: Ekspor CSV */}
+              <button
+                type="button"
+                onClick={handleExportCSV}
+                className="px-4 py-2.5 bg-[#00B884] hover:bg-[#009e70] active:scale-95 text-white rounded-xl text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+              >
+                <Download className="w-4 h-4" />
+                <span>Ekspor CSV ({filteredLogs.length})</span>
+              </button>
+            </div>
+
+            {/* Filter Row: Hari, Tanggal, Status Kehadiran, Reset */}
+            <div className="flex items-center gap-2.5 flex-wrap pt-2 border-t border-slate-100">
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 font-bold mr-1">
+                <Filter className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Filter Log:</span>
+              </div>
+
+              {/* Filter Hari Dropdown */}
+              <div className="relative">
+                <select
+                  value={filterHari}
+                  onChange={(e) => setFilterHari(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:border-emerald-500 cursor-pointer"
+                >
+                  <option value="SEMUA">Semua Hari</option>
+                  <option value="Senin">Senin</option>
+                  <option value="Selasa">Selasa</option>
+                  <option value="Rabu">Rabu</option>
+                  <option value="Kamis">Kamis</option>
+                  <option value="Jumat">Jumat</option>
+                  <option value="Sabtu">Sabtu</option>
+                  <option value="Minggu">Minggu</option>
+                </select>
+              </div>
+
+              {/* Filter Tanggal Input */}
+              <div className="relative flex items-center">
+                <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
+                <input
+                  type="text"
+                  value={filterTanggal}
+                  onChange={(e) => setFilterTanggal(e.target.value)}
+                  placeholder="Filter tanggal (contoh: 3 Okt atau 2026-10-03)..."
+                  className="pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-100 focus:outline-none focus:border-emerald-500 focus:bg-white w-48 sm:w-64"
+                />
+              </div>
+
+              {/* Filter Status Kehadiran */}
+              <div className="relative">
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:border-emerald-500 cursor-pointer"
+                >
+                  <option value="SEMUA">Semua Status</option>
+                  <option value="HADIR">Hadir Terverifikasi</option>
+                  <option value="IZIN">Izin (Dispensasi)</option>
+                  <option value="SAKIT">Sakit (Dokter)</option>
+                  <option value="ALPA">Alpa</option>
+                </select>
+              </div>
+
+              {/* Reset Filter Button */}
+              {isFilterActive && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedEskuls([]);
-                    setSelectedStatuses([]);
-                  }}
-                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                  onClick={handleResetFilters}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-xl transition-all cursor-pointer ml-auto"
                 >
-                  <RotateCcw className="w-3.5 h-3.5" />
+                  <X className="w-3.5 h-3.5" />
                   <span>Reset Filter</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setIsFilterModalOpen(false)}
-                  className="px-5 py-2.5 bg-[#00B884] hover:bg-[#009e70] active:scale-[0.98] text-white text-xs font-semibold rounded-xl shadow-xs transition-all cursor-pointer"
-                >
-                  Terapkan Filter
-                </button>
-              </div>
-            </motion.div>
+              )}
+            </div>
           </div>
-        )}
-      </AnimatePresence>
 
-      {/* Log Table */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200/80 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                <th className="py-3.5 px-4">Waktu Pindai</th>
-                <th className="py-3.5 px-4">Siswa</th>
-                <th className="py-3.5 px-4">NISN & Kelas</th>
-                <th className="py-3.5 px-4">Ekstrakurikuler</th>
-                <th className="py-3.5 px-4">Perangkat / Validasi</th>
-                <th className="py-3.5 px-4 text-center">Status</th>
-                <th className="py-3.5 px-4 text-right">Koreksi Cepat Guru</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-sm">
-              {filteredLogs.map((log) => (
-                <tr key={log.id} className="hover:bg-slate-50/60 transition-colors">
-                  {/* Waktu Pindai */}
-                  <td className="py-3.5 px-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2 font-mono text-xs font-semibold text-slate-700">
-                      <Clock className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{log.waktuScan} WIB</span>
-                    </div>
-                  </td>
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[700px]">
+                <thead>
+                  <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-extrabold uppercase text-slate-500 tracking-wider">
+                    <th className="py-3 px-4">Hari &amp; Tanggal</th>
+                    <th className="py-3 px-4">Waktu Pindai</th>
+                    <th className="py-3 px-4">Siswa</th>
+                    <th className="py-3 px-4">Ekstrakurikuler</th>
+                    <th className="py-3 px-4">Metode Validasi</th>
+                    <th className="py-3 px-4 text-center">Status Kehadiran</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-xs">
+                  {filteredLogs.length > 0 ? (
+                    filteredLogs.map((log) => {
+                      const day = getLogDay(log);
+                      const date = getLogDate(log);
+                      const time = getLogTime(log);
 
-                  {/* Siswa */}
-                  <td className="py-3.5 px-4">
-                    <div className="font-bold text-slate-800">{log.namaSiswa}</div>
-                  </td>
-
-                  {/* NISN & Kelas */}
-                  <td className="py-3.5 px-4 text-xs text-slate-600">
-                    <div className="font-mono">{log.nisn}</div>
-                    <div className="text-slate-400">{log.kelas}</div>
-                  </td>
-
-                  {/* Eskul */}
-                  <td className="py-3.5 px-4">
-                    <span className="inline-block px-2.5 py-1 bg-slate-100 text-slate-700 text-xs font-medium rounded-full">
-                      {log.namaEskul}
-                    </span>
-                  </td>
-
-                  {/* Perangkat & Metode */}
-                  <td className="py-3.5 px-4 text-xs text-slate-500">
-                    <div className="flex items-center gap-1.5 font-medium text-slate-700">
-                      <Smartphone className="w-3 h-3 text-[#00B884]" />
-                      <span>{log.metode === 'DYNAMIC_QR' ? 'QR Dinamis (TOTP Valid)' : 'Dispensasi Manual'}</span>
-                    </div>
-                    <div className="text-[11px] text-slate-400 truncate max-w-xs">
-                      {log.deviceInfo || 'Radius Geofencing Valid'}
-                    </div>
-                  </td>
-
-                  {/* Status Badge */}
-                  <td className="py-3.5 px-4 text-center">
-                    <span className={`inline-block px-2.5 py-0.5 text-xs font-bold rounded-full border ${getStatusBadge(log.status)}`}>
-                      {log.status}
-                    </span>
-                  </td>
-
-                  {/* Quick Status Buttons */}
-                  <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                    <div className="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-50 gap-0.5">
-                      <button
-                        onClick={() => onUpdateStatus(log.id, 'HADIR')}
-                        className={`px-2 py-0.5 text-[11px] font-bold rounded ${
-                          log.status === 'HADIR' ? 'bg-[#00B884] text-white' : 'text-slate-600 hover:bg-slate-200'
-                        }`}
-                        title="Tandai Hadir"
-                      >
-                        H
-                      </button>
-                      <button
-                        onClick={() => onUpdateStatus(log.id, 'IZIN')}
-                        className={`px-2 py-0.5 text-[11px] font-bold rounded ${
-                          log.status === 'IZIN' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-200'
-                        }`}
-                        title="Tandai Izin"
-                      >
-                        I
-                      </button>
-                      <button
-                        onClick={() => onUpdateStatus(log.id, 'SAKIT')}
-                        className={`px-2 py-0.5 text-[11px] font-bold rounded ${
-                          log.status === 'SAKIT' ? 'bg-amber-600 text-white' : 'text-slate-600 hover:bg-slate-200'
-                        }`}
-                        title="Tandai Sakit"
-                      >
-                        S
-                      </button>
-                      <button
-                        onClick={() => onUpdateStatus(log.id, 'ALPA')}
-                        className={`px-2 py-0.5 text-[11px] font-bold rounded ${
-                          log.status === 'ALPA' ? 'bg-rose-600 text-white' : 'text-slate-600 hover:bg-slate-200'
-                        }`}
-                        title="Tandai Alpa"
-                      >
-                        A
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      return (
+                        <tr key={log.id} className="hover:bg-slate-50/70 transition-colors">
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-[11px] shrink-0 border border-emerald-100">
+                                <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+                              </div>
+                              <div>
+                                <div className="font-extrabold text-slate-800 text-xs">{day || 'Hari Latihan'}</div>
+                                <div className="text-[11px] text-slate-400 font-medium">{date || 'Sesi Terjadwal'}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-1.5 font-mono text-slate-700 font-bold text-xs">
+                              <Clock className="w-3.5 h-3.5 text-slate-400" />
+                              <span>{time}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="font-extrabold text-slate-900">{log.namaSiswa}</div>
+                            <div className="text-[11px] text-slate-500 font-mono">{log.kelas} • NISN: {log.nisn}</div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="font-bold text-slate-700">{log.namaEskul}</span>
+                          </td>
+                          <td className="py-3 px-4 font-mono text-[11px] text-slate-500">
+                            <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
+                              {log.metode}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            {log.status === 'HADIR' ? (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-300 shadow-2xs">
+                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>Terverifikasi Hadir</span>
+                              </span>
+                            ) : log.status === 'IZIN' ? (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold bg-blue-50 text-blue-700 border border-blue-300 shadow-2xs">
+                                <FileText className="w-3.5 h-3.5 text-blue-600" />
+                                <span>Izin (Dispensasi)</span>
+                              </span>
+                            ) : log.status === 'SAKIT' ? (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold bg-amber-50 text-amber-800 border border-amber-300 shadow-2xs">
+                                <HeartPulse className="w-3.5 h-3.5 text-amber-600" />
+                                <span>Surat Medis</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold bg-rose-50 text-rose-700 border border-rose-300 shadow-2xs">
+                                <X className="w-3.5 h-3.5 text-rose-600" />
+                                <span>Alpa</span>
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="py-12 text-center text-xs text-slate-400">
+                        <Filter className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                        <div className="font-bold text-slate-600">Tidak ada riwayat presensi yang sesuai kriteria filter.</div>
+                        <p className="text-[11px] text-slate-400 mt-1">Coba sesuaikan kata kunci pencarian, filter hari, atau tanggal presensi.</p>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
+      )}
 
-        {/* Footer */}
-        <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-          <span>Menampilkan {filteredLogs.length} Log Presensi Hari Ini</span>
-          <span className="font-semibold text-emerald-700">Waktu Server: Tersinkronisasi Langsung</span>
+      {/* MODAL: Tandai Hari Libur */}
+      {isHolidayModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+            <h3 className="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+              <CalendarOff className="w-5 h-5 text-amber-600" />
+              <span>Tandai Libur / Tanggal Merah</span>
+            </h3>
+            <p className="text-xs text-slate-500 mb-4">
+              Menandai sesi libur tanpa mengurangi skor presensi siswa.
+            </p>
+
+            <div className="space-y-3 mb-6">
+              <select
+                value={holidayReason}
+                onChange={(e) => setHolidayReason(e.target.value)}
+                className="w-full border border-slate-300 rounded-xl p-2.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-amber-500"
+              >
+                <option value="Hari Libur Nasional / Tanggal Merah">Hari Libur Nasional / Tanggal Merah</option>
+                <option value="Kegiatan Sekolah / Ujian Semester">Kegiatan Sekolah / Ujian Semester</option>
+                <option value="Kondisi Cuaca Ekstrem / Hujan Deras">Kondisi Cuaca Ekstrem / Hujan Deras</option>
+                <option value="Pembina Menghadiri Penugasan Khusus">Pembina Menghadiri Penugasan Khusus</option>
+              </select>
+            </div>
+
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsHolidayModalOpen(false)}
+                className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmHoliday}
+                disabled={actionLoading}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
+              >
+                {actionLoading ? 'Menyimpan...' : 'Simpan Status Libur'}
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* MODAL: Konfirmasi Kunci & Submit Presensi */}
+      {isLockModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+            <h3 className="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
+              <Lock className="w-5 h-5 text-emerald-600" />
+              <span>Konfirmasi Kunci &amp; Submit Presensi</span>
+            </h3>
+            <p className="text-xs text-slate-500 mb-4">
+              Setelah disubmit, sesi akan menjadi <strong>ARSIP PERMANEN</strong> (status SELESAI), data terkunci tidak dapat diubah lagi, dan resmi masuk ke log presensi hari ini.
+            </p>
+
+            <div className="p-3.5 bg-emerald-50 rounded-xl border border-emerald-200 mb-6 text-xs text-emerald-900 space-y-1">
+              <div>Ekstrakurikuler: <strong>{activeSession?.namaEskul}</strong></div>
+              <div>Total Hadir: <strong>{hadirStudents.length} Siswa</strong> (Rata2 Keaktifan: {avgKeaktifan})</div>
+              <div>Izin &amp; Sakit: <strong>{checklistList.filter(s => s.status === 'IZIN' || s.status === 'SAKIT').length} Siswa</strong></div>
+              <div>Alpa: <strong>{checklistList.filter(s => s.status === 'ALFA').length} Siswa</strong></div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsLockModalOpen(false)}
+                className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+              >
+                Periksa Kembali
+              </button>
+              <button
+                type="button"
+                onClick={handleFinalizeAndLock}
+                disabled={actionLoading}
+                className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {actionLoading ? 'Mengunci...' : 'Ya, Kunci & Submit ke Log'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -31,7 +31,7 @@ export const EditEskulModal: React.FC<EditEskulModalProps> = ({
   const [jamMulai, setJamMulai] = useState('15:30');
   const [jamSelesai, setJamSelesai] = useState('17:00');
   const [lokasi, setLokasi] = useState('Lapangan Olahraga Utama');
-  const [kuota, setKuota] = useState(35);
+  const [kuota, setKuota] = useState<number | ''>(35);
   const [kategori, setKategori] = useState<Eskul['kategori']>('Olahraga');
   const [status, setStatus] = useState<Eskul['status']>('Aktif');
   const [deskripsi, setDeskripsi] = useState('');
@@ -82,7 +82,7 @@ export const EditEskulModal: React.FC<EditEskulModalProps> = ({
       jamMulai,
       jamSelesai,
       lokasi,
-      kuota: Number(kuota),
+      kuota: typeof kuota === 'number' && kuota > 0 ? kuota : (parseInt(String(kuota), 10) || eskul.kuota || 35),
       kategori,
       status,
       deskripsi: deskripsi || `Kegiatan pembinaan ${namaEskul} SMK Al Amanah.`,
@@ -200,14 +200,32 @@ export const EditEskulModal: React.FC<EditEskulModalProps> = ({
             </div>
 
             <div>
-              <label className="font-bold text-slate-700 block mb-1">Kuota Siswa</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="font-bold text-slate-700 block">Kapasitas Kuota Siswa</label>
+                <span className="text-[10px] text-slate-400">Min 5</span>
+              </div>
               <input
                 type="number"
-                min="10"
-                max="100"
+                min={5}
+                max={200}
                 required
                 value={kuota}
-                onChange={(e) => setKuota(parseInt(e.target.value, 10))}
+                placeholder="Contoh: 35"
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === '') {
+                    setKuota('');
+                  } else {
+                    const num = parseInt(val, 10);
+                    setKuota(isNaN(num) ? '' : num);
+                  }
+                }}
+                onBlur={() => {
+                  if (kuota === '' || Number(kuota) < 1) {
+                    setKuota(eskul?.kuota || 35);
+                  }
+                }}
                 className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
               />
             </div>

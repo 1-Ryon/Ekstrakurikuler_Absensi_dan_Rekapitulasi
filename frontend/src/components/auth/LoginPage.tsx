@@ -10,101 +10,23 @@ import {
   QrCode, 
   Award,
   AlertCircle,
-  Check,
-  ChevronDown
+  Check
 } from 'lucide-react';
 import { api } from '../../services/api';
-import { User, Role } from '../../types';
+import { User } from '../../types';
 
 interface LoginPageProps {
   onLoginSuccess: (user: User) => void;
 }
 
-interface DemoAccountItem {
-  label: string;
-  role: Role;
-  username: string;
-  password: string;
-  roleBadge: string;
-  personName: string;
-}
-
-const DEMO_ACCOUNTS: DemoAccountItem[] = [
-  {
-    label: 'Administrator Sistem',
-    role: 'ADMIN',
-    username: 'admin',
-    password: 'admin123',
-    roleBadge: 'Super Admin',
-    personName: 'Administrator Sistem',
-  },
-  {
-    label: 'Koordinator Eskul',
-    role: 'KOORDINATOR',
-    username: 'koordinator',
-    password: 'admin123',
-    roleBadge: 'Koordinator Eskul',
-    personName: 'Viska Adawiyah Zulkarnaen, S.Pd.',
-  },
-  {
-    label: 'Wakasek Kesiswaan',
-    role: 'KOORDINATOR',
-    username: 'mulyadi',
-    password: 'admin123',
-    roleBadge: 'Admin Kesiswaan',
-    personName: 'Drs. H. Mulyadi, M.Pd.',
-  },
-  {
-    label: 'Admin IT Sistem PKM',
-    role: 'ADMIN',
-    username: 'admin.it',
-    password: 'admin123',
-    roleBadge: 'SysAdmin',
-    personName: 'Ryon Syaputra, S.Kom.',
-  },
-  {
-    label: 'Guru Pembina Eskul',
-    role: 'PEMBINA',
-    username: 'ahmad.futsal',
-    password: 'pembina123',
-    roleBadge: 'Pembina Futsal',
-    personName: 'Ahmad Syafii, S.Pd.',
-  },
-  {
-    label: 'Wali Kelas X RPL 1',
-    role: 'WALI_KELAS',
-    username: 'walikelas',
-    password: 'walikelas123',
-    roleBadge: 'Wali Kelas',
-    personName: 'Siti Nurhaliza, M.Pd.',
-  },
-  {
-    label: 'Siswa Mandiri',
-    role: 'SISWA',
-    username: '20241001',
-    password: 'al_amanah_001',
-    roleBadge: 'NIS: 20241001',
-    personName: 'Muhammad Farhan Al-Fatih',
-  },
-];
-
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin123');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [showDemoSelector, setShowDemoSelector] = useState(false);
-  const [selectedDemoLabel, setSelectedDemoLabel] = useState<string>('Administrator Sistem');
   const [shakeKey, setShakeKey] = useState(0);
-
-  const handleSelectQuickAccount = (item: DemoAccountItem) => {
-    setUsername(item.username);
-    setPassword(item.password);
-    setSelectedDemoLabel(item.label);
-    setErrorMessage(null);
-  };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -363,68 +285,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               )}
             </button>
           </form>
-
-          {/* Clean Quick Credentials Accordion / Drawer */}
-          <div className="mt-6 pt-5 border-t border-slate-200">
-            <button
-              type="button"
-              onClick={() => setShowDemoSelector(!showDemoSelector)}
-              className="w-full flex items-center justify-between text-left p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 transition-colors cursor-pointer"
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-[#00B884]" />
-                <span className="text-xs font-semibold text-slate-700">
-                  Pilih Kredensial Cepat (Klik untuk Isi Formulir)
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
-                  {selectedDemoLabel}
-                </span>
-                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showDemoSelector ? 'rotate-180' : ''}`} />
-              </div>
-            </button>
-
-            {showDemoSelector && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
-                className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2.5 overflow-hidden"
-              >
-                {DEMO_ACCOUNTS.map((acc) => {
-                  const isSelected = username === acc.username;
-                  return (
-                    <button
-                      key={acc.username}
-                      type="button"
-                      onClick={() => handleSelectQuickAccount(acc)}
-                      className={`p-2.5 rounded-xl text-left border transition-all flex flex-col justify-between cursor-pointer ${
-                        isSelected
-                          ? 'bg-emerald-50/80 border-[#00B884] text-slate-800'
-                          : 'bg-white border-slate-200/80 hover:bg-slate-50 text-slate-700'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between w-full mb-1">
-                        <span className="text-xs font-bold text-slate-800">{acc.label}</span>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                          isSelected ? 'bg-[#00B884] text-white' : 'bg-slate-100 text-slate-600'
-                        }`}>
-                          {acc.roleBadge}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-500 truncate mb-1.5">{acc.personName}</p>
-                      <div className="flex items-center justify-between text-[11px] font-mono text-slate-500 pt-1 border-t border-slate-100">
-                        <span>User: <strong className="text-slate-700">{acc.username}</strong></span>
-                        <span>Pass: <strong className="text-slate-700">{acc.password}</strong></span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </motion.div>
-            )}
-          </div>
         </div>
       </motion.div>
     </div>

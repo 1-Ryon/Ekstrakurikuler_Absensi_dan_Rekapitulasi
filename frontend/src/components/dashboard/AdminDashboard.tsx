@@ -13,8 +13,6 @@ import {
   ChevronRight, 
   Building2, 
   QrCode,
-  BarChart2,
-  LineChart,
   UserCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -80,9 +78,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Selected Day Index for inspector
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(todayIndex);
-
-  // Toggle between Bar Chart (Batang) and Line Chart (Garis)
-  const [chartViewMode, setChartViewMode] = useState<'bar' | 'line'>('bar');
 
   // 3. Dynamic Weekly Schedule from effectiveEskulList
   const attendanceBase = [96, 94, 91, 95, 90, 97, 88];
@@ -169,9 +164,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     });
 
     return [
-      { name: 'Olahraga & Prestasi', count: counts['Olahraga'] || 0, percent: Math.round(((counts['Olahraga'] || 0) / total) * 100), color: 'text-sky-600' },
-      { name: 'Teknologi & Digital', count: counts['Teknologi'] || 0, percent: Math.round(((counts['Teknologi'] || 0) / total) * 100), color: 'text-violet-600' },
-      { name: 'Seni & Budaya', count: counts['Seni & Budaya'] || 0, percent: Math.round(((counts['Seni & Budaya'] || 0) / total) * 100), color: 'text-amber-600' },
+      { name: 'Olahraga & Prestasi', count: counts['Olahraga'] || 0, percent: Math.round(((counts['Olahraga'] || 0) / total) * 100), color: 'text-amber-600' },
+      { name: 'Teknologi & Digital', count: counts['Teknologi'] || 0, percent: Math.round(((counts['Teknologi'] || 0) / total) * 100), color: 'text-slate-700' },
+      { name: 'Keagamaan & Karakter', count: counts['Keagamaan'] || 0, percent: Math.round(((counts['Keagamaan'] || 0) / total) * 100), color: 'text-[#00B884]' },
+      { name: 'Seni & Budaya', count: counts['Seni & Budaya'] || 0, percent: Math.round(((counts['Seni & Budaya'] || 0) / total) * 100), color: 'text-amber-700' },
     ];
   }, [effectiveEskulList]);
 
@@ -228,21 +224,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     };
   }, [effectiveEskulList]);
 
-  // Helper: Kategori badge color mapping
+  // Helper: Kategori badge color mapping (Harmonized to SMK Al Amanah Brand Palette)
   const getCategoryColor = (kategori: string) => {
     switch (kategori) {
       case 'Olahraga':
-        return 'bg-sky-50 text-sky-700 border-sky-200';
+        return 'bg-amber-50 text-amber-800 border-amber-200/80';
       case 'Teknologi':
-        return 'bg-violet-50 text-violet-700 border-violet-200';
-      case 'Seni & Budaya':
-        return 'bg-amber-50 text-amber-700 border-amber-200';
+        return 'bg-slate-100 text-slate-700 border-slate-300/80';
       case 'Keagamaan':
-        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        return 'bg-emerald-50 text-emerald-800 border-emerald-200/80';
       case 'Kepemimpinan':
-        return 'bg-rose-50 text-rose-700 border-rose-200';
+        return 'bg-emerald-100/70 text-emerald-900 border-emerald-300/80';
+      case 'Seni & Budaya':
+        return 'bg-amber-100/60 text-amber-900 border-amber-300/70';
       default:
-        return 'bg-slate-50 text-slate-700 border-slate-200';
+        return 'bg-slate-50 text-slate-700 border-slate-200/80';
     }
   };
 
@@ -323,55 +319,58 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       </div>
 
-      {/* Alert Banner for Pending Schedule Proposals */}
-      {pendingProposalsCount > 0 && (
-        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-600 to-orange-500 text-white shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
-              <Calendar className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <div className="font-extrabold text-sm sm:text-base">
-                Terdapat {pendingProposalsCount} Permohonan Perubahan Jadwal Menunggu Validasi!
+      {/* Action Center for Pending Verifications (Compact & Clean) */}
+      {(pendingProposalsCount > 0 || pendingPendaftaranCount > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          {pendingProposalsCount > 0 && (
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-sm flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
+                  <Calendar className="w-5 h-5 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-extrabold text-xs sm:text-sm truncate">
+                    {pendingProposalsCount} Permohonan Jadwal
+                  </div>
+                  <div className="text-[11px] text-amber-100 truncate">
+                    Guru pembina mengajukan penyesuaian jadwal
+                  </div>
+                </div>
               </div>
-              <div className="text-xs text-amber-100 mt-0.5">
-                Guru pembina mengajukan penyesuaian hari, jam, atau lokasi eskul. Silakan tinjau dan lakukan validasi.
-              </div>
+              <button
+                type="button"
+                onClick={() => onNavigate('validasi-jadwal')}
+                className="px-3.5 py-2 bg-white text-amber-900 hover:bg-amber-50 active:scale-[0.98] font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer shrink-0"
+              >
+                Tinjau Jadwal
+              </button>
             </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => onNavigate('validasi-jadwal')}
-            className="px-4 py-2 bg-white text-amber-900 hover:bg-amber-50 active:scale-[0.98] font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer shrink-0"
-          >
-            Tinjau &amp; Validasi Sekarang
-          </button>
-        </div>
-      )}
+          )}
 
-      {/* Alert Banner for Pending Student Registrations */}
-      {pendingPendaftaranCount > 0 && (
-        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600 text-white shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
-              <UserCheck className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <div className="font-extrabold text-sm sm:text-base">
-                Terdapat {pendingPendaftaranCount} Siswa Pendaftar Menunggu Pengesahan Koordinator!
+          {pendingPendaftaranCount > 0 && (
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
+                  <UserCheck className="w-5 h-5 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-extrabold text-xs sm:text-sm truncate">
+                    {pendingPendaftaranCount} Pendaftar Siswa
+                  </div>
+                  <div className="text-[11px] text-blue-100 truncate">
+                    Hasil seleksi pembina menunggu pengesahan
+                  </div>
+                </div>
               </div>
-              <div className="text-xs text-blue-100 mt-0.5">
-                Pembina telah menyeleksi siswa sesuai kuota maksimal eskul dan mengajukan batch siswa terpilih untuk disahkan.
-              </div>
+              <button
+                type="button"
+                onClick={() => onNavigate('validasi-pendaftaran')}
+                className="px-3.5 py-2 bg-white text-blue-900 hover:bg-blue-50 active:scale-[0.98] font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer shrink-0"
+              >
+                Sahkan Siswa
+              </button>
             </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => onNavigate('validasi-pendaftaran')}
-            className="px-4 py-2 bg-white text-blue-900 hover:bg-blue-50 active:scale-[0.98] font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer shrink-0"
-          >
-            Validasi Pendaftar Sekarang
-          </button>
+          )}
         </div>
       )}
 
@@ -522,362 +521,94 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
 
           <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
-            {/* View Switcher: Batang vs Garis */}
-            <div className="flex items-center p-1 bg-slate-100/90 rounded-xl border border-slate-200/80">
-              <button
-                type="button"
-                onClick={() => setChartViewMode('bar')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  chartViewMode === 'bar'
-                    ? 'bg-white text-[#00B884] shadow-xs'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                <BarChart2 className="w-3.5 h-3.5" />
-                <span>Batang</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setChartViewMode('line')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  chartViewMode === 'line'
-                    ? 'bg-white text-[#00B884] shadow-xs'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                <LineChart className="w-3.5 h-3.5" />
-                <span>Garis</span>
-              </button>
-            </div>
-
-            <span className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200/60">
-              Hari: <strong className="text-[#00B884]">{selectedDay.dayName}</strong> ({selectedDay.jumlahEskul} Eskul)
+            <span className="px-3.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200/60">
+              Hari Terpilih: <strong className="text-[#00B884]">{selectedDay.dayName}</strong> ({selectedDay.jumlahEskul} Eskul Aktif)
             </span>
           </div>
         </div>
 
-        {/* 7-Day Interactive Visual Representation (Batang vs Garis) */}
+        {/* 7-Day Interactive Day Roster Grid */}
         <div className="space-y-4">
-          {chartViewMode === 'bar' ? (
-            /* ================= VIEW 1: GRAFIK BATANG ================= */
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 sm:gap-3 w-full">
-              {weeklySchedule.map((day) => {
-                const isSelected = selectedDay.dayIndex === day.dayIndex;
-                const isToday = day.isToday;
-                const heightPercent = day.jumlahEskul > 0 
-                  ? Math.max(25, Math.round((day.jumlahEskul / maxEskulCount) * 100))
-                  : 8;
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 sm:gap-3 w-full">
+            {weeklySchedule.map((day) => {
+              const isSelected = selectedDay.dayIndex === day.dayIndex;
+              const isToday = day.isToday;
+              const heightPercent = day.jumlahEskul > 0 
+                ? Math.max(25, Math.round((day.jumlahEskul / maxEskulCount) * 100))
+                : 8;
 
-                return (
-                  <motion.div
-                    key={day.dayIndex}
-                    whileHover={{ y: -3 }}
-                    whileTap={{ scale: 0.98 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                    onClick={() => setSelectedDayIndex(day.dayIndex)}
-                    className={`relative p-3 sm:p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between select-none ${
-                      isSelected
-                        ? 'border-[#00B884] bg-emerald-50/40 ring-2 ring-[#00B884]/30 shadow-md'
-                        : isToday
-                        ? 'border-emerald-300 bg-white shadow-xs'
-                        : 'border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-slate-300'
-                    }`}
-                  >
-                    {/* Today Badge */}
-                    {isToday && (
-                      <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10">
-                        <span className="px-2 py-0.5 bg-[#00B884] text-white text-[9px] font-bold rounded-full shadow-xs uppercase tracking-wider inline-flex items-center gap-1">
-                          Hari Ini
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Day Name & Count */}
-                    <div className="text-center pt-0.5">
-                      <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
-                        {day.shortDay}
-                      </span>
-                      <h4 className="text-xs sm:text-sm font-bold text-slate-800">
-                        {day.dayName}
-                      </h4>
-                    </div>
-
-                    {/* Visual Bar Column */}
-                    <div className="my-2.5 flex flex-col items-center">
-                      <div className="w-full h-24 sm:h-28 bg-slate-200/50 rounded-xl relative flex flex-col justify-end p-1 overflow-hidden">
-                        {/* Fill Bar */}
-                        <motion.div
-                          initial={{ height: 0 }}
-                          animate={{ height: `${heightPercent}%` }}
-                          transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                          className={`w-full rounded-lg transition-all flex flex-col items-center justify-start pt-1.5 ${
-                            day.jumlahEskul === 0
-                              ? 'bg-slate-300/60'
-                              : isSelected
-                              ? 'bg-gradient-to-t from-[#00B884] to-[#14d49a] shadow-xs'
-                              : isToday
-                              ? 'bg-gradient-to-t from-[#00B884] to-[#40d7a9]'
-                              : 'bg-gradient-to-t from-slate-400 to-slate-300'
-                          }`}
-                        >
-                          <span className="text-[10px] font-extrabold text-white leading-none drop-shadow-xs">
-                            {day.jumlahEskul}
-                          </span>
-                        </motion.div>
-                      </div>
-                    </div>
-
-                    {/* Footer Info */}
-                    <div className="text-center space-y-1">
-                      <div className="inline-block px-2 py-0.5 rounded-full bg-white border border-slate-200/80 text-[10px] font-semibold text-slate-700">
-                        {day.jumlahEskul} Eskul
-                      </div>
-                      <span className="text-[10px] text-slate-500 font-medium block">
-                        {day.eskulList.length} Sesi Aktif
+              return (
+                <motion.div
+                  key={day.dayIndex}
+                  whileHover={{ y: -3 }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                  onClick={() => setSelectedDayIndex(day.dayIndex)}
+                  className={`relative p-3 sm:p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between select-none ${
+                    isSelected
+                      ? 'border-[#00B884] bg-emerald-50/40 ring-2 ring-[#00B884]/30 shadow-md'
+                      : isToday
+                      ? 'border-emerald-300 bg-white shadow-xs'
+                      : 'border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-slate-300'
+                  }`}
+                >
+                  {/* Today Badge */}
+                  {isToday && (
+                    <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10">
+                      <span className="px-2 py-0.5 bg-[#00B884] text-white text-[9px] font-bold rounded-full shadow-xs uppercase tracking-wider inline-flex items-center gap-1">
+                        Hari Ini
                       </span>
                     </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          ) : (
-            /* ================= VIEW 2: GRAFIK GARIS (MURNI GARIS) ================= */
-            <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs pb-1 border-b border-slate-100">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#00B884] inline-block ring-4 ring-emerald-50"></span>
-                  <span className="font-bold text-slate-700">Diagram Garis Sebaran Eskul (Senin — Minggu)</span>
-                </div>
-                <span className="text-slate-400 text-[11px]">
-                  Klik titik pada garis untuk melihat roster kegiatan hari tersebut
-                </span>
-              </div>
-              
-              {/* Dynamic SVG Clean Line Chart */}
-              {(() => {
-                const chartWidth = 740;
-                const chartHeight = 230;
-                const padLeft = 65;
-                const padRight = 50;
-                const padTop = 38;
-                const padBottom = 55;
-                const usableW = chartWidth - padLeft - padRight;
-                const usableH = chartHeight - padTop - padBottom;
-                const maxVal = maxEskulCount;
+                  )}
 
-                const linePoints = weeklySchedule.map((day, idx) => {
-                  const x = padLeft + idx * (usableW / (weeklySchedule.length - 1));
-                  const y = (chartHeight - padBottom) - (day.jumlahEskul / maxVal) * usableH;
-                  return { ...day, x, y };
-                });
-
-                const polylinePath = linePoints
-                  .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
-                  .join(' ');
-
-                const selectedPoint = linePoints.find(p => p.dayIndex === selectedDay.dayIndex);
-
-                return (
-                  <div className="w-full h-56 sm:h-64 relative">
-                    <svg
-                      viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-                      className="w-full h-full overflow-visible select-none"
-                    >
-                      {/* Horizontal Gridlines & Y-Axis Scale */}
-                      {Array.from({ length: maxVal + 1 }, (_, lvl) => {
-                        const y = (chartHeight - padBottom) - (lvl / maxVal) * usableH;
-                        return (
-                          <g key={lvl}>
-                            <line
-                              x1={padLeft - 10}
-                              y1={y}
-                              x2={chartWidth - padRight + 10}
-                              y2={y}
-                              stroke="#F1F5F9"
-                              strokeDasharray="4 4"
-                              strokeWidth="1.2"
-                            />
-                            <text
-                              x={padLeft - 18}
-                              y={y + 3.5}
-                              fill="#94A3B8"
-                              fontSize="11"
-                              fontWeight="500"
-                              textAnchor="end"
-                            >
-                              {lvl} {lvl === maxVal ? 'Eskul' : ''}
-                            </text>
-                          </g>
-                        );
-                      })}
-
-                      {/* Axes */}
-                      <line
-                        x1={padLeft - 10}
-                        y1={padTop - 5}
-                        x2={padLeft - 10}
-                        y2={chartHeight - padBottom}
-                        stroke="#E2E8F0"
-                        strokeWidth="1.2"
-                      />
-                      <line
-                        x1={padLeft - 10}
-                        y1={chartHeight - padBottom}
-                        x2={chartWidth - padRight + 10}
-                        y2={chartHeight - padBottom}
-                        stroke="#E2E8F0"
-                        strokeWidth="1.2"
-                      />
-
-                      {/* Vertical Guideline on Selected Day */}
-                      {selectedPoint && (
-                        <line
-                          x1={selectedPoint.x}
-                          y1={padTop}
-                          x2={selectedPoint.x}
-                          y2={chartHeight - padBottom}
-                          stroke="#00B884"
-                          strokeWidth="1.5"
-                          strokeDasharray="3 3"
-                          opacity="0.8"
-                        />
-                      )}
-
-                      {/* Pure Line Stroke */}
-                      <motion.path
-                        d={polylinePath}
-                        fill="none"
-                        stroke="#00B884"
-                        strokeWidth="3.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        initial={{ pathLength: 0 }}
-                        animate={{ pathLength: 1 }}
-                        transition={{ duration: 0.6, ease: 'easeOut' }}
-                      />
-
-                      {/* Data Nodes & Day Labels */}
-                      {linePoints.map((point) => {
-                        const isSelected = selectedDay.dayIndex === point.dayIndex;
-                        const isToday = point.isToday;
-
-                        return (
-                          <g
-                            key={point.dayIndex}
-                            onClick={() => setSelectedDayIndex(point.dayIndex)}
-                            className="cursor-pointer group"
-                          >
-                            {/* Invisible wide column for easy click/touch */}
-                            <rect
-                              x={point.x - 45}
-                              y={padTop - 15}
-                              width="90"
-                              height={usableH + 55}
-                              fill="transparent"
-                            />
-
-                            {/* Halo / Pulse ring on selected */}
-                            {isSelected && (
-                              <circle
-                                cx={point.x}
-                                cy={point.y}
-                                r="13"
-                                fill="#00B884"
-                                fillOpacity="0.18"
-                              />
-                            )}
-
-                            {/* Data point circle */}
-                            <circle
-                              cx={point.x}
-                              cy={point.y}
-                              r={isSelected ? 6.5 : 5}
-                              fill={isSelected ? '#00B884' : '#FFFFFF'}
-                              stroke="#00B884"
-                              strokeWidth={isSelected ? 3 : 2.5}
-                              className="transition-transform group-hover:scale-110"
-                            />
-
-                            {/* Value badge above point */}
-                            <g transform={`translate(${point.x}, ${point.y - 24})`}>
-                              <rect
-                                x="-15"
-                                y="-9"
-                                width="30"
-                                height="18"
-                                rx="9"
-                                fill={isSelected ? '#00B884' : '#FFFFFF'}
-                                stroke={isSelected ? '#00B884' : '#CBD5E1'}
-                                strokeWidth="1"
-                                className="shadow-xs"
-                              />
-                              <text
-                                x="0"
-                                y="3"
-                                textAnchor="middle"
-                                fill={isSelected ? '#FFFFFF' : '#334155'}
-                                fontSize="10"
-                                fontWeight="bold"
-                              >
-                                {point.jumlahEskul}
-                              </text>
-                            </g>
-
-                            {/* X-axis Day Name */}
-                            <text
-                              x={point.x}
-                              y={chartHeight - padBottom + 23}
-                              textAnchor="middle"
-                              fill={isSelected ? '#00B884' : '#475569'}
-                              fontSize="12"
-                              fontWeight={isSelected ? 'bold' : '600'}
-                            >
-                              {point.dayName}
-                            </text>
-
-                            {/* Today Indicator or Sub-label */}
-                            {isToday ? (
-                              <g transform={`translate(${point.x}, ${chartHeight - padBottom + 36})`}>
-                                <rect
-                                  x="-23"
-                                  y="-6"
-                                  width="46"
-                                  height="13"
-                                  rx="6.5"
-                                  fill="#00B884"
-                                />
-                                <text
-                                  x="0"
-                                  y="3.5"
-                                  textAnchor="middle"
-                                  fill="#FFFFFF"
-                                  fontSize="8"
-                                  fontWeight="bold"
-                                  letterSpacing="0.5"
-                                >
-                                  HARI INI
-                                </text>
-                              </g>
-                            ) : (
-                              <text
-                                x={point.x}
-                                y={chartHeight - padBottom + 36}
-                                textAnchor="middle"
-                                fill="#94A3B8"
-                                fontSize="10"
-                              >
-                                {point.shortDay}
-                              </text>
-                            )}
-                          </g>
-                        );
-                      })}
-                    </svg>
+                  {/* Day Name & Count */}
+                  <div className="text-center pt-0.5">
+                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
+                      {day.shortDay}
+                    </span>
+                    <h4 className="text-xs sm:text-sm font-bold text-slate-800">
+                      {day.dayName}
+                    </h4>
                   </div>
-                );
-              })()}
-            </div>
-          )}
+
+                  {/* Visual Bar Column */}
+                  <div className="my-2.5 flex flex-col items-center">
+                    <div className="w-full h-20 bg-slate-200/50 rounded-xl relative flex flex-col justify-end p-1 overflow-hidden">
+                      {/* Fill Bar */}
+                      <motion.div
+                        initial={{ height: 0 }}
+                        animate={{ height: `${heightPercent}%` }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                        className={`w-full rounded-lg transition-all flex flex-col items-center justify-start pt-1 ${
+                          day.jumlahEskul === 0
+                            ? 'bg-slate-300/60'
+                            : isSelected
+                            ? 'bg-gradient-to-t from-[#00B884] to-[#14d49a] shadow-xs'
+                            : isToday
+                            ? 'bg-gradient-to-t from-[#00B884] to-[#40d7a9]'
+                            : 'bg-gradient-to-t from-slate-400 to-slate-300'
+                        }`}
+                      >
+                        <span className="text-[10px] font-extrabold text-white leading-none drop-shadow-xs">
+                          {day.jumlahEskul}
+                        </span>
+                      </motion.div>
+                    </div>
+                  </div>
+
+                  {/* Footer Info */}
+                  <div className="text-center space-y-1">
+                    <div className="inline-block px-2 py-0.5 rounded-full bg-white border border-slate-200/80 text-[10px] font-semibold text-slate-700">
+                      {day.jumlahEskul} Eskul
+                    </div>
+                    <span className="text-[10px] text-slate-500 font-medium block">
+                      {day.eskulList.length} Sesi Aktif
+                    </span>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-400 pt-1 px-1 gap-1">
             <span className="flex items-center gap-1.5">

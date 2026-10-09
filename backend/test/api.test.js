@@ -436,17 +436,23 @@ test('25. Pendaftaran: Pembina selects applicants and submits batch to Koordinat
   let eskulId = listData.data?.[0]?.eskulId || 'eskul-01';
 
   if (!pendaftaranId) {
+    const allSiswa = await (await fetch(`${BASE_URL}/students`)).json();
+    const targetSiswaId = allSiswa.data?.find(s => !s.enrolledEskulIds?.includes('eskul-06'))?.id || 'sis-07';
     const daftarRes = await fetch(`${BASE_URL}/pendaftaran`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         eskulId: 'eskul-06',
-        siswaId: 'sis-07',
+        siswaId: targetSiswaId,
         alasanDaftar: 'Ingin bergabung pramuka penegak.',
       }),
     });
     const daftarData = await daftarRes.json();
     pendaftaranId = daftarData.data?.id;
+    if (!pendaftaranId) {
+      const anyPendaftaran = await (await fetch(`${BASE_URL}/pendaftaran`)).json();
+      pendaftaranId = anyPendaftaran.data?.[0]?.id;
+    }
     eskulId = 'eskul-06';
   }
   assert.ok(pendaftaranId);

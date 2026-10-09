@@ -14,7 +14,8 @@ import {
   Filter,
   Check,
   RotateCcw,
-  Sparkles
+  Sparkles,
+  ArrowLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PengajuanJadwal, User, Eskul } from '../../types';
@@ -29,6 +30,7 @@ interface ValidasiJadwalViewProps {
     status: 'DISETUJUI' | 'DITOLAK',
     catatanKoordinator?: string
   ) => Promise<void>;
+  onBack?: () => void;
 }
 
 export const ValidasiJadwalView: React.FC<ValidasiJadwalViewProps> = ({
@@ -36,6 +38,7 @@ export const ValidasiJadwalView: React.FC<ValidasiJadwalViewProps> = ({
   proposals,
   eskulList,
   onValidate,
+  onBack,
 }) => {
   const [activeTab, setActiveTab] = useState<'PENDING' | 'HISTORY' | 'ALL'>('PENDING');
   const [searchQuery, setSearchQuery] = useState('');
@@ -119,7 +122,17 @@ export const ValidasiJadwalView: React.FC<ValidasiJadwalViewProps> = ({
               <CalendarClock className="w-7 h-7" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                {onBack && (
+                  <button
+                    type="button"
+                    onClick={onBack}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all cursor-pointer border border-slate-200/60 active:scale-95"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Kembali ke Dasbor</span>
+                  </button>
+                )}
                 <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200/60">
                   Modul Validasi Koordinator
                 </span>
@@ -244,6 +257,18 @@ export const ValidasiJadwalView: React.FC<ValidasiJadwalViewProps> = ({
               ? 'Seluruh permohonan perubahan jadwal dari pembina telah selesai divalidasi. Tidak ada antrean pending!'
               : 'Tidak ditemukan data pengajuan jadwal sesuai kriteria pencarian dan filter.'}
           </p>
+          {onBack && (
+            <div className="pt-3">
+              <button
+                type="button"
+                onClick={onBack}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold rounded-xl transition-all cursor-pointer border border-amber-200"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Kembali ke Dasbor Utama</span>
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -403,22 +428,22 @@ export const ValidasiJadwalView: React.FC<ValidasiJadwalViewProps> = ({
                   </div>
                 )}
 
-                {/* Action Buttons for Pending */}
+                {/* Action Buttons for Pending - Equal 50/50 Width */}
                 {isPending && (
-                  <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                  <div className="grid grid-cols-2 gap-2.5 pt-2 border-t border-slate-100">
                     <button
                       onClick={() => handleOpenAction(prop, 'APPROVE')}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 bg-[#00B884] hover:bg-[#009e70] active:scale-98 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+                      className="w-full flex items-center justify-center gap-1.5 py-2.5 px-3 bg-[#00B884] hover:bg-[#009e70] active:scale-98 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
                     >
                       <Check className="w-4 h-4" />
                       <span>Setujui Jadwal</span>
                     </button>
                     <button
                       onClick={() => handleOpenAction(prop, 'REJECT')}
-                      className="py-2.5 px-3 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                      className="w-full flex items-center justify-center gap-1.5 py-2.5 px-3 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 rounded-xl text-xs font-bold transition-all cursor-pointer"
                     >
                       <XCircle className="w-4 h-4" />
-                      <span>Tolak</span>
+                      <span>Tolak Jadwal</span>
                     </button>
                   </div>
                 )}

@@ -225,6 +225,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [searchVal, setSearchVal] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [filterCategory, setFilterCategory] = useState<'all' | 'menu' | 'eskul' | 'guru' | 'siswa' | 'kelas'>('all');
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -309,6 +310,7 @@ export const Header: React.FC<HeaderProps> = ({
       }
       if (e.key === 'Escape') {
         setIsSearchOpen(false);
+        setIsSearchFocused(false);
         searchInputRef.current?.blur();
       }
     };
@@ -321,6 +323,7 @@ export const Header: React.FC<HeaderProps> = ({
     const handleClickOutside = (e: MouseEvent) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
         setIsSearchOpen(false);
+        setIsSearchFocused(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -338,7 +341,8 @@ export const Header: React.FC<HeaderProps> = ({
     setSearchVal('');
     onSearch('');
     setIsSearchOpen(false);
-    searchInputRef.current?.focus();
+    setIsSearchFocused(false);
+    searchInputRef.current?.blur();
   };
 
   const handleItemClick = (action: () => void) => {
@@ -369,14 +373,21 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="w-full bg-[#EEF1F5] px-4 sm:px-6 py-3.5 flex items-center justify-between gap-3 sticky top-0 z-30">
       {/* Left: Mobile Hamburger & Interactive Global Search Input */}
-      <div className="flex items-center gap-2.5 flex-1 max-w-lg relative" ref={searchContainerRef}>
+      <div 
+        className={`flex items-center gap-2 sm:gap-2.5 transition-all duration-300 ease-out relative ${
+          isSearchFocused ? 'flex-1 max-w-full sm:max-w-2xl' : 'flex-1 max-w-xs sm:max-w-md lg:max-w-lg'
+        }`} 
+        ref={searchContainerRef}
+      >
         {/* Mobile Hamburger Button */}
         {onToggleMobileMenu && (
           <button
             type="button"
             onClick={onToggleMobileMenu}
             aria-label="Buka Menu Navigasi"
-            className="lg:hidden p-2 rounded-xl bg-white border border-slate-200/90 text-slate-700 hover:bg-slate-50 active:scale-95 transition-all shadow-xs shrink-0 cursor-pointer"
+            className={`lg:hidden p-2 rounded-xl bg-white border border-slate-200/90 text-slate-700 hover:bg-slate-50 active:scale-95 transition-all shadow-xs shrink-0 cursor-pointer ${
+              isSearchFocused ? 'hidden sm:flex' : 'flex'
+            }`}
           >
             <Menu className="w-5 h-5" />
           </button>
@@ -406,6 +417,7 @@ export const Header: React.FC<HeaderProps> = ({
             value={searchVal}
             onChange={handleInputChange}
             onFocus={() => {
+              setIsSearchFocused(true);
               if (searchVal.trim()) setIsSearchOpen(true);
             }}
             placeholder="Cari eskul, siswa, pembina, kelas..."
@@ -886,25 +898,39 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         )}
 
-        {/* Mail Icon Button */}
-        <button
-          onClick={onOpenMail}
-          aria-label="Pesan Masuk"
-          className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-white border border-slate-200/90 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:border-slate-300 shadow-xs transition-all cursor-pointer"
-        >
-          <Mail className="w-4 h-4" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-[#00B884] rounded-full ring-2 ring-white"></span>
-        </button>
+        {/* Mail and Notifications Icons - Animated Slide-Out to Right on Search Focus */}
+        <AnimatePresence mode="popLayout">
+          {!isSearchFocused && (
+            <motion.div
+              key="mail-notif-icons-group"
+              initial={{ opacity: 0, x: 30, width: 0 }}
+              animate={{ opacity: 1, x: 0, width: 'auto' }}
+              exit={{ opacity: 0, x: 50, width: 0 }}
+              transition={{ duration: 0.24, ease: [0.23, 1, 0.32, 1] }}
+              className="flex items-center gap-2 sm:gap-3 overflow-hidden shrink-0"
+            >
+              {/* Mail Icon Button */}
+              <button
+                onClick={onOpenMail}
+                aria-label="Pesan Masuk"
+                className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-white border border-slate-200/90 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:border-slate-300 shadow-xs transition-all cursor-pointer shrink-0"
+              >
+                <Mail className="w-4 h-4" />
+                <span className="absolute top-2 right-2 w-2 h-2 bg-[#00B884] rounded-full ring-2 ring-white"></span>
+              </button>
 
-        {/* Bell / Notification Icon Button */}
-        <button
-          onClick={onOpenNotifications}
-          aria-label="Pemberitahuan"
-          className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-white border border-slate-200/90 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:border-slate-300 shadow-xs transition-all cursor-pointer"
-        >
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white animate-pulse"></span>
-        </button>
+              {/* Bell / Notification Icon Button */}
+              <button
+                onClick={onOpenNotifications}
+                aria-label="Pemberitahuan"
+                className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-white border border-slate-200/90 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:border-slate-300 shadow-xs transition-all cursor-pointer shrink-0"
+              >
+                <Bell className="w-4 h-4" />
+                <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white animate-pulse"></span>
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Profile Area with Dropdown */}
         <div className="relative">

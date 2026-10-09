@@ -15,7 +15,8 @@ import {
   ShieldCheck,
   Send,
   RefreshCw,
-  Award
+  Award,
+  ArrowLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -26,12 +27,14 @@ interface ValidasiPendaftaranSiswaProps {
   currentUser: User;
   eskulList: Eskul[];
   onRefreshData?: () => void;
+  onBack?: () => void;
 }
 
 export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> = ({
   currentUser,
   eskulList,
   onRefreshData,
+  onBack,
 }) => {
   const [registrations, setRegistrations] = useState<PendaftaranEskul[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,7 +66,7 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
   const fetchRegistrations = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/pendaftaran');
+      const res = await fetch('/api/pendaftaran');
       if (res.ok) {
         const json = await res.json();
         if (json.success && Array.isArray(json.data)) {
@@ -137,7 +140,7 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
     setActionLoading(true);
 
     try {
-      const res = await fetch('http://localhost:5000/api/pendaftaran/validasi-koordinator', {
+      const res = await fetch('/api/pendaftaran/validasi-koordinator', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -201,9 +204,21 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
         <div className="absolute right-0 top-0 w-96 h-96 bg-white/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-bold text-white tracking-wide">
-              <ShieldCheck className="w-4 h-4" />
-              <span>Otoritas Validasi Koordinator Ekstrakurikuler</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              {onBack && (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 text-xs font-bold text-white transition-all backdrop-blur-md cursor-pointer active:scale-95 border border-white/25"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Kembali ke Dasbor</span>
+                </button>
+              )}
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-bold text-white tracking-wide">
+                <ShieldCheck className="w-4 h-4" />
+                <span>Otoritas Validasi Koordinator Ekstrakurikuler</span>
+              </div>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
               Validasi Pendaftaran & Kuota Siswa Eskul
@@ -213,7 +228,17 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
             </p>
           </div>
 
-          <div className="flex items-center gap-3 self-start md:self-auto">
+          <div className="flex items-center gap-3 self-start md:self-auto flex-wrap">
+            {onBack && (
+              <button
+                type="button"
+                onClick={onBack}
+                className="px-4 py-2.5 rounded-2xl bg-white text-emerald-900 hover:bg-emerald-50 active:scale-95 transition-all text-xs font-bold flex items-center gap-2 shadow-md cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4 text-emerald-700" />
+                <span>Kembali ke Dasbor</span>
+              </button>
+            )}
             <button
               onClick={fetchRegistrations}
               disabled={isLoading}
@@ -419,6 +444,18 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
                 ? 'Semua berkas pendaftaran calon siswa sudah divalidasi atau belum ada pengajuan baru dari Guru Pembina.'
                 : 'Silakan ubah filter atau kata kunci pencarian Anda.'}
             </p>
+            {onBack && (
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 hover:bg-emerald-100/80 text-[#00B884] text-xs font-bold rounded-xl transition-all cursor-pointer border border-emerald-200"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Kembali ke Dasbor Utama</span>
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">

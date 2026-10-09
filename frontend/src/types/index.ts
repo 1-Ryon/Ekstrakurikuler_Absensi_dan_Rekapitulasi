@@ -27,6 +27,8 @@ export interface Guru {
   isPembina?: boolean;
   isWaliKelas?: boolean;
   role?: Role;
+  password?: string;
+  defaultPassword?: string;
   statusAktif?: boolean;
   eskulDiampu?: { id: string; namaEskul: string; kategori?: string }[];
   kelasWali?: { id: string; namaKelas: string; tingkat?: number; jurusan?: string; _count?: { siswaList: number } }[];
@@ -170,6 +172,7 @@ export interface PendaftaranEskul {
 export interface PresensiRecord {
   id: string;
   sesiId: string;
+  eskulId?: string;
   namaEskul: string;
   siswaId: string;
   namaSiswa: string;
@@ -177,6 +180,9 @@ export interface PresensiRecord {
   kelas: string;
   avatarUrl?: string;
   waktuScan: string;
+  hari?: string;
+  tanggal?: string;
+  jamScan?: string;
   status: 'HADIR' | 'IZIN' | 'SAKIT' | 'ALPA';
   metode: 'DYNAMIC_QR' | 'SCAN_QR_SISWA' | 'SCAN_KARTU_GURU' | 'MANUAL_CHECKLIST' | 'MANUAL_DISPENSASI';
   nilaiKeaktifan?: number;
@@ -202,6 +208,7 @@ export interface PenilaianRecord {
   nilaiAkhir: number;
   predikat: 'A' | 'B' | 'C' | 'D';
   catatan: string;
+  capaianKompetensi?: string;
 }
 
 export interface EskulScheduleItem {

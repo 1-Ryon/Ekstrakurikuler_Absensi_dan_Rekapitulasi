@@ -6,17 +6,32 @@ import {
   Clock, 
   MapPin, 
   Award, 
-  Download, 
-  FileText, 
-  ChevronRight,
-  TrendingUp,
-  Sparkles,
-  QrCode
+  QrCode,
+  ShieldCheck,
+  UserCheck,
+  ChevronRight
 } from 'lucide-react';
 import { StudentProfile, Eskul, SesiPertemuan, PresensiRecord, PenilaianRecord } from '../../types';
 import { QrScannerModal } from './QrScannerModal';
 import { KartuHasilNilaiModal } from './KartuHasilNilaiModal';
 import { StudentCardModal } from '../modals/StudentCardModal';
+
+const getCategoryBadge = (kategori?: string) => {
+  switch (kategori) {
+    case 'Olahraga':
+      return 'bg-amber-50 text-amber-800 border-amber-200/80';
+    case 'Teknologi':
+      return 'bg-slate-100 text-slate-700 border-slate-300/80';
+    case 'Keagamaan':
+      return 'bg-emerald-50 text-emerald-800 border-emerald-200/80';
+    case 'Kepemimpinan':
+      return 'bg-emerald-100/70 text-emerald-900 border-emerald-300/80';
+    case 'Seni & Budaya':
+      return 'bg-amber-100/60 text-amber-900 border-amber-300/70';
+    default:
+      return 'bg-slate-50 text-slate-700 border-slate-200/80';
+  }
+};
 
 interface SiswaDashboardProps {
   currentStudent?: StudentProfile;
@@ -24,8 +39,11 @@ interface SiswaDashboardProps {
   todaySessions: SesiPertemuan[];
   attendanceHistory: PresensiRecord[];
   penilaianRecords?: PenilaianRecord[];
-  onNewAttendance: (studentName: string, eskulName: string) => void;
+  onNewAttendance: (studentName: string, eskulName: string, rawToken?: string) => void;
   initialOpenModal?: 'scanner' | 'khn' | 'card' | null;
+  onNavigateToKhn?: () => void;
+  onNavigateToCard?: () => void;
+  onNavigateToHistory?: (eskulId?: string) => void;
 }
 
 export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
@@ -36,6 +54,9 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
   penilaianRecords = [],
   onNewAttendance,
   initialOpenModal = null,
+  onNavigateToKhn,
+  onNavigateToCard,
+  onNavigateToHistory,
 }) => {
   const currentStudent: StudentProfile = rawStudent || {
     id: 'usr-sis-01',
@@ -55,228 +76,241 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
   const [isScannerOpen, setIsScannerOpen] = useState(initialOpenModal === 'scanner');
   const [isKhnOpen, setIsKhnOpen] = useState(initialOpenModal === 'khn');
   const [isCardModalOpen, setIsCardModalOpen] = useState(initialOpenModal === 'card');
+  const [selectedSessionToken, setSelectedSessionToken] = useState<string>('SMK-AMANAH-DEMO');
 
   React.useEffect(() => {
     if (initialOpenModal === 'scanner') setIsScannerOpen(true);
-    if (initialOpenModal === 'khn') setIsKhnOpen(true);
-    if (initialOpenModal === 'card') setIsCardModalOpen(true);
-  }, [initialOpenModal]);
+    if (initialOpenModal === 'khn') {
+      if (onNavigateToKhn) {
+        onNavigateToKhn();
+      } else {
+        setIsKhnOpen(true);
+      }
+    }
+    if (initialOpenModal === 'card') {
+      if (onNavigateToCard) {
+        onNavigateToCard();
+      } else {
+        setIsCardModalOpen(true);
+      }
+    }
+  }, [initialOpenModal, onNavigateToKhn, onNavigateToCard]);
+
+  const handleOpenScannerForSession = (session?: SesiPertemuan) => {
+    const targetSession = session || 
+      todaySessions.find(s => enrolledEskuls.some(e => e.id === s.eskulId)) || 
+      todaySessions[0];
+
+    if (targetSession && targetSession.tokenAktif) {
+      setSelectedSessionToken(targetSession.tokenAktif);
+    } else if (targetSession) {
+      setSelectedSessionToken(`SMK-AMANAH:${targetSession.id}:${Math.floor(Date.now() / 15000)}:TOKEN`);
+    } else {
+      setSelectedSessionToken('SMK-AMANAH:sesi-01:DEMO');
+    }
+    setIsScannerOpen(true);
+  };
+
+  const handleOpenKhn = () => {
+    if (onNavigateToKhn) {
+      onNavigateToKhn();
+    } else {
+      setIsKhnOpen(true);
+    }
+  };
+
+  const handleOpenCard = () => {
+    if (onNavigateToCard) {
+      onNavigateToCard();
+    } else {
+      setIsCardModalOpen(true);
+    }
+  };
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Welcome Banner matching design */}
+      {/* 1. WELCOME BANNER / CARD PORTAL PRESENSI */}
       <div className="bg-gradient-to-r from-[#00B884] to-emerald-700 text-white rounded-3xl p-6 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
         <div className="relative z-10">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/20 backdrop-blur-xs rounded-full text-xs font-semibold mb-3">
-            <Sparkles className="w-3.5 h-3.5" />
             <span>Portal Presensi Digital Siswa</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
             Halo, {currentStudent.namaLengkap}!
           </h1>
           <p className="text-white/80 text-sm mt-1 max-w-lg">
-            {currentStudent.kelas} • NISN: {currentStudent.nomorInduk} • Kehadiran Semester Ini: {currentStudent.kehadiranRataRata}%
+            {currentStudent.kelas} • NISN: {currentStudent.nomorInduk || currentStudent.nis} • Kehadiran Semester Ini: {currentStudent.kehadiranRataRata}%
           </p>
         </div>
 
-        {/* Action Buttons: Tunjukkan QR ke Guru, Scan Dynamic QR, & KHN */}
+        {/* Action Buttons: Pindai Kamera, Kartu QR Saya, & Nilai Rapor (KHN) */}
         <div className="relative z-10 flex flex-col sm:flex-row items-center gap-2.5 w-full md:w-auto">
-          {/* Tombol Tunjukkan QR Siswa ke Guru (Ide Kelompok) */}
+          {/* Pindai QR Kamera Aktif */}
           <button
-            onClick={() => setIsCardModalOpen(true)}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 bg-white text-[#00B884] hover:bg-slate-50 active:scale-[0.98] font-bold text-xs rounded-2xl shadow-lg transition-all"
+            onClick={() => handleOpenScannerForSession()}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 bg-white text-[#00B884] hover:bg-slate-50 active:scale-[0.98] font-bold text-xs rounded-2xl shadow-lg transition-all cursor-pointer"
+            title="Buka kamera perangkat untuk memindai QR Code guru pembina"
+          >
+            <Camera className="w-4 h-4 text-[#00B884]" />
+            <span>Pindai QR Presensi</span>
+          </button>
+
+          {/* Kartu QR Saya */}
+          <button
+            onClick={handleOpenCard}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3.5 bg-emerald-800/80 hover:bg-emerald-900 text-white font-bold text-xs rounded-2xl border border-white/20 transition-all cursor-pointer"
             title="Buka QR Code kartu siswa di layar HP untuk dipindai oleh Guru"
           >
             <QrCode className="w-4 h-4" />
-            <span>Kartu QR Saya (Tunjukkan ke Guru)</span>
+            <span>Kartu QR Saya</span>
           </button>
 
+          {/* Kartu Nilai (KHN) */}
           <button
-            onClick={() => setIsScannerOpen(true)}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3.5 bg-emerald-800/80 hover:bg-emerald-900 text-white font-bold text-xs rounded-2xl border border-white/20 transition-all"
-          >
-            <Camera className="w-4 h-4" />
-            <span>Pindai Layar Guru</span>
-          </button>
-
-          <button
-            onClick={() => setIsKhnOpen(true)}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3.5 bg-emerald-800/60 hover:bg-emerald-800/80 text-white text-xs font-semibold rounded-2xl border border-white/20 transition-all"
+            onClick={handleOpenKhn}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3.5 bg-emerald-800/60 hover:bg-emerald-800/80 text-white text-xs font-semibold rounded-2xl border border-white/20 transition-all cursor-pointer"
           >
             <Award className="w-4 h-4" />
-            <span>Kartu Nilai (KHN)</span>
+            <span>Nilai Rapor (KHN)</span>
           </button>
         </div>
-
-        {/* Decorative background circle */}
-        <div className="absolute right-0 -bottom-10 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none" />
       </div>
 
-      {/* Grid: Eskul yang diikuti (Kartu Persentase Kehadiran Personal) */}
-      <div>
-        <h2 className="text-lg font-bold text-slate-800 mb-3">
-          Ekstrakurikuler yang Anda Ikuti
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {enrolledEskuls.map((eskul) => (
-            <div
-              key={eskul.id}
-              className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-start justify-between mb-3">
-                  <span className="px-2.5 py-1 bg-emerald-50 text-[#00B884] text-xs font-semibold rounded-full border border-emerald-100">
-                    {eskul.kategori}
-                  </span>
-                  <div className="text-right">
-                    <span className="text-xs text-slate-400">Kehadiran Pribadi</span>
-                    <div className="text-lg font-extrabold text-[#00B884]">
-                      {currentStudent.kehadiranRataRata}%
-                    </div>
-                  </div>
-                </div>
-
-                <h3 className="text-base font-bold text-slate-800">
-                  {eskul.namaEskul}
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Pembina: {eskul.pembinaNama}
-                </p>
-
-                <div className="mt-4 space-y-1.5 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Setiap {eskul.jadwalHari}, {eskul.jamMulai} - {eskul.jamSelesai} WIB</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                    <span>{eskul.lokasi}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Progress bar */}
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-xs text-slate-500">Target Semester: 16 Pertemuan</span>
-                <span className="text-xs font-bold text-emerald-600">14 / 16 Hadir</span>
-              </div>
+      {/* 2. EKSTRAKURIKULER YANG ANDA IKUTI (Format List Jelas, Informatif & Rapi) */}
+      <div className="space-y-3.5">
+        <div className="flex items-center justify-between pb-1">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-[#00B884] flex items-center justify-center">
+              <Award className="w-4 h-4 text-[#00B884]" />
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Sesi Eskul Hari Ini & Notifikasi Sesi */}
-      <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-bold text-slate-800">
-            Jadwal & Sesi Presensi Hari Ini
-          </h2>
-          <span className="text-xs text-slate-400">
-            Kamis, 24 September 2026
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-slate-800">
+                Ekstrakurikuler yang Anda Ikuti
+              </h2>
+              <p className="text-xs text-slate-400">
+                Daftar cabang eskul aktif, guru pembina, jadwal rutin, dan persentase kehadiran
+              </p>
+            </div>
+          </div>
+          <span className="text-xs text-[#00B884] font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 shrink-0">
+            {enrolledEskuls.length} Cabang Aktif
           </span>
         </div>
 
-        <div className="space-y-3">
-          {todaySessions.map((session) => (
-            <div
-              key={session.id}
-              className="p-4 rounded-2xl border border-slate-200/80 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-            >
-              <div className="flex items-center gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-[#00B884]/10 text-[#00B884] flex items-center justify-center shrink-0">
-                  <QrCode className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-slate-800">{session.namaEskul}</h3>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      session.status === 'BERLANGSUNG'
-                        ? 'bg-emerald-100 text-emerald-800 animate-pulse'
-                        : session.status === 'BELUM_DIMULAI'
-                        ? 'bg-amber-100 text-amber-800'
-                        : 'bg-slate-200 text-slate-600'
-                    }`}>
-                      {session.status === 'BERLANGSUNG' ? 'Presensi Dibuka' : session.status}
-                    </span>
-                  </div>
-                  <div className="text-xs text-slate-500 mt-0.5">
-                    {session.jamMulai} - {session.jamSelesai} WIB • {session.lokasi}
-                  </div>
-                  {session.judul && (
-                    <div className="mt-1.5 text-xs font-bold text-emerald-900 bg-emerald-50/90 px-2.5 py-1 rounded-lg border border-emerald-200/80 inline-block">
-                      🎯 Topik: {session.judul}
-                    </div>
-                  )}
-                  {session.deskripsi && (
-                    <p className="text-[11px] text-slate-600 mt-1 line-clamp-2 leading-relaxed">
-                      {session.deskripsi}
-                    </p>
-                  )}
-                </div>
-              </div>
+        {enrolledEskuls.length > 0 ? (
+          <div className="space-y-3">
+            {enrolledEskuls.map((eskul) => {
+              // Hitung persentase kehadiran eskul ini
+              const eskulRecords = attendanceHistory.filter(
+                (h) => h.eskulId === eskul.id || h.namaEskul?.toLowerCase() === eskul.namaEskul?.toLowerCase()
+              );
+              const attendedCount = eskulRecords.filter((h) => h.status === 'HADIR').length;
+              const attendancePercent = eskulRecords.length > 0
+                ? Math.round((attendedCount / eskulRecords.length) * 100)
+                : (currentStudent.kehadiranRataRata || 96);
 
-              {session.status === 'BERLANGSUNG' ? (
-                <button
-                  onClick={() => setIsScannerOpen(true)}
-                  className="px-4 py-2 bg-[#00B884] hover:bg-[#009e70] active:scale-[0.98] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5"
+              const catBadgeStyle = getCategoryBadge(eskul.kategori);
+
+              return (
+                <div
+                  key={eskul.id}
+                  onClick={() => onNavigateToHistory && onNavigateToHistory(eskul.id)}
+                  className={`bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs hover:border-emerald-400 hover:shadow-xs transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+                    onNavigateToHistory ? 'cursor-pointer group' : ''
+                  }`}
                 >
-                  <Camera className="w-3.5 h-3.5" />
-                  <span>Pindai QR Sekarang</span>
-                </button>
-              ) : (
-                <span className="text-xs text-slate-400 font-medium">
-                  {session.status === 'BELUM_DIMULAI' ? 'Menunggu Pembina Membuka Sesi' : 'Sesi Selesai'}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
+                  {/* Sisi Kiri: Informasi Eskul, Pembina, Jadwal & Lokasi */}
+                  <div className="flex items-start gap-4 min-w-0 flex-1">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#00B884] flex items-center justify-center shrink-0 border border-emerald-100 font-bold shadow-2xs group-hover:scale-105 group-hover:bg-[#00B884] group-hover:text-white transition-all">
+                      <Award className="w-6 h-6 transition-colors" />
+                    </div>
+
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-base sm:text-lg font-extrabold text-slate-800 tracking-tight group-hover:text-emerald-700 transition-colors">
+                          {eskul.namaEskul}
+                        </h3>
+                        <span className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border ${catBadgeStyle}`}>
+                          {eskul.kategori}
+                        </span>
+                      </div>
+
+                      {/* Dibina oleh siapa */}
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-slate-400 font-medium">Dibina oleh:</span>
+                        <span className="font-bold text-slate-700 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200/60 inline-flex items-center gap-1.5">
+                          <UserCheck className="w-3.5 h-3.5 text-[#00B884]" />
+                          <span>{eskul.pembinaNama || 'Guru Pembina'}</span>
+                        </span>
+                      </div>
+
+                      {/* Jadwal & Lokasi */}
+                      <div className="flex items-center gap-3.5 flex-wrap text-xs text-slate-500 pt-0.5">
+                        <div className="flex items-center gap-1.5 font-semibold text-slate-700">
+                          <Calendar className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>Setiap {eskul.jadwalHari || '-'}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span>{eskul.jamMulai || '15:30'} - {eskul.jamSelesai || '17:00'} WIB</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-slate-400">
+                          <MapPin className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate max-w-[240px]">{eskul.lokasi}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sisi Kanan: Persenan Kehadiran (HANYA text 'Kehadiran' dan persenannya, TANPA tulisan 'pribadi') */}
+                  <div className="flex md:flex-col items-center md:items-end justify-between md:justify-center gap-2 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100 shrink-0 md:min-w-[150px]">
+                    <div className="text-left md:text-right">
+                      <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                        Kehadiran
+                      </span>
+                      <div className="text-2xl sm:text-3xl font-black text-[#00B884] leading-tight">
+                        {attendancePercent}%
+                      </div>
+                    </div>
+                    <div className="w-28 sm:w-32 bg-slate-100 rounded-full h-2 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${
+                          attendancePercent >= 90 ? 'bg-[#00B884]' : attendancePercent >= 75 ? 'bg-amber-500' : 'bg-rose-500'
+                        }`}
+                        style={{ width: `${Math.min(attendancePercent, 100)}%` }}
+                      />
+                    </div>
+                    {onNavigateToHistory && (
+                      <span className="text-[11px] font-bold text-[#00B884] group-hover:underline flex items-center gap-0.5 mt-1">
+                        <span>Lihat Detail & Materi</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="p-8 text-center text-slate-400 bg-white rounded-2xl border border-slate-200/80">
+            <Award className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+            <p className="text-sm font-bold text-slate-700">Belum terdaftar di ekstrakurikuler</p>
+            <p className="text-xs text-slate-400 mt-1">Anda belum terdaftar dalam cabang kegiatan ekstrakurikuler apapun.</p>
+          </div>
+        )}
       </div>
 
-      {/* Riwayat Presensi Personal */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-          <h2 className="text-base font-bold text-slate-800">
-            Riwayat Presensi Personal
-          </h2>
-          <span className="text-xs text-slate-400">Log Verifikasi TOTP</span>
-        </div>
-
-        <div className="divide-y divide-slate-100 text-xs">
-          {attendanceHistory.map((item) => (
-            <div key={item.id} className="p-4 flex items-center justify-between hover:bg-slate-50/70 transition-colors">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="w-4 h-4" />
-                </div>
-                <div>
-                  <div className="font-bold text-slate-800">{item.namaEskul}</div>
-                  <div className="text-slate-400 font-mono">Pukul {item.waktuScan} WIB • {item.metode}</div>
-                </div>
-              </div>
-
-              <div className="text-right">
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  {item.status}
-                </span>
-                <div className="text-[10px] text-slate-400 mt-1">
-                  {item.deviceInfo || 'Radius Valid'}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Modals */}
+      {/* Real Camera QR Scanner Modal */}
       <QrScannerModal
         isOpen={isScannerOpen}
         onClose={() => setIsScannerOpen(false)}
         onSuccessScan={onNewAttendance}
-        currentActiveToken="SMK-AMANAH-DEMO-TOKEN"
+        currentActiveToken={selectedSessionToken}
+        studentId={currentStudent.id}
+        studentName={currentStudent.namaLengkap}
       />
 
+      {/* Kartu Hasil Nilai (KHN) Modal Fallback */}
       <KartuHasilNilaiModal
         isOpen={isKhnOpen}
         onClose={() => setIsKhnOpen(false)}

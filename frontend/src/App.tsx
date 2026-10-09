@@ -15,6 +15,8 @@ import { PenilaianPage } from './components/guru/PenilaianPage';
 import { PembinaDashboard } from './components/guru/PembinaDashboard';
 import { WaliKelasDashboard } from './components/dashboard/WaliKelasDashboard';
 import { SiswaDashboard } from './components/siswa/SiswaDashboard';
+import { KartuHasilNilaiPage } from './components/siswa/KartuHasilNilaiPage';
+import { RiwayatEskulSiswaPage } from './components/siswa/RiwayatEskulSiswaPage';
 import { AddEskulModal } from './components/modals/AddEskulModal';
 import { AddPembinaModal } from './components/modals/AddPembinaModal';
 import { ImportDataModal } from './components/modals/ImportDataModal';
@@ -37,7 +39,6 @@ import { LoginPage } from './components/auth/LoginPage';
 import { ValidasiPendaftaranSiswa } from './components/dashboard/ValidasiPendaftaranSiswa';
 import { ValidasiJadwalView } from './components/dashboard/ValidasiJadwalView';
 import { PendaftaranSiswaPembina } from './components/guru/PendaftaranSiswaPembina';
-import { MultiStageAbsensi } from './components/guru/MultiStageAbsensi';
 
 import { 
   CURRENT_USER, 
@@ -55,8 +56,8 @@ const ALLOWED_TABS_BY_ROLE: Record<Role, string[]> = {
   ADMIN: [
     'beranda', 'eskul', 'pembina', 'guru', 'kelas', 'siswa', 'laporan', 
     'dynamic-qr', 'scanner-guru', 'live-presensi', 'penilaian', 
-    'scanner-siswa', 'kartu-siswa', 'khn-siswa', 'pengaturan',
-    'validasi-jadwal', 'validasi-pendaftaran', 'pembina-pendaftaran', 'alur-absensi'
+    'scanner-siswa', 'kartu-siswa', 'khn-siswa', 'riwayat-eskul-siswa', 'pengaturan',
+    'validasi-jadwal', 'validasi-pendaftaran', 'pembina-pendaftaran'
   ],
   KOORDINATOR: [
     'beranda', 'eskul', 'pembina', 'guru', 'kelas', 'siswa', 'laporan', 
@@ -66,10 +67,10 @@ const ALLOWED_TABS_BY_ROLE: Record<Role, string[]> = {
   PEMBINA: [
     'beranda', 'siswa', 'laporan', 'dynamic-qr', 'scanner-guru', 
     'live-presensi', 'penilaian', 'pengaturan',
-    'pembina-pendaftaran', 'alur-absensi', 'validasi-jadwal'
+    'pembina-pendaftaran', 'validasi-jadwal'
   ],
   WALI_KELAS: ['beranda', 'siswa', 'laporan', 'penilaian', 'pengaturan'],
-  SISWA: ['beranda', 'scanner-siswa', 'kartu-siswa', 'khn-siswa', 'pengaturan'],
+  SISWA: ['beranda', 'riwayat-eskul-siswa', 'scanner-siswa', 'kartu-siswa', 'khn-siswa', 'pengaturan'],
 };
 
 export function App() {
@@ -84,8 +85,8 @@ export function App() {
         // fallback
       }
     }
-    // Default ke Administrator Sistem agar langsung siap ditest
-    return CURRENT_USER;
+    // Sesi baru wajib login terlebih dahulu
+    return null;
   });
 
   const [currentRole, setCurrentRole] = useState<Role>(() => {
@@ -120,6 +121,19 @@ export function App() {
     return (jadwalProposals || []).filter(p => p.status === 'MENUNGGU_VALIDASI').length;
   }, [jadwalProposals]);
 
+  // Current logged in student profile
+  const currentStudentProfile = useMemo(() => {
+    if (currentUser?.role === 'SISWA') {
+      const match = students.find(s => 
+        s.nis === currentUser.username || 
+        s.nomorInduk === currentUser.nomorInduk || 
+        s.id === currentUser.id
+      );
+      if (match) return match;
+    }
+    return students[0] || null;
+  }, [currentUser, students]);
+
   // Modals state
   const [isAddEskulOpen, setIsAddEskulOpen] = useState(false);
   const [isEditEskulOpen, setIsEditEskulOpen] = useState(false);
@@ -144,6 +158,7 @@ export function App() {
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
+  const [selectedEskulHistoryId, setSelectedEskulHistoryId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -239,7 +254,7 @@ export function App() {
 
       // Fetch summary badge for pending pendaftaran
       try {
-        const pendaftaranSummary = await fetch('http://localhost:5000/api/pendaftaran/summary');
+        const pendaftaranSummary = await fetch('/api/pendaftaran/summary');
         if (pendaftaranSummary.ok) {
           const pJson = await pendaftaranSummary.json();
           if (pJson.success && pJson.data) {
@@ -571,8 +586,21 @@ export function App() {
     alasan: string;
   }) => {
     try {
-      const created = await api.createJadwalProposal(proposalData);
-      setJadwalProposals(prev => [created, ...prev]);
+      const targetEskul = eskulList.find(e => e.id === proposalData.eskulId);
+      const effectivePembinaId = proposalData.pembinaId || targetEskul?.pembinaId || guruList[0]?.id || 'gur-01';
+
+      const created = await api.createJadwalProposal({
+        ...proposalData,
+        pembinaId: effectivePembinaId,
+      });
+
+      // Synchronize latest proposals from backend immediately
+      const latestProposals = await api.getJadwalProposals();
+      if (latestProposals && latestProposals.length > 0) {
+        setJadwalProposals(latestProposals);
+      } else {
+        setJadwalProposals(prev => [created, ...prev.filter(p => p.id !== created.id)]);
+      }
       setIsAjukanJadwalModalOpen(false);
       showToast('Pengajuan perubahan jadwal berhasil dikirimkan ke Koordinator!');
     } catch (err) {
@@ -740,15 +768,34 @@ export function App() {
     showToast(`Status presensi diperbarui: ${newStatus}`);
   };
 
-  const handleStudentScanned = (studentName: string, eskulName: string) => {
-    const student = students[0];
+  const handleStudentScanned = async (studentName: string, eskulName: string, rawToken?: string) => {
+    const student = currentStudentProfile || students[0];
+
+    // Attempt backend registration first if raw QR token is present
+    if (rawToken && student) {
+      try {
+        await api.scanPresensi(
+          rawToken,
+          student.nis || student.nomorInduk || student.id,
+          'Kamera Siswa (Live Web Scan)',
+          'DYNAMIC_QR'
+        );
+        await loadBackendData();
+        showToast(`Presensi Anda di ${eskulName || 'Ekstrakurikuler'} berhasil diverifikasi & tercatat di basis data!`);
+        return;
+      } catch (err: any) {
+        console.warn('Backend scan failed, using fallback:', err);
+      }
+    }
+
     const newRecord: PresensiRecord = {
       id: `log-${Date.now()}`,
       sesiId: currentSession.id,
+      eskulId: currentSession.eskulId,
       namaEskul: eskulName || currentSession.namaEskul,
-      siswaId: student?.id || 'sis-01',
+      siswaId: student?.id || 'sis-001',
       namaSiswa: studentName || student?.namaLengkap || 'Siswa',
-      nisn: student?.nis || student?.nomorInduk || '0061928374',
+      nisn: student?.nis || student?.nomorInduk || '241011400049',
       kelas: student?.kelas || 'X RPL 1',
       waktuScan: new Date().toTimeString().slice(0, 8),
       status: 'HADIR',
@@ -756,15 +803,17 @@ export function App() {
       deviceInfo: 'Perangkat Siswa (GPS Valid)',
     };
 
-    setPresensiLog([newRecord, ...presensiLog]);
+    setPresensiLog(prev => [newRecord, ...prev]);
     showToast(`Presensi Anda di ${eskulName || 'Ekstrakurikuler'} berhasil diverifikasi!`);
   };
 
-  const handleTeacherRecordAttendance = (student: StudentProfile) => {
+  const handleTeacherRecordAttendance = async (student: StudentProfile, session?: SesiPertemuan) => {
+    const targetSession = session || (isPembina ? activeSessionForPembina : currentSession);
     const newRecord: PresensiRecord = {
       id: `log-${Date.now()}`,
-      sesiId: currentSession.id,
-      namaEskul: currentSession.namaEskul,
+      sesiId: targetSession.id,
+      eskulId: targetSession.eskulId,
+      namaEskul: targetSession.namaEskul,
       siswaId: student.id,
       namaSiswa: student.namaLengkap,
       nisn: student.nis || student.nomorInduk,
@@ -775,10 +824,25 @@ export function App() {
       deviceInfo: 'Kamera Scanner Pembina (ID Card QR)',
     };
 
-    setPresensiLog([newRecord, ...presensiLog]);
-    const updatedSession = { ...currentSession, totalHadir: currentSession.totalHadir + 1 };
+    setPresensiLog(prev => [newRecord, ...prev.filter(p => !(p.sesiId === targetSession.id && p.siswaId === student.id))]);
+    const updatedSession = { ...targetSession, totalHadir: (targetSession.totalHadir || 0) + 1 };
     setCurrentSession(updatedSession);
     setSessions(sessions.map(s => s.id === updatedSession.id ? updatedSession : s));
+
+    // Langsung catat ke basis data backend agar data tersimpan permanen
+    try {
+      await api.scanStudentCard({
+        sesiId: targetSession.id,
+        studentIdOrNis: student.nis || student.nomorInduk || student.id,
+        pembinaId: currentUser?.id,
+        nilaiKeaktifan: 85,
+        ratingKeaktifan: 'Baik',
+      });
+      await loadBackendData();
+    } catch (err) {
+      console.warn('Backend scanStudentCard sync error:', err);
+    }
+
     showToast(`Presensi Terverifikasi: ${student.namaLengkap} (HADIR)`);
   };
 
@@ -858,6 +922,10 @@ export function App() {
         onToggleDesktop={() => setIsDesktopSidebarOpen(prev => !prev)}
         pendingJadwalCount={pendingJadwalCount}
         pendingPendaftaranCount={pendingPendaftaranCount}
+        onOpenAjukanJadwalModal={() => {
+          const defaultEskul = selectedEskulForJadwal || pembinaCoachedEskuls[0] || eskulList[0];
+          handleOpenAjukanJadwalModal(defaultEskul);
+        }}
       />
 
       {/* Main Content Area */}
@@ -969,9 +1037,15 @@ export function App() {
                       currentStudent={studentProfile}
                       enrolledEskuls={eskulList.filter(e => studentProfile?.enrolledEskulIds?.includes(e.id))}
                       todaySessions={sessions}
-                      attendanceHistory={presensiLog.filter(p => p.siswaId === studentProfile?.id || p.siswaId === 'usr-sis-01')}
+                      attendanceHistory={presensiLog.filter(p => p.siswaId === studentProfile?.id || p.siswaId === 'usr-sis-01' || p.siswaId === 'sis-001')}
                       penilaianRecords={penilaianList}
                       onNewAttendance={handleStudentScanned}
+                      onNavigateToKhn={() => setActiveTab('khn-siswa')}
+                      onNavigateToCard={() => setIsStudentCardModalOpen(true)}
+                      onNavigateToHistory={(eskulId) => {
+                        setSelectedEskulHistoryId(eskulId || null);
+                        setActiveTab('riwayat-eskul-siswa');
+                      }}
                     />
                   )
                 )}
@@ -1097,6 +1171,10 @@ export function App() {
                     onUpdateSessionAgenda={handleUpdateSessionAgenda}
                     coachedEskulIds={pembinaCoachedEskulIds}
                     currentRole={currentRole}
+                    currentUser={currentUser!}
+                    students={students}
+                    presensiLog={presensiLog}
+                    onRefreshData={loadBackendData}
                   />
                 )}
 
@@ -1104,18 +1182,28 @@ export function App() {
                 {activeTab === 'scanner-guru' && (
                   <TeacherStudentScanner
                     currentSession={isPembina ? activeSessionForPembina : currentSession}
+                    sessions={isPembina ? pembinaSessions : sessions}
+                    onSelectSession={(sess) => setCurrentSession(sess)}
                     students={students}
                     onRecordAttendance={handleTeacherRecordAttendance}
                     recentLogs={presensiLog.filter(p => p.sesiId === (isPembina ? activeSessionForPembina.id : currentSession.id))}
+                    currentUser={currentUser!}
+                    onRefreshData={loadBackendData}
                   />
                 )}
 
-                {/* 8. LIVE PRESENSI (Koordinator / Pembina) */}
+                {/* 8. LIVE PRESENSI / PRESENSI LANGSUNG (Koordinator / Pembina) */}
                 {activeTab === 'live-presensi' && (
                   <LiveAttendanceLog
                     logs={presensiLog}
+                    sessions={isPembina ? pembinaSessions : sessions}
+                    currentSession={isPembina ? activeSessionForPembina : currentSession}
+                    onSelectSession={(sess) => setCurrentSession(sess)}
+                    students={students}
+                    eskulList={isPembina ? pembinaCoachedEskuls : eskulList}
+                    currentUser={currentUser!}
                     onUpdateStatus={handleUpdateAttendanceStatus}
-                    onRefresh={() => showToast('Data presensi diperbarui secara langsung.')}
+                    onRefresh={loadBackendData}
                   />
                 )}
 
@@ -1143,18 +1231,17 @@ export function App() {
                     attendanceHistory={presensiLog.filter(p => p.siswaId === studentProfile?.id || p.siswaId === 'usr-sis-01')}
                     penilaianRecords={penilaianList}
                     onNewAttendance={handleStudentScanned}
+                    onNavigateToKhn={() => setActiveTab('khn-siswa')}
+                    onNavigateToCard={() => setIsStudentCardModalOpen(true)}
                   />
                 )}
 
                 {activeTab === 'khn-siswa' && (
-                  <SiswaDashboard
-                    initialOpenModal="khn"
-                    currentStudent={studentProfile}
+                  <KartuHasilNilaiPage
+                    student={studentProfile}
                     enrolledEskuls={eskulList.filter(e => studentProfile?.enrolledEskulIds?.includes(e.id))}
-                    todaySessions={sessions}
-                    attendanceHistory={presensiLog.filter(p => p.siswaId === studentProfile?.id || p.siswaId === 'usr-sis-01')}
                     penilaianRecords={penilaianList}
-                    onNewAttendance={handleStudentScanned}
+                    onBack={() => setActiveTab('beranda')}
                   />
                 )}
 
@@ -1167,6 +1254,24 @@ export function App() {
                     attendanceHistory={presensiLog.filter(p => p.siswaId === studentProfile?.id || p.siswaId === 'usr-sis-01')}
                     penilaianRecords={penilaianList}
                     onNewAttendance={handleStudentScanned}
+                    onNavigateToKhn={() => setActiveTab('khn-siswa')}
+                    onNavigateToCard={() => setIsStudentCardModalOpen(true)}
+                  />
+                )}
+
+                {/* 10.4 RIWAYAT EKSTRAKURIKULER (Siswa) */}
+                {activeTab === 'riwayat-eskul-siswa' && (
+                  <RiwayatEskulSiswaPage
+                    student={studentProfile}
+                    enrolledEskuls={eskulList.filter(e => studentProfile?.enrolledEskulIds?.includes(e.id))}
+                    sessions={sessions}
+                    attendanceHistory={presensiLog.filter(p => p.siswaId === studentProfile?.id || p.siswaId === 'usr-sis-01' || p.siswaId === 'sis-001')}
+                    jadwalProposals={jadwalProposals}
+                    initialSelectedEskulId={selectedEskulHistoryId}
+                    onBackToDashboard={() => {
+                      setSelectedEskulHistoryId(null);
+                      setActiveTab('beranda');
+                    }}
                   />
                 )}
 
@@ -1181,6 +1286,7 @@ export function App() {
                       proposals={jadwalProposals}
                       eskulList={eskulList}
                       onValidate={handleValidateJadwalProposal}
+                      onBack={() => setActiveTab('beranda')}
                     />
                   ) : (
                     <AccessDeniedCard onBack={() => setActiveTab('beranda')} />
@@ -1194,6 +1300,7 @@ export function App() {
                       currentUser={currentUser!}
                       eskulList={eskulList}
                       onRefreshData={loadBackendData}
+                      onBack={() => setActiveTab('beranda')}
                     />
                   ) : (
                     <AccessDeniedCard onBack={() => setActiveTab('beranda')} />
@@ -1213,25 +1320,7 @@ export function App() {
                   )
                 )}
 
-                {/* 15. ALUR PRESENSI 4-TAHAP PEMBINA (Pembina / Koordinator) */}
-                {activeTab === 'alur-absensi' && (
-                  (isPembina || isKoordinator) ? (
-                    <MultiStageAbsensi
-                      currentUser={currentUser!}
-                      coachedEskuls={pembinaCoachedEskuls.length > 0 ? pembinaCoachedEskuls : eskulList}
-                      sessions={isPembina ? pembinaSessions : sessions}
-                      students={students}
-                      onFinish={() => {
-                        loadBackendData();
-                        setActiveTab('live-presensi');
-                        showToast('Sesi absensi telah dikunci dan tersimpan sebagai riwayat permanen!');
-                      }}
-                      onRefreshData={loadBackendData}
-                    />
-                  ) : (
-                    <AccessDeniedCard onBack={() => setActiveTab('beranda')} />
-                  )
-                )}
+
               </>
             );
           })()}
@@ -1317,7 +1406,7 @@ export function App() {
       <StudentCardModal
         isOpen={isStudentCardModalOpen}
         onClose={() => setIsStudentCardModalOpen(false)}
-        student={students[0] || null}
+        student={currentStudentProfile}
         allStudents={students}
         eskulList={eskulList}
       />

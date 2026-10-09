@@ -1,0 +1,23 @@
+Error dibagian admin 
+1. Tulisan kapasitas siswa, yang saat dibuat eskul baru dan pada kapasitas kuota siswa ketika di hapus tersisa 0 dan 0 itu tidak bisa dihapus saat menulis dia tidak terhapus secara otomatis
+2. Error stuck di validasi pendaftaran eskul, tambahin tombol back atau kembali, 
+3. Tambahin tombol kembali dibagian validasi perubahan jadwal 
+4. Kurang di UX nya aja ini kurangi yang ui ux terutama pada bagian dashboard   dan form yang membuat pusing pengguna buat mudah melihat informasi yang penting sesuai kebutuhan user pada kelola eskul juga tolong buat kategori bentuk data seperti data pembina
+
+tambahan:
+- pilih kredensial jangan ada di halaman login
+- ajukan ganti jadwal 
+- gabisa submit presensi sebagai pembina (terjadi kesalahan koneksi server) 
+- pada waktu pindai tambahkan tanggal dan hari (log presensi)
+- filter tanggal dan hari (log presensi)
+- kehadiran terverifikasi di revisi
+
+
+- Pada validasi jaddwal tombol setuju jadwal dan tolak itu besarnya sama aja setengah setengah
+- saat diabsensi ddengan qr data tidak masuk atau tidak terabsensi
+- saat pertama kali masuk website bukan buka page login malah masuk langsung page admin
+
+pada user siswa:
+- hapus gampar pada kartu presensi dan hilangkan gambar tameng centang di kiri bawah, yang di tampilkan sisanya bagus tapi cukup tulisan aja gak usah ada hijau hijau pada ekstrakurikuler terdaftar
+- saat klik tombol cetak pada kartu presensi, dan saat pendetakan atau dalam masuk mode print dia malah ada 10. seharusnya cukup satu saja.
+- 

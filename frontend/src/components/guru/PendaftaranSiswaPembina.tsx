@@ -55,7 +55,7 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
     if (!selectedEskulId) return;
     setIsLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/pendaftaran?eskulId=${selectedEskulId}`);
+      const res = await fetch(`/api/pendaftaran?eskulId=${selectedEskulId}`);
       if (res.ok) {
         const json = await res.json();
         if (json.success && Array.isArray(json.data)) {
@@ -106,7 +106,7 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
     }
 
     try {
-      const res = await fetch('http://localhost:5000/api/pendaftaran/seleksi-pembina', {
+      const res = await fetch('/api/pendaftaran/seleksi-pembina', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -142,7 +142,7 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
     setActionLoading(true);
 
     try {
-      const res = await fetch('http://localhost:5000/api/pendaftaran/ajukan-koordinator', {
+      const res = await fetch('/api/pendaftaran/ajukan-koordinator', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

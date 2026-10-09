@@ -14,7 +14,7 @@ const API_BASE_URL = '/api';
 async function fetchWithFallback<T>(url: string, options?: RequestInit, fallbackData?: T): Promise<T> {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000);
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
 
     const userSession = typeof window !== 'undefined' ? localStorage.getItem('al_amanah_user_session') : null;
     const authToken = typeof window !== 'undefined' ? localStorage.getItem('al_amanah_auth_token') : null;
@@ -40,7 +40,16 @@ async function fetchWithFallback<T>(url: string, options?: RequestInit, fallback
     });
     clearTimeout(timeoutId);
 
-    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    if (!res.ok) {
+      let errorMsg = `HTTP error ${res.status}`;
+      try {
+        const errJson = await res.json();
+        if (errJson && errJson.message) errorMsg = errJson.message;
+      } catch {
+        // ignore json parse error
+      }
+      throw new Error(errorMsg);
+    }
     const json = await res.json();
     return json.data !== undefined ? json.data : json;
   } catch (err) {
@@ -265,6 +274,49 @@ export const api = {
     fetchWithFallback<PresensiRecord>(`/presensi/${id}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
+    }),
+  scanStudentCard: (data: {
+    sesiId: string;
+    studentIdOrNis: string;
+    pembinaId?: string;
+    nilaiKeaktifan?: number;
+    ratingKeaktifan?: string;
+  }) =>
+    fetchWithFallback<{ success: boolean; isDuplicate?: boolean; message: string; data?: any }>('/presensi/scan-student-card', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  finalizeSession: (id: string, data: {
+    pembuatId?: string;
+    judul?: string;
+    deskripsi?: string;
+    materi?: string;
+    attendanceList: Array<{
+      siswaId: string;
+      status: string;
+      metode?: string;
+      nilaiKeaktifan?: number;
+      ratingKeaktifan?: string;
+      keterangan?: string;
+      buktiSurat?: string;
+    }>;
+  }) =>
+    fetchWithFallback<{ success: boolean; message: string; data?: any }>(`/sessions/${id}/finalize`, {
+      method: 'POST',
+      body: JSON.stringify({
+        ...data,
+        kehadiran: data.attendanceList,
+      }),
+    }),
+  markHolidaySession: (data: {
+    eskulId: string;
+    pembuatId?: string;
+    tanggal?: string;
+    alasanLibur: string;
+  }) =>
+    fetchWithFallback<{ success: boolean; message: string; data?: any }>('/sessions/mark-holiday', {
+      method: 'POST',
+      body: JSON.stringify(data),
     }),
 
   // Penilaian Rapor

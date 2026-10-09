@@ -1,6 +1,6 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { X, Printer, Download, ShieldCheck, Sparkles, Smartphone, Award } from 'lucide-react';
+import { X, Printer, ShieldCheck, Smartphone, Award, User, CheckCircle2 } from 'lucide-react';
 import { StudentProfile, Eskul } from '../../types';
 import { SchoolLogo } from '../SchoolLogo';
 import { UserAvatar } from '../common/UserAvatar';
@@ -31,31 +31,31 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({
   const studentsToRender = isBatchMode ? allStudents : (student ? [student] : []);
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-4xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-3xl max-w-4xl w-full p-5 sm:p-7 shadow-2xl border border-slate-200/90 max-h-[94vh] flex flex-col animate-in fade-in zoom-in-95 duration-200">
         
-        {/* Modal Controls (Hidden when printing via @media print) */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0 print:hidden">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-emerald-50 text-[#00B884] flex items-center justify-center">
-              <Award className="w-4 h-4" />
+        {/* Modal Controls (Hidden on print) */}
+        <div className="flex items-center justify-between pb-4 border-b border-slate-200 shrink-0 print:hidden">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-[#00B884] flex items-center justify-center border border-emerald-100">
+              <Award className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-slate-800 text-base">
-                {isBatchMode ? `Cetak Massal Kartu QR Siswa (${allStudents.length} Siswa)` : 'Kartu Presensi Siswa Ber-QR Code'}
+              <h3 className="font-extrabold text-slate-900 text-base">
+                {isBatchMode ? `Cetak Massal Kartu Presensi Siswa (${allStudents.length} Siswa)` : 'Kartu Presensi & Identitas Digital Siswa'}
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 {isBatchMode 
-                  ? 'Format lembar cetak A4 siap cetak & laminasi untuk seluruh siswa.' 
-                  : 'Bisa langsung ditunjukkan dari layar HP siswa atau dicetak/disimpan ke PDF.'}
+                  ? 'Format lembar cetak siap potong & laminasi untuk seluruh siswa.' 
+                  : 'Bisa ditunjukkan dari layar ponsel kepada guru pembina atau dicetak ke PDF.'}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <button
               onClick={handlePrint}
-              className="flex items-center gap-2 px-4 py-2 bg-[#00B884] hover:bg-[#009e70] active:scale-[0.98] text-white font-semibold text-xs rounded-xl shadow-sm transition-all"
+              className="flex items-center gap-2 px-4 py-2 bg-[#00B884] hover:bg-[#009e70] active:scale-[0.98] text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
             >
               <Printer className="w-4 h-4" />
               <span>Cetak / Simpan PDF</span>
@@ -63,7 +63,8 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({
 
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center transition-colors"
+              aria-label="Tutup Kartu"
+              className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 hover:bg-slate-200 flex items-center justify-center transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -73,114 +74,134 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({
         {/* Printable Cards Area */}
         <div className="my-4 overflow-y-auto flex-1 pr-1">
           {/* Instructions Banner (hidden on print) */}
-          <div className="bg-emerald-50/80 border border-emerald-200/80 p-3 rounded-2xl mb-5 flex items-center justify-between gap-3 text-xs text-emerald-900 print:hidden">
-            <div className="flex items-center gap-2">
-              <Smartphone className="w-4 h-4 text-emerald-600 shrink-0" />
+          <div className="bg-emerald-50/90 border border-emerald-200 p-3 rounded-2xl mb-4 flex items-center justify-between gap-3 text-xs text-emerald-900 print:hidden">
+            <div className="flex items-center gap-2.5">
+              <Smartphone className="w-4 h-4 text-[#00B884] shrink-0" />
               <span>
-                <strong>Dua Cara Penggunaan:</strong> Siswa bisa tangkapan layar/buka kartu ini di HP untuk dipindai guru, ATAU dicetak dalam bentuk Kartu Fisik (ukuran saku).
+                <strong>Panduan:</strong> Tunjukkan QR Code pada kartu ini kepada Guru Pembina saat presensi tatap muka, atau simpan tangkapan layar di galeri ponsel Anda.
               </span>
             </div>
           </div>
 
-          {/* Cards Grid: 1 or 2 per row for comfortable viewing & printing */}
+          {/* Cards Grid */}
           <div className={`grid gap-6 ${isBatchMode ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 max-w-md mx-auto'}`}>
             {studentsToRender.map((stu) => {
-              const enrolledEskuls = eskulList.filter((e) => stu.enrolledEskulIds.includes(e.id));
-              // Token format containing student ID and unique verification payload
-              const studentQrPayload = `SMK-AMANAH:STUDENT:${stu.nomorInduk}:${stu.id}:2026`;
+              const enrolledEskuls = eskulList.filter((e) => stu.enrolledEskulIds && stu.enrolledEskulIds.includes(e.id));
+              const studentQrPayload = `SMK-AMANAH:STUDENT:${stu.nis || stu.nomorInduk || stu.id}:${stu.id}:2026`;
 
               return (
                 <div
                   key={stu.id}
-                  className="bg-white rounded-3xl border-2 border-emerald-600/30 shadow-md p-5 flex flex-col justify-between relative overflow-hidden break-inside-avoid print:border-emerald-600 print:shadow-none"
-                  style={{ minHeight: '340px' }}
+                  className="bg-white rounded-2xl border-2 border-emerald-700/40 shadow-sm p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden break-inside-avoid print:border-emerald-700 print:shadow-none"
+                  style={{ minHeight: '330px' }}
                 >
-                  {/* Decorative background curves */}
-                  <div className="absolute -top-12 -right-12 w-32 h-32 bg-[#00B884]/10 rounded-full blur-xl pointer-events-none" />
-                  <div className="absolute -bottom-10 -left-10 w-28 h-28 bg-[#00B884]/5 rounded-full blur-xl pointer-events-none" />
+                  {/* Top Color Accent Stripe */}
+                  <div className="absolute top-0 left-0 right-0 h-1.5 bg-[#00B884]" />
 
-                  {/* Card Header: School Crest */}
-                  <div className="flex items-center justify-between border-b-2 border-emerald-500/20 pb-3 mb-3">
-                    <SchoolLogo size="sm" showText={true} />
+                  {/* Card Header: Official School Header */}
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-3 pt-1">
+                    <div className="flex items-center gap-2.5">
+                      <img 
+                        src="/logo-smk.png" 
+                        alt="Logo SMK Al Amanah" 
+                        className="w-10 h-10 object-contain shrink-0" 
+                      />
+                      <div>
+                        <span className="text-[10px] font-extrabold uppercase text-[#00B884] tracking-wider block">
+                          SMK AL AMANAH
+                        </span>
+                        <h4 className="text-xs font-bold text-slate-800 leading-tight">
+                          KARTU PRESENSI DIGITAL
+                        </h4>
+                        <span className="text-[9px] text-slate-500 font-medium block">
+                          Kota Tangerang Selatan
+                        </span>
+                      </div>
+                    </div>
+
                     <div className="text-right">
-                      <span className="text-[9px] uppercase font-extrabold text-[#00B884] block tracking-wider">
-                        KARTU PRESENSI
-                      </span>
-                      <span className="text-[8px] font-bold text-slate-400 block">
+                      <span className="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 inline-block font-mono">
                         TP 2026/2027
                       </span>
                     </div>
                   </div>
 
-                  {/* Card Body: Student Info + QR Code */}
-                  <div className="flex items-center gap-4 my-auto">
-                    {/* Left: Avatar & Info */}
+                  {/* Card Body: Student Photo + Info + QR Code */}
+                  <div className="flex items-center gap-3.5 my-auto">
+                    {/* Left: Avatar & Metadata */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2.5 mb-2">
+                      <div className="flex items-center gap-2.5 mb-2.5">
                         <UserAvatar
                           name={stu.namaLengkap}
-                          className="w-12 h-12 rounded-2xl ring-2 ring-[#00B884] shadow-xs shrink-0 text-sm font-extrabold"
+                          className="w-12 h-12 rounded-xl ring-2 ring-[#00B884] shadow-xs shrink-0 text-sm font-extrabold"
                         />
                         <div className="min-w-0">
-                          <h4 className="font-extrabold text-sm text-slate-800 leading-tight truncate">
+                          <h5 className="font-extrabold text-sm text-slate-900 leading-tight truncate">
                             {stu.namaLengkap}
-                          </h4>
-                          <span className="inline-block mt-0.5 px-2 py-0.5 bg-slate-100 text-slate-600 font-mono text-[10px] font-bold rounded-md">
-                            {stu.kelas}
-                          </span>
+                          </h5>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="px-1.5 py-0.2 bg-slate-100 text-slate-700 font-mono text-[10px] font-bold rounded">
+                              {stu.kelas}
+                            </span>
+                            <span className="text-[10px] text-emerald-700 font-semibold">
+                              {stu.statusAktif ? 'Siswa Aktif' : 'Non-Aktif'}
+                            </span>
+                          </div>
                         </div>
                       </div>
 
                       <div className="space-y-1 text-xs">
-                        <div className="text-[11px] text-slate-500">
-                          <span>NISN: </span>
-                          <strong className="font-mono text-slate-800">{stu.nomorInduk}</strong>
+                        <div className="text-[11px] text-slate-600 flex items-center justify-between">
+                          <span className="text-slate-400">NIS / NISN:</span>
+                          <strong className="font-mono text-slate-800">
+                            {stu.nis || stu.nomorInduk || '-'} / {stu.nisn || stu.nis || '-'}
+                          </strong>
                         </div>
 
-                        {/* Eskul Badges */}
-                        <div className="mt-2">
-                          <span className="text-[9px] text-slate-400 block uppercase font-bold mb-1">
-                            Ekstrakurikuler:
+                        {/* Ekstrakurikuler yang Diikuti */}
+                        <div className="pt-1.5">
+                          <span className="text-[9px] text-slate-400 uppercase font-bold block mb-1">
+                            Ekstrakurikuler Terdaftar:
                           </span>
                           <div className="flex flex-wrap gap-1">
                             {enrolledEskuls.length > 0 ? (
                               enrolledEskuls.map((e) => (
                                 <span
                                   key={e.id}
-                                  className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-[#00B884] border border-emerald-200"
+                                  className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-[#00B884] border border-emerald-200"
                                 >
                                   {e.namaEskul}
                                 </span>
                               ))
                             ) : (
-                              <span className="text-[10px] text-slate-400 italic">Anggota Umum</span>
+                              <span className="text-[10px] text-slate-500 italic">Siswa Terdaftar</span>
                             )}
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Right: High-Res QR Code */}
-                    <div className="bg-white p-2.5 rounded-2xl border-2 border-emerald-500/30 shadow-xs flex flex-col items-center shrink-0">
+                    {/* Right: High-Resolution Clean QR Code */}
+                    <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-2xs flex flex-col items-center shrink-0">
                       <QRCodeSVG
                         value={studentQrPayload}
                         size={105}
                         level="H"
                         includeMargin={false}
                       />
-                      <span className="text-[8px] font-mono font-bold text-slate-400 mt-1.5 uppercase tracking-tighter">
-                        PINDAI UNTUK HADIR
+                      <span className="text-[8px] font-mono font-bold text-slate-500 mt-1 uppercase tracking-tighter">
+                        PINDAI KEHADIRAN
                       </span>
                     </div>
                   </div>
 
-                  {/* Card Footer: Security Watermark & Signature line */}
-                  <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[9px] text-slate-400">
-                    <div className="flex items-center gap-1 font-semibold text-emerald-700">
-                      <ShieldCheck className="w-3 h-3 text-[#00B884]" />
+                  {/* Card Footer: Official Security Watermark */}
+                  <div className="mt-3 pt-2 border-t border-slate-200 flex items-center justify-between text-[9px] text-slate-500">
+                    <div className="flex items-center gap-1 font-semibold text-slate-600">
+                      <ShieldCheck className="w-3.5 h-3.5 text-[#00B884]" />
                       <span>Sistem Presensi Resmi SMK Al Amanah</span>
                     </div>
-                    <span className="font-mono text-[8px] text-slate-300">
+                    <span className="font-mono text-[9px] text-slate-400 font-semibold">
                       ID: {stu.id.slice(-6).toUpperCase()}
                     </span>
                   </div>
@@ -190,12 +211,12 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({
           </div>
         </div>
 
-        {/* Modal Bottom note */}
-        <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400 print:hidden shrink-0">
-          <span>Gunakan kertas tebal (Art Paper 260gr) atau laminasi untuk kartu fisik tahan lama.</span>
+        {/* Modal Bottom footer */}
+        <div className="pt-3 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 print:hidden shrink-0">
+          <span>Format resmi siap cetak untuk kartu fisik (ukuran ID Card) atau tampilan layar ponsel.</span>
           <button
             onClick={onClose}
-            className="text-xs font-semibold text-slate-600 hover:text-slate-900"
+            className="text-xs font-bold text-slate-700 hover:text-slate-900 cursor-pointer"
           >
             Tutup Pratinjau
           </button>

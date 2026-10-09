@@ -616,8 +616,8 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                               {student.jenisKelamin && (
                                 <span className={`text-[10px] px-1.5 py-0.2 rounded font-semibold ${
                                   student.jenisKelamin === 'P' || student.jenisKelamin === 'Perempuan'
-                                    ? 'bg-pink-50 text-pink-700 border border-pink-200'
-                                    : 'bg-blue-50 text-blue-700 border border-blue-200'
+                                    ? 'bg-amber-50 text-amber-800 border border-amber-200/80'
+                                    : 'bg-slate-100 text-slate-700 border border-slate-200/80'
                                 }`}>
                                   {student.jenisKelamin.toString().toUpperCase().startsWith('P') ? 'P' : 'L'}
                                 </span>

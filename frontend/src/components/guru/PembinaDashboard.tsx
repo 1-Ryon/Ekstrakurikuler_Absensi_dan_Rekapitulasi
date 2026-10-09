@@ -362,14 +362,14 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
 
           {/* Action Callout Button */}
           <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0 justify-center">
-            {/* 1. Alur Presensi 4-Tahap (Utama & Resmi) */}
+            {/* 1. Mulai Sesi QR Proyektor */}
             <button
               type="button"
-              onClick={() => onNavigate('alur-absensi')}
+              onClick={() => onNavigate('dynamic-qr')}
               className="flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-emerald-600 via-[#00B884] to-teal-600 hover:from-emerald-700 hover:to-teal-700 active:scale-[0.98] text-white font-bold text-xs rounded-2xl shadow-md transition-all cursor-pointer"
             >
-              <CheckCircle2 className="w-4 h-4 text-white" />
-              <span>Alur Presensi 4-Tahap (Resmi)</span>
+              <QrCode className="w-4 h-4 text-white" />
+              <span>Buka QR Proyektor (15s)</span>
             </button>
 
             {/* 2. Seleksi & Pendaftaran Siswa */}

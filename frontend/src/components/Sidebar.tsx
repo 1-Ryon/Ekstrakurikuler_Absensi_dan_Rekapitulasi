@@ -43,7 +43,7 @@ export type NavItemKey =
   | 'validasi-jadwal'
   | 'validasi-pendaftaran'
   | 'pembina-pendaftaran'
-  | 'alur-absensi';
+  | 'riwayat-eskul-siswa';
 
 interface SidebarProps {
   activeTab: NavItemKey;
@@ -56,6 +56,7 @@ interface SidebarProps {
   onToggleDesktop?: () => void;
   pendingJadwalCount?: number;
   pendingPendaftaranCount?: number;
+  onOpenAjukanJadwalModal?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -69,6 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleDesktop,
   pendingJadwalCount = 0,
   pendingPendaftaranCount = 0,
+  onOpenAjukanJadwalModal,
 }) => {
   const [isValidasiDropdownOpen, setIsValidasiDropdownOpen] = React.useState(
     activeTab === 'validasi-jadwal' || activeTab === 'validasi-pendaftaran'
@@ -377,6 +379,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <UserPlus className={`w-5 h-5 shrink-0 ${activeTab === 'pembina-pendaftaran' ? 'text-[#00B884]' : 'text-slate-500'}`} />
                 <span className="truncate text-left">Pendaftaran Siswa</span>
               </button>
+
+              {onOpenAjukanJadwalModal && (
+                <button
+                  onClick={() => {
+                    onOpenAjukanJadwalModal();
+                    if (onCloseMobile) onCloseMobile();
+                  }}
+                  className="w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-xl font-semibold text-sm transition-all text-amber-700 bg-amber-50/80 hover:bg-amber-100/80 border border-amber-200/60 shadow-2xs cursor-pointer"
+                >
+                  <CalendarClock className="w-5 h-5 shrink-0 text-amber-600" />
+                  <span className="truncate text-left font-bold">Ajukan Ganti Jadwal</span>
+                </button>
+              )}
             </nav>
           </div>
 
@@ -386,24 +401,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-semibold">GURU</span>
             </div>
             <nav className="space-y-1">
-              {/* Alur Presensi Multi-Tahap (Utama) */}
-              <button
-                onClick={() => handleTabClick('alur-absensi')}
-                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-xl font-medium text-sm transition-all relative cursor-pointer ${
-                  activeTab === 'alur-absensi'
-                    ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
-                }`}
-              >
-                {activeTab === 'alur-absensi' && (
-                  <div className="absolute left-0 top-1.5 bottom-1.5 w-1.5 bg-[#00B884] rounded-r-md -ml-5" />
-                )}
-                <ClipboardCheck className={`w-5 h-5 shrink-0 ${activeTab === 'alur-absensi' ? 'text-[#00B884]' : 'text-slate-500'}`} />
-                <div className="flex-1 flex items-center justify-between min-w-0">
-                  <span className="truncate text-left">Alur Presensi 4-Tahap</span>
-                  <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded-full ml-1 shrink-0">Resmi</span>
-                </div>
-              </button>
 
               <button
                 onClick={() => handleTabClick('dynamic-qr')}
@@ -549,7 +546,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <div className="absolute left-0 top-1.5 bottom-1.5 w-1.5 bg-[#00B884] rounded-r-md -ml-5" />
                 )}
                 <LayoutGrid className={`w-5 h-5 shrink-0 ${activeTab === 'beranda' ? 'text-[#00B884]' : 'text-slate-500'}`} />
-                <span className="truncate text-left">Jadwal Eskul</span>
+                <span className="truncate text-left">Beranda</span>
+              </button>
+
+              <button
+                onClick={() => handleTabClick('riwayat-eskul-siswa')}
+                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-xl font-medium text-sm transition-all relative cursor-pointer ${
+                  activeTab === 'riwayat-eskul-siswa'
+                    ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+                }`}
+              >
+                {activeTab === 'riwayat-eskul-siswa' && (
+                  <div className="absolute left-0 top-1.5 bottom-1.5 w-1.5 bg-[#00B884] rounded-r-md -ml-5" />
+                )}
+                <Volleyball className={`w-5 h-5 shrink-0 ${activeTab === 'riwayat-eskul-siswa' ? 'text-[#00B884]' : 'text-slate-500'}`} />
+                <span className="truncate text-left">Riwayat Ekstrakurikuler</span>
               </button>
 
               <button
