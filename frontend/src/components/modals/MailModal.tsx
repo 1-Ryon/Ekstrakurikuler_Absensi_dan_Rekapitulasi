@@ -36,18 +36,25 @@ export const MailModal: React.FC<MailModalProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150"
+      >
         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-emerald-50 text-[#00B884] flex items-center justify-center">
+            <div className="size-8 rounded-md bg-emerald-50 text-[#00B884] flex items-center justify-center">
               <Mail className="w-4 h-4" />
             </div>
             <h3 className="font-bold text-slate-800 text-base">Pesan & Surat Dispensasi</h3>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700"
+            className="size-8 rounded-md border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -57,7 +64,7 @@ export const MailModal: React.FC<MailModalProps> = ({
           {messages.map((m) => (
             <div
               key={m.id}
-              className="p-3.5 rounded-2xl border border-slate-100 bg-slate-50/70 hover:bg-slate-50 transition-colors flex items-start gap-3"
+              className="p-3.5 rounded-lg border border-slate-100 bg-slate-50/70 hover:bg-slate-50 transition-colors flex items-start gap-3"
             >
               <UserAvatar
                 name={m.sender}

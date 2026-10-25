@@ -123,13 +123,19 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] flex flex-col justify-between animate-in fade-in zoom-in-95 duration-150">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-lg max-w-xl w-full p-6 shadow-xl border border-slate-200 max-h-[90vh] flex flex-col justify-between animate-in fade-in zoom-in-95 duration-150"
+      >
         <div>
           {/* Header */}
           <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
             <div>
-              <h3 className="text-lg font-extrabold text-slate-800">
+              <h3 className="text-lg font-bold text-slate-900">
                 Impor Data Siswa Sekolah
               </h3>
               <p className="text-xs text-slate-500">
@@ -138,18 +144,18 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
             </div>
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700"
+              className="size-8 rounded-md border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-500 hover:text-slate-700 cursor-pointer"
             >
-              <X className="w-4 h-4" />
+              <X className="size-4" />
             </button>
           </div>
 
           {/* Rule Highlight Card */}
-          <div className="p-3.5 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl mb-4 text-xs">
+          <div className="p-3.5 bg-emerald-50/70 border border-emerald-200/80 rounded-md mb-4 text-xs">
             <div className="flex items-start gap-2.5">
-              <KeyRound className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+              <KeyRound className="size-4 text-emerald-700 shrink-0 mt-0.5" />
               <div>
-                <span className="font-bold text-emerald-900 block mb-0.5">
+                <span className="font-semibold text-emerald-900 block mb-0.5">
                   Aturan Akun Baru Otomatis:
                 </span>
                 <span className="text-emerald-800">
@@ -163,13 +169,13 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
           {!importSummary && (
             <>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-slate-700">Metode Input:</span>
-                <div className="flex items-center gap-2 text-xs">
+                <span className="text-xs font-semibold text-slate-700">Metode Input:</span>
+                <div className="flex items-center gap-1.5 text-xs p-0.5 bg-slate-100 rounded-md">
                   <button
                     type="button"
                     onClick={() => setUseTextInput(false)}
-                    className={`px-3 py-1 rounded-lg font-semibold transition-all ${
-                      !useTextInput ? 'bg-[#00B884] text-white shadow-xs' : 'text-slate-500 hover:bg-slate-100'
+                    className={`px-3 py-1 rounded-md font-semibold transition-all cursor-pointer ${
+                      !useTextInput ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
                     Unggah CSV/Excel
@@ -177,8 +183,8 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setUseTextInput(true)}
-                    className={`px-3 py-1 rounded-lg font-semibold transition-all ${
-                      useTextInput ? 'bg-[#00B884] text-white shadow-xs' : 'text-slate-500 hover:bg-slate-100'
+                    className={`px-3 py-1 rounded-md font-semibold transition-all cursor-pointer ${
+                      useTextInput ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
                     Tempel Teks (Excel)
@@ -188,9 +194,9 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
 
               {!useTextInput ? (
                 /* Drag and Drop File Box */
-                <label className="border-2 border-dashed border-slate-300 hover:border-[#00B884] bg-slate-50 hover:bg-emerald-50/20 rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-colors block mb-4">
-                  <Upload className="w-8 h-8 text-[#00B884] mb-2" />
-                  <span className="text-xs font-bold text-slate-700">
+                <label className="border-2 border-dashed border-slate-300 hover:border-[#00B884] bg-slate-50 hover:bg-emerald-50/20 rounded-md p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-colors block mb-4">
+                  <Upload className="size-8 text-[#00B884] mb-2" />
+                  <span className="text-xs font-semibold text-slate-700">
                     {selectedFile ? selectedFile.name : 'Pilih atau seret berkas CSV data siswa ke sini'}
                   </span>
                   <span className="text-[11px] text-slate-400 mt-1">
@@ -211,13 +217,13 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
                     value={pastedText}
                     onChange={(e) => setPastedText(e.target.value)}
                     placeholder="Tempel data langsung dari Excel (NIS, Nama, Kelas, JK, No HP)..."
-                    className="w-full p-3 font-mono text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
+                    className="w-full p-3 font-mono text-xs bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
                   />
                   <div className="flex justify-end mt-1">
                     <button
                       type="button"
                       onClick={fillSampleData}
-                      className="text-[11px] text-[#00B884] font-semibold hover:underline"
+                      className="text-[11px] text-[#00B884] font-semibold hover:underline cursor-pointer"
                     >
                       + Isi Contoh Data Simulasi
                     </button>
@@ -226,25 +232,25 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
               )}
 
               {/* Sample Template & Help */}
-              <div className="flex items-center justify-between text-xs text-slate-600 bg-slate-50 p-3 rounded-2xl mb-4 border border-slate-100">
+              <div className="flex items-center justify-between text-xs text-slate-600 bg-slate-50 p-3 rounded-md mb-4 border border-slate-200">
                 <div className="flex items-center gap-2">
-                  <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                  <FileSpreadsheet className="size-4 text-emerald-600" />
                   <span>Belum memiliki berkas format sekolah?</span>
                 </div>
                 <button
                   type="button"
                   onClick={downloadSampleTemplate}
-                  className="text-[#00B884] font-bold hover:underline flex items-center gap-1"
+                  className="text-[#00B884] font-semibold hover:underline flex items-center gap-1 cursor-pointer"
                 >
-                  <Download className="w-3.5 h-3.5" />
+                  <Download className="size-3.5" />
                   <span>Unduh Templat CSV</span>
                 </button>
               </div>
 
               {/* Error Alert */}
               {errorMessage && (
-                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-rose-700 text-xs font-medium mb-3">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-md flex items-center gap-2 text-rose-700 text-xs font-medium mb-3">
+                  <AlertCircle className="size-4 shrink-0" />
                   <span>{errorMessage}</span>
                 </div>
               )}
@@ -254,15 +260,15 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
           {/* Success Summary Table */}
           {importSummary && (
             <div className="space-y-3">
-              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-2 text-emerald-800 text-xs font-bold">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-md flex items-center gap-2 text-emerald-800 text-xs font-semibold">
+                <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
                 <span>Berhasil mengimpor {importSummary.length} siswa ke basis data sekolah!</span>
               </div>
 
-              <div className="text-xs font-bold text-slate-700">Daftar Akun Siswa Dihasilkan:</div>
-              <div className="overflow-x-auto border border-slate-200 rounded-2xl max-h-56">
+              <div className="text-xs font-semibold text-slate-700">Daftar Akun Siswa Dihasilkan:</div>
+              <div className="overflow-x-auto border border-slate-200 rounded-md max-h-56">
                 <table className="w-full text-xs text-left">
-                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold sticky top-0">
+                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold sticky top-0">
                     <tr>
                       <th className="p-2.5">Nama Siswa</th>
                       <th className="p-2.5">Kelas</th>
@@ -273,7 +279,7 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
                   <tbody className="divide-y divide-slate-100 font-mono">
                     {importSummary.map((item, idx) => (
                       <tr key={idx} className="hover:bg-slate-50">
-                        <td className="p-2.5 font-sans font-semibold text-slate-800">{item.namaLengkap}</td>
+                        <td className="p-2.5 font-sans font-medium text-slate-800">{item.namaLengkap}</td>
                         <td className="p-2.5 font-sans text-slate-600">{item.kelas}</td>
                         <td className="p-2.5 text-[#00B884] font-bold">{item.username}</td>
                         <td className="p-2.5 text-slate-700 font-bold bg-amber-50/50">{item.defaultPassword}</td>
@@ -287,7 +293,7 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 mt-4">
+        <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100 mt-4">
           {importSummary ? (
             <button
               onClick={() => {
@@ -296,7 +302,7 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
                 setSelectedFile(null);
                 onClose();
               }}
-              className="px-5 py-2.5 bg-[#00B884] hover:bg-[#009e70] text-white rounded-xl text-xs font-bold shadow-xs transition-all"
+              className="px-4 py-2 bg-[#00B884] hover:bg-[#009e70] text-white rounded-md text-xs font-semibold shadow-xs transition-all cursor-pointer"
             >
               Selesai
             </button>
@@ -304,18 +310,18 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
             <>
               <button
                 onClick={onClose}
-                className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-semibold hover:bg-slate-50 transition-colors"
+                className="px-4 py-2 border border-slate-200 text-slate-600 rounded-md text-xs font-semibold hover:bg-slate-50 transition-colors cursor-pointer"
               >
                 Batal
               </button>
               <button
                 onClick={handleExecuteImport}
                 disabled={!pastedText.trim() || isProcessing}
-                className="px-5 py-2.5 bg-[#00B884] hover:bg-[#009e70] active:scale-[0.98] text-white rounded-xl text-xs font-semibold shadow-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-4 py-2 bg-[#00B884] hover:bg-[#009e70] active:scale-[0.98] text-white rounded-md text-xs font-semibold shadow-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
               >
                 {isProcessing ? (
                   <>
-                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span className="size-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     <span>Menyimpan ke Basis Data...</span>
                   </>
                 ) : (

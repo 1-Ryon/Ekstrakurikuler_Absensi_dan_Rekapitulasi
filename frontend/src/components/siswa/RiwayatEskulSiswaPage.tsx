@@ -262,22 +262,18 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
 
   return (
     <div className="space-y-6 pb-12">
-      {/* 1. TOP HEADER / HERO (Harmonized with SMK Al Amanah Green Theme) */}
-      <div className="bg-gradient-to-r from-[#00B884] to-emerald-700 text-white rounded-3xl p-6 sm:p-7 shadow-sm relative overflow-hidden">
-        {/* Subtle Brand Ambient Glow */}
-        <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-10 w-60 h-60 bg-emerald-400/20 rounded-full blur-2xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+      {/* 1. TOP HEADER / HERO */}
+      <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-xs relative">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
           <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-xs rounded-full text-xs font-semibold text-white">
-              <Volleyball className="w-3.5 h-3.5" />
+            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 bg-emerald-50 border border-emerald-200 rounded-md text-xs font-semibold text-emerald-800">
+              <Volleyball className="size-3.5 text-emerald-600" />
               <span>Portal Riwayat & Ekstrakurikuler Siswa</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
               Riwayat Ekstrakurikuler
             </h1>
-            <p className="text-white/85 text-xs sm:text-sm max-w-xl">
+            <p className="text-slate-500 text-xs sm:text-sm max-w-xl">
               Lihat seluruh cabang ekstrakurikuler yang Anda ikuti, pantau riwayat presensi kehadiran di setiap sesi latihan, materi yang dipelajari, serta pembaruan jadwal.
             </p>
           </div>
@@ -285,55 +281,55 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
           {onBackToDashboard && (
             <button
               onClick={onBackToDashboard}
-              className="px-4 py-2.5 bg-white text-[#00B884] hover:bg-slate-50 active:scale-95 text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer shrink-0"
+              className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 active:scale-95 text-xs font-semibold rounded-md border border-slate-200 shadow-xs transition-all flex items-center gap-2 cursor-pointer shrink-0"
             >
-              <ArrowLeft className="w-4 h-4 text-[#00B884]" />
+              <ArrowLeft className="size-4 text-slate-600" />
               <span>Ke Beranda Utama</span>
             </button>
           )}
         </div>
 
         {/* Quick KPI Bento Bar */}
-        <div className="relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-white/20">
-          <div className="bg-white/15 backdrop-blur-xs rounded-2xl p-3.5 border border-white/20">
-            <span className="text-[11px] font-medium text-white/80 block">Eskul Diikuti</span>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-slate-100">
+          <div className="bg-slate-50 rounded-md p-3.5 border border-slate-200">
+            <span className="text-[11px] font-medium text-slate-500 block">Eskul Diikuti</span>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-xl sm:text-2xl font-black text-white">{enrolledEskuls.length}</span>
-              <span className="text-[10px] text-white font-bold bg-white/20 px-2 py-0.5 rounded-full">
+              <span className="text-xl sm:text-2xl font-bold text-slate-900">{enrolledEskuls.length}</span>
+              <span className="text-[10px] text-emerald-800 font-semibold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
                 Aktif
               </span>
             </div>
           </div>
 
-          <div className="bg-white/15 backdrop-blur-xs rounded-2xl p-3.5 border border-white/20">
-            <span className="text-[11px] font-medium text-white/80 block">Kehadiran Rata-rata</span>
+          <div className="bg-slate-50 rounded-md p-3.5 border border-slate-200">
+            <span className="text-[11px] font-medium text-slate-500 block">Kehadiran Rata-rata</span>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-xl sm:text-2xl font-black text-white">
+              <span className="text-xl sm:text-2xl font-bold text-slate-900">
                 {totalStats.averagePercent}%
               </span>
-              <span className="text-[10px] text-white font-bold bg-white/20 px-2 py-0.5 rounded-full">
+              <span className="text-[10px] text-slate-700 font-semibold bg-slate-200 px-2 py-0.5 rounded-md">
                 Semester Ini
               </span>
             </div>
           </div>
 
-          <div className="bg-white/15 backdrop-blur-xs rounded-2xl p-3.5 border border-white/20">
-            <span className="text-[11px] font-medium text-white/80 block">Total Sesi Hadir</span>
+          <div className="bg-slate-50 rounded-md p-3.5 border border-slate-200">
+            <span className="text-[11px] font-medium text-slate-500 block">Total Sesi Hadir</span>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-xl sm:text-2xl font-black text-white">
+              <span className="text-xl sm:text-2xl font-bold text-slate-900">
                 {totalStats.totalAttendedCount}
               </span>
-              <span className="text-[10px] text-white/80">Pertemuan</span>
+              <span className="text-[10px] text-slate-500">Pertemuan</span>
             </div>
           </div>
 
-          <div className="bg-white/15 backdrop-blur-xs rounded-2xl p-3.5 border border-white/20">
-            <span className="text-[11px] font-medium text-white/80 block">Pembaruan Jadwal</span>
+          <div className="bg-slate-50 rounded-md p-3.5 border border-slate-200">
+            <span className="text-[11px] font-medium text-slate-500 block">Pembaruan Jadwal</span>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-xl sm:text-2xl font-black text-amber-200">
+              <span className="text-xl sm:text-2xl font-bold text-amber-600">
                 {totalStats.activeProposalsCount}
               </span>
-              <span className="text-[10px] text-amber-900 font-bold bg-amber-300 px-2 py-0.5 rounded-full">
+              <span className="text-[10px] text-amber-800 font-semibold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
                 Pemberitahuan
               </span>
             </div>
@@ -356,7 +352,7 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
             className="space-y-5"
           >
             {/* Filter & Search Bar */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-4 rounded-lg border border-slate-200 shadow-xs">
               {/* Search Box */}
               <div className="relative flex-1">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -365,7 +361,7 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                   placeholder="Cari ekstrakurikuler, pembina, atau lokasi..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all placeholder:text-slate-400"
+                  className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-md focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all placeholder:text-slate-400"
                 />
               </div>
 
@@ -375,9 +371,9 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                   <button
                     key={cat}
                     onClick={() => setFilterCategory(cat)}
-                    className={`px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                    className={`px-3 py-2 rounded-md text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                       filterCategory === cat
-                        ? 'bg-[#00B884] text-white shadow-2xs'
+                        ? 'bg-[#00B884] text-white shadow-xs'
                         : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200/60'
                     }`}
                   >
@@ -426,7 +422,7 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                     <div
                       key={eskul.id}
                       onClick={() => setSelectedEskulId(eskul.id)}
-                      className="group bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs hover:border-emerald-400 hover:shadow-md transition-all cursor-pointer relative overflow-hidden"
+                      className="group bg-white rounded-lg border border-slate-200 p-5 shadow-xs hover:border-emerald-400 transition-all cursor-pointer relative overflow-hidden"
                     >
                       {/* Left Accent Bar on Hover */}
                       <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#00B884] opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -434,7 +430,7 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
                         {/* 1. Left Details */}
                         <div className="flex items-start gap-4 flex-1 min-w-0">
-                          <div className="w-13 h-13 rounded-2xl bg-emerald-50 text-[#00B884] flex items-center justify-center shrink-0 border border-emerald-100 shadow-2xs group-hover:scale-105 group-hover:bg-[#00B884] group-hover:text-white transition-all">
+                          <div className="w-12 h-12 rounded-md bg-emerald-50 text-[#00B884] flex items-center justify-center shrink-0 border border-emerald-200 shadow-xs group-hover:scale-105 group-hover:bg-[#00B884] group-hover:text-white transition-all">
                             <Volleyball className="w-6 h-6 transition-colors" />
                           </div>
 
@@ -491,7 +487,7 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
 
                             {/* Latest Session & Material snippet if available */}
                             {latestSession?.materi && (
-                              <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-100 flex items-start gap-2 text-xs mt-2">
+                              <div className="bg-slate-50 rounded-md p-2.5 border border-slate-200/60 flex items-start gap-2 text-xs mt-2">
                                 <BookOpen className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
                                 <div className="min-w-0">
                                   <span className="font-semibold text-slate-700">Materi Terakhir: </span>
@@ -521,7 +517,7 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                               e.stopPropagation();
                               setSelectedEskulId(eskul.id);
                             }}
-                            className="px-4 py-2 bg-emerald-50 hover:bg-[#00B884] text-[#00B884] hover:text-white group-hover:bg-[#00B884] group-hover:text-white font-bold text-xs rounded-xl border border-emerald-200/80 transition-all flex items-center gap-1.5 cursor-pointer"
+                            className="px-4 py-2 bg-emerald-50 hover:bg-[#00B884] text-[#00B884] hover:text-white group-hover:bg-[#00B884] group-hover:text-white font-bold text-xs rounded-md border border-emerald-200 transition-all flex items-center gap-1.5 cursor-pointer"
                           >
                             <span>Lihat Detail</span>
                             <ChevronRight className="w-3.5 h-3.5" />
@@ -533,9 +529,9 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                 })}
               </div>
             ) : (
-              <div className="bg-white rounded-3xl border border-slate-200/80 p-12 text-center shadow-2xs space-y-3">
-                <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
-                  <Volleyball className="w-7 h-7" />
+              <div className="bg-white rounded-lg border border-slate-200 p-12 text-center shadow-xs space-y-3">
+                <div className="size-12 rounded-md bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                  <Volleyball className="size-6" />
                 </div>
                 <h3 className="text-base font-bold text-slate-800">Tidak ada ekstrakurikuler ditemukan</h3>
                 <p className="text-xs text-slate-500 max-w-md mx-auto">
@@ -549,7 +545,7 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                       setSearchQuery('');
                       setFilterCategory('SEMUA');
                     }}
-                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                    className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-md border border-slate-200 transition-all cursor-pointer"
                   >
                     Reset Filter
                   </button>
@@ -570,33 +566,33 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
             className="space-y-6"
           >
             {/* Top Back Navigation Bar */}
-            <div className="flex items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+            <div className="flex items-center justify-between gap-3 bg-white p-3.5 rounded-lg border border-slate-200 shadow-xs">
               <button
                 onClick={() => setSelectedEskulId(null)}
-                className="inline-flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-md border border-slate-200 transition-all cursor-pointer"
               >
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="size-4" />
                 <span>Kembali ke Daftar Eskul</span>
               </button>
 
               <div className="text-xs font-semibold text-slate-400">
-                Detail Eskul: <span className="text-slate-800 font-bold">{selectedEskul.namaEskul}</span>
+                Detail Eskul: <span className="text-slate-900 font-bold">{selectedEskul.namaEskul}</span>
               </div>
             </div>
 
             {/* Eskul Header & KPI Bento Card */}
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-7 shadow-2xs space-y-6">
+            <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-xs space-y-6">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100">
                 <div className="flex items-start gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-[#00B884] flex items-center justify-center shrink-0 border border-emerald-100 shadow-2xs font-bold">
-                    <Volleyball className="w-7 h-7" />
+                  <div className="size-12 rounded-md bg-emerald-50 text-[#00B884] flex items-center justify-center shrink-0 border border-emerald-200 shadow-xs font-bold">
+                    <Volleyball className="size-6" />
                   </div>
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                      <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
                         {selectedEskul.namaEskul}
                       </h2>
-                      <span className={`px-2.5 py-0.5 text-xs font-bold rounded-full border ${getCategoryBadge(selectedEskul.kategori)}`}>
+                      <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-md border ${getCategoryBadge(selectedEskul.kategori)}`}>
                         {selectedEskul.kategori}
                       </span>
                     </div>
@@ -605,8 +601,8 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                     </p>
                     <div className="flex items-center gap-2 text-xs pt-1">
                       <span className="text-slate-400">Guru Pembina:</span>
-                      <span className="font-bold text-slate-800 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200/60 inline-flex items-center gap-1.5">
-                        <UserCheck className="w-3.5 h-3.5 text-[#00B884]" />
+                      <span className="font-semibold text-slate-800 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200 inline-flex items-center gap-1.5">
+                        <UserCheck className="size-3.5 text-[#00B884]" />
                         <span>{selectedEskul.pembinaNama || 'Guru Pembina'}</span>
                       </span>
                     </div>
@@ -614,14 +610,14 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                 </div>
 
                 {/* Main Attendance Percentage */}
-                <div className="bg-emerald-50/80 rounded-2xl p-4 border border-emerald-100 text-center md:text-right shrink-0 min-w-[160px]">
+                <div className="bg-emerald-50/80 rounded-md p-4 border border-emerald-200 text-center md:text-right shrink-0 min-w-[160px]">
                   <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider block">
                     Kehadiran
                   </span>
                   <div className="text-3xl font-black text-[#00B884] leading-tight">
                     {selectedEskulData?.stats.percent}%
                   </div>
-                  <span className="text-[11px] text-emerald-600 font-semibold block mt-0.5">
+                  <span className="text-[11px] text-emerald-700 font-semibold block mt-0.5">
                     {selectedEskulData?.stats.hadirCount} Hadir dari {selectedEskulData?.stats.totalCount} Sesi
                   </span>
                 </div>
@@ -629,27 +625,27 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
 
               {/* 4 KPI Badges */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-slate-50 rounded-2xl p-3.5 border border-slate-200/60">
+                <div className="bg-slate-50 rounded-md p-3.5 border border-slate-200">
                   <span className="text-[11px] font-medium text-slate-500 block">Total Pertemuan</span>
-                  <span className="text-lg font-extrabold text-slate-800 mt-0.5 block">
+                  <span className="text-lg font-bold text-slate-800 mt-0.5 block">
                     {selectedEskulData?.stats.totalCount} Sesi
                   </span>
                 </div>
-                <div className="bg-emerald-50/70 rounded-2xl p-3.5 border border-emerald-200/80">
+                <div className="bg-emerald-50/70 rounded-md p-3.5 border border-emerald-200">
                   <span className="text-[11px] font-medium text-emerald-800 block">Hadir</span>
-                  <span className="text-lg font-extrabold text-emerald-800 mt-0.5 block">
+                  <span className="text-lg font-bold text-emerald-800 mt-0.5 block">
                     {selectedEskulData?.stats.hadirCount} Sesi
                   </span>
                 </div>
-                <div className="bg-amber-50/70 rounded-2xl p-3.5 border border-amber-200/80">
+                <div className="bg-amber-50/70 rounded-md p-3.5 border border-amber-200">
                   <span className="text-[11px] font-medium text-amber-800 block">Izin / Sakit</span>
-                  <span className="text-lg font-extrabold text-amber-800 mt-0.5 block">
+                  <span className="text-lg font-bold text-amber-800 mt-0.5 block">
                     {selectedEskulData?.stats.izinSakitCount} Sesi
                   </span>
                 </div>
-                <div className="bg-rose-50/60 rounded-2xl p-3.5 border border-rose-100">
+                <div className="bg-rose-50/60 rounded-md p-3.5 border border-rose-200">
                   <span className="text-[11px] font-medium text-rose-700 block">Alpa / Tidak Hadir</span>
-                  <span className="text-lg font-extrabold text-rose-700 mt-0.5 block">
+                  <span className="text-lg font-bold text-rose-700 mt-0.5 block">
                     {selectedEskulData?.stats.alpaCount} Sesi
                   </span>
                 </div>
@@ -659,14 +655,14 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
             {/* ========================================================== */}
             {/* SEKSI 1: INFORMASI & PERUBAHAN JADWAL                       */}
             {/* ========================================================== */}
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-2xs space-y-4">
+            <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-xs space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                    <CalendarClock className="w-4 h-4" />
+                  <div className="size-8 rounded-md bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center">
+                    <CalendarClock className="size-4" />
                   </div>
                   <div>
-                    <h3 className="text-base font-extrabold text-slate-800">
+                    <h3 className="text-base font-bold text-slate-800">
                       Jadwal & Pembaruan Jadwal Latihan
                     </h3>
                     <p className="text-xs text-slate-400">
@@ -678,8 +674,8 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
 
               {/* Jadwal Rutin Card */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/60 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white text-emerald-600 flex items-center justify-center shadow-2xs border border-slate-100">
+                <div className="bg-slate-50 p-4 rounded-lg border border-slate-200/80 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-md bg-white text-[#00B884] flex items-center justify-center shadow-xs border border-slate-200/60">
                     <Calendar className="w-5 h-5" />
                   </div>
                   <div>
@@ -692,8 +688,8 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                   </div>
                 </div>
 
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/60 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white text-emerald-600 flex items-center justify-center shadow-2xs border border-slate-100">
+                <div className="bg-slate-50 p-4 rounded-lg border border-slate-200/80 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-md bg-white text-[#00B884] flex items-center justify-center shadow-xs border border-slate-200/60">
                     <Clock className="w-5 h-5" />
                   </div>
                   <div>
@@ -706,8 +702,8 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                   </div>
                 </div>
 
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/60 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white text-emerald-600 flex items-center justify-center shadow-2xs border border-slate-100">
+                <div className="bg-slate-50 p-4 rounded-lg border border-slate-200/80 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-md bg-white text-[#00B884] flex items-center justify-center shadow-xs border border-slate-200/60">
                     <MapPin className="w-5 h-5" />
                   </div>
                   <div>
@@ -736,7 +732,7 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                     return (
                       <div
                         key={prop.id}
-                        className={`p-4 rounded-2xl border transition-all ${
+                        className={`p-4 rounded-lg border transition-all ${
                           isApproved
                             ? 'bg-emerald-50/50 border-emerald-200'
                             : isPending
@@ -775,14 +771,14 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
 
                         {/* Detail Perubahan: Hari & Jam Lama vs Baru */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 my-3">
-                          <div className="bg-white/80 p-3 rounded-xl border border-slate-200/60">
+                          <div className="bg-white/80 p-3 rounded-md border border-slate-200/60">
                             <span className="text-[10px] font-semibold text-slate-400 block">Jadwal Lama:</span>
                             <p className="text-xs font-bold text-slate-600 line-through mt-0.5">
                               {prop.hariLama}, {prop.jamMulaiLama} - {prop.jamSelesaiLama} WIB ({prop.lokasiLama})
                             </p>
                           </div>
 
-                          <div className="bg-white p-3 rounded-xl border border-emerald-300 shadow-2xs">
+                          <div className="bg-white p-3 rounded-md border border-emerald-300 shadow-xs">
                             <span className="text-[10px] font-bold text-emerald-600 block">Jadwal Baru:</span>
                             <p className="text-xs font-extrabold text-slate-900 mt-0.5">
                               {prop.hariBaru}, {prop.jamMulaiBaru} - {prop.jamSelesaiBaru} WIB ({prop.lokasiBaru || prop.lokasiLama})
@@ -809,7 +805,7 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                   })}
                 </div>
               ) : (
-                <div className="bg-slate-50 rounded-2xl p-3.5 border border-slate-200/60 flex items-center gap-3 text-xs text-slate-500">
+                <div className="bg-slate-50 rounded-lg p-3.5 border border-slate-200/60 flex items-center gap-3 text-xs text-slate-500">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                   <span>
                     Jadwal latihan berjalan normal sesuai agenda rutin mingguan sekolah. Belum ada permohonan perubahan jadwal khusus.
@@ -821,14 +817,14 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
             {/* ========================================================== */}
             {/* SEKSI 2: RIWAYAT PRESENSI & MATERI YANG TELAH BERLALU       */}
             {/* ========================================================== */}
-            <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-2xs space-y-5">
+            <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-xs space-y-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-50 text-[#00B884] flex items-center justify-center">
-                    <BookOpen className="w-4 h-4 text-[#00B884]" />
+                  <div className="size-8 rounded-md bg-emerald-50 border border-emerald-200 text-[#00B884] flex items-center justify-center">
+                    <BookOpen className="size-4 text-[#00B884]" />
                   </div>
                   <div>
-                    <h3 className="text-base font-extrabold text-slate-800">
+                    <h3 className="text-base font-bold text-slate-800">
                       Riwayat Presensi & Materi Sesi Latihan
                     </h3>
                     <p className="text-xs text-slate-400">
@@ -850,9 +846,9 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                     <button
                       key={f.key}
                       onClick={() => setAttendanceFilter(f.key)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                      className={`px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                         attendanceFilter === f.key
-                          ? 'bg-[#00B884] text-white shadow-2xs'
+                          ? 'bg-[#00B884] text-white shadow-xs'
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
@@ -875,12 +871,12 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                     return (
                       <div
                         key={sesi.id || idx}
-                        className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs hover:border-emerald-300 hover:shadow-xs transition-all space-y-3.5"
+                        className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs hover:border-emerald-300 transition-all space-y-3.5"
                       >
                         {/* Top Bar: Sesi Header & Attendance Badge */}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-slate-100">
                           <div className="flex items-center gap-3">
-                            <span className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 font-extrabold text-xs flex items-center justify-center shrink-0">
+                            <span className="w-8 h-8 rounded-md bg-slate-100 text-slate-700 font-extrabold text-xs flex items-center justify-center shrink-0">
                               #{filteredSessions.length - idx}
                             </span>
                             <div>
@@ -941,7 +937,7 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                         </div>
 
                         {/* MATERI PERTEMUAN (Agenda & Pembahasan Latihan) */}
-                        <div className="bg-slate-50/90 rounded-2xl p-4 border border-slate-200/60 space-y-2">
+                        <div className="bg-slate-50/90 rounded-lg p-4 border border-slate-200/80 space-y-2">
                           <div className="flex items-center gap-2">
                             <BookOpen className="w-4 h-4 text-emerald-600" />
                             <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
@@ -995,7 +991,7 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                   })}
                 </div>
               ) : (
-                <div className="bg-slate-50 rounded-2xl p-8 text-center border border-slate-200/60 space-y-2">
+                <div className="bg-slate-50 rounded-lg p-8 text-center border border-slate-200/80 space-y-2">
                   <BookOpen className="w-8 h-8 mx-auto text-slate-300" />
                   <p className="text-xs font-bold text-slate-700">Tidak ada data sesi pertemuan</p>
                   <p className="text-[11px] text-slate-400 max-w-sm mx-auto">

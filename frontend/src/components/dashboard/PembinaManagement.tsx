@@ -24,6 +24,22 @@ import {
 } from 'lucide-react';
 import { Guru, Eskul } from '../../types';
 import { UserAvatar } from '../common/UserAvatar';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  Button,
+  Badge,
+  Input,
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '../ui';
 
 interface PembinaManagementProps {
   pembinaList: Guru[];
@@ -92,163 +108,169 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
       {/* Top Header Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight">
+          <h1 className="text-xl font-bold tracking-tight text-foreground">
             Data Guru Pembina
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-muted-foreground mt-0.5">
             Master data pembina ekstrakurikuler, penugasan cabang eskul, dan kredensial akun login.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5">
           {onOpenImport && (
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={onOpenImport}
-              className="flex items-center gap-2 px-3.5 py-2.5 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 rounded-xl font-bold text-xs shadow-2xs hover:shadow-xs transition-all active:scale-95 cursor-pointer"
+              className="gap-2"
             >
-              <Upload className="w-4 h-4 text-emerald-600" />
+              <Upload className="size-4 text-emerald-600" />
               <span>Impor Data Pembina</span>
-            </button>
+            </Button>
           )}
-          <button
+          <Button
+            variant="brand"
+            size="sm"
             onClick={onAddPembina}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#00B884] hover:bg-[#009E71] text-white rounded-xl font-bold text-xs shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer"
+            className="gap-2"
           >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>+ Buat Akun Pembina</span>
-          </button>
+            <Plus className="size-4" />
+            <span> Buat Akun Pembina</span>
+          </Button>
         </div>
       </div>
 
       {/* Summary KPI Bento Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
+        <Card className="p-4 flex items-center justify-between">
           <div>
-            <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
               Total Pembina Terdaftar
             </div>
-            <div className="text-2xl font-black text-slate-800 mt-1">
-              {totalPembina} <span className="text-xs font-normal text-slate-400">Guru</span>
+            <div className="text-2xl font-bold text-foreground mt-1">
+              {totalPembina} <span className="text-xs font-normal text-muted-foreground">Guru</span>
             </div>
           </div>
-          <div className="w-11 h-11 rounded-2xl bg-emerald-50 text-[#00B884] flex items-center justify-center shrink-0">
-            <UserCheck className="w-5 h-5 stroke-[2.2]" />
+          <div className="size-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+            <UserCheck className="size-5" />
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
+        <Card className="p-4 flex items-center justify-between">
           <div>
-            <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
               Pembina Aktif Bertugas
             </div>
-            <div className="text-2xl font-black text-slate-800 mt-1">
-              {activePembina} <span className="text-xs font-normal text-slate-400">Akun</span>
+            <div className="text-2xl font-bold text-foreground mt-1">
+              {activePembina} <span className="text-xs font-normal text-muted-foreground">Akun</span>
             </div>
           </div>
-          <div className="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-            <ShieldCheck className="w-5 h-5 stroke-[2.2]" />
+          <div className="size-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+            <ShieldCheck className="size-5" />
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center justify-between">
+        <Card className="p-4 flex items-center justify-between">
           <div>
-            <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
               Cabang Eskul Terbina
             </div>
-            <div className="text-2xl font-black text-slate-800 mt-1">
-              {coachedEskulCount} <span className="text-xs font-normal text-slate-400">Cabang</span>
+            <div className="text-2xl font-bold text-foreground mt-1">
+              {coachedEskulCount} <span className="text-xs font-normal text-muted-foreground">Cabang</span>
             </div>
           </div>
-          <div className="w-11 h-11 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-            <Volleyball className="w-5 h-5 stroke-[2.2]" />
+          <div className="size-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+            <Volleyball className="size-5" />
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Search, Filter, & View Mode Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <Card className="p-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
         {/* Search Input */}
         <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
+          <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Cari nama pembina, NIP, eskul, username..."
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
+            className="pl-9 h-9 text-xs sm:text-sm"
           />
         </div>
 
         {/* Action Controls */}
         <div className="flex items-center gap-2">
           {/* Filter Trigger Button */}
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setIsFilterModalOpen(true)}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-semibold shadow-2xs transition-all cursor-pointer ${
+            className={`gap-2 h-9 text-xs ${
               activeFiltersCount > 0
-                ? 'bg-emerald-50 text-[#00B884] border-emerald-300 ring-2 ring-[#00B884]/20'
-                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                : ''
             }`}
           >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <SlidersHorizontal className="size-3.5" />
             <span>Filter</span>
             {activeFiltersCount > 0 && (
-              <span className="w-5 h-5 rounded-full bg-[#00B884] text-white text-[10px] font-bold flex items-center justify-center">
+              <Badge variant="brand" className="size-4 p-0 text-[10px] flex items-center justify-center rounded-full">
                 {activeFiltersCount}
-              </span>
+              </Badge>
             )}
-          </button>
+          </Button>
 
           {/* View Mode Toggle */}
-          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/60">
-            <button
+          <div className="flex items-center bg-muted p-1 rounded-md border border-border">
+            <Button
+              variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+              size="icon"
               onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded-lg transition-all ${
-                viewMode === 'table' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-              }`}
+              className="size-7"
               title="Tampilan Tabel"
             >
-              <List className="w-4 h-4" />
-            </button>
-            <button
+              <List className="size-3.5" />
+            </Button>
+            <Button
+              variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+              size="icon"
               onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-lg transition-all ${
-                viewMode === 'grid' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-800'
-              }`}
+              className="size-7"
               title="Tampilan Kartu"
             >
-              <LayoutGrid className="w-4 h-4" />
-            </button>
+              <LayoutGrid className="size-3.5" />
+            </Button>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Filter Modal Dialog */}
       {isFilterModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <Card className="max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-border">
               <div className="flex items-center gap-2">
-                <SlidersHorizontal className="w-4 h-4 text-[#00B884]" />
-                <h3 className="text-base font-extrabold text-slate-800">Filter Data Pembina</h3>
+                <SlidersHorizontal className="size-4 text-emerald-600" />
+                <h3 className="text-sm font-semibold text-foreground">Filter Data Pembina</h3>
               </div>
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => setIsFilterModalOpen(false)}
-                className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700"
+                className="size-7"
               >
-                <X className="w-4 h-4" />
-              </button>
+                <X className="size-4" />
+              </Button>
             </div>
 
             <div className="space-y-4 text-xs">
               {/* Filter Eskul */}
               <div>
-                <label className="font-bold text-slate-700 block mb-1.5">Cabang Eskul Binaan</label>
+                <label className="font-medium text-foreground block mb-1.5">Cabang Eskul Binaan</label>
                 <select
                   value={selectedEskulFilter}
                   onChange={(e) => setSelectedEskulFilter(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
+                  className="w-full p-2 bg-background border border-border rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-ring"
                 >
                   <option value="ALL">Semua Cabang Eskul</option>
                   {eskulList.map((eskul) => (
@@ -261,11 +283,11 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
 
               {/* Filter Status */}
               <div>
-                <label className="font-bold text-slate-700 block mb-1.5">Status Akun</label>
+                <label className="font-medium text-foreground block mb-1.5">Status Akun</label>
                 <select
                   value={selectedStatusFilter}
                   onChange={(e) => setSelectedStatusFilter(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
+                  className="w-full p-2 bg-background border border-border rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-ring"
                 >
                   <option value="ALL">Semua Status</option>
                   <option value="AKTIF">Hanya Aktif</option>
@@ -274,223 +296,226 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2.5 mt-6 pt-3 border-t border-slate-100">
-              <button
-                type="button"
+            <div className="flex items-center justify-end gap-2.5 mt-6 pt-3 border-t border-border">
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => {
                   setSelectedEskulFilter('ALL');
                   setSelectedStatusFilter('ALL');
                 }}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
               >
                 Reset Filter
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant="brand"
+                size="sm"
                 onClick={() => setIsFilterModalOpen(false)}
-                className="px-5 py-2 bg-[#00B884] hover:bg-[#009E71] text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
               >
                 Terapkan
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
       {/* Main Content: Table or Grid */}
       {filteredList.length === 0 ? (
-        <div className="bg-white rounded-2xl p-12 text-center border border-slate-200/80 shadow-2xs">
-          <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
-            <UserCheck className="w-6 h-6" />
+        <Card className="p-12 text-center">
+          <div className="w-12 h-12 rounded-full bg-muted text-muted-foreground flex items-center justify-center mx-auto mb-3">
+            <UserCheck className="size-6" />
           </div>
-          <h3 className="text-sm font-bold text-slate-700">Tidak ada data pembina yang sesuai</h3>
-          <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+          <h3 className="text-sm font-semibold text-foreground">Tidak ada data pembina yang sesuai</h3>
+          <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
             Coba ubah kata kunci pencarian atau reset filter untuk menampilkan kembali data pembina.
           </p>
-        </div>
+        </Card>
       ) : viewMode === 'table' ? (
         /* TABLE VIEW */
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-slate-50/80 border-b border-slate-200/80 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  <th className="py-3.5 px-4">Guru Pembina</th>
-                  <th className="py-3.5 px-4">Eskul yang Dibina</th>
-                  <th className="py-3.5 px-4">Akun Login</th>
-                  <th className="py-3.5 px-4">Kontak</th>
-                  <th className="py-3.5 px-4 text-center">Status</th>
-                  <th className="py-3.5 px-4 text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredList.map((pembina) => {
-                  // Resolve coached eskul names
-                  const coachedEskuls = eskulList.filter(
-                    (e) => e.pembinaId === pembina.id || (e.pembinaNama && e.pembinaNama.toLowerCase() === pembina.namaLengkap.toLowerCase())
-                  );
+        <Card className="overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/40 hover:bg-muted/40">
+                <TableHead className="py-3 px-4 text-xs font-semibold">Guru Pembina</TableHead>
+                <TableHead className="py-3 px-4 text-xs font-semibold">Eskul yang Dibina</TableHead>
+                <TableHead className="py-3 px-4 text-xs font-semibold">Akun Login</TableHead>
+                <TableHead className="py-3 px-4 text-xs font-semibold">Kontak</TableHead>
+                <TableHead className="py-3 px-4 text-xs font-semibold text-center">Status</TableHead>
+                <TableHead className="py-3 px-4 text-xs font-semibold text-right">Aksi</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredList.map((pembina) => {
+                // Resolve coached eskul names
+                const coachedEskuls = eskulList.filter(
+                  (e) => e.pembinaId === pembina.id || (e.pembinaNama && e.pembinaNama.toLowerCase() === pembina.namaLengkap.toLowerCase())
+                );
 
-                  return (
-                    <tr key={pembina.id} className="hover:bg-slate-50/60 transition-colors">
-                      {/* Name & Avatar */}
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-3">
-                          <UserAvatar
-                            name={pembina.namaLengkap}
-                            className="w-10 h-10 ring-2 ring-emerald-500/20 shrink-0 text-xs shadow-xs"
-                          />
-                          <div>
-                            <div className="font-bold text-slate-800 text-sm">
-                              {pembina.namaLengkap}
-                            </div>
-                            <div className="text-[11px] text-slate-400 mt-0.5">
-                              NIP: {pembina.nip || '-'}
-                            </div>
-                            {pembina.spesialisasi && (
-                              <div className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md inline-block mt-1 font-medium">
-                                {pembina.spesialisasi}
-                              </div>
+                return (
+                  <TableRow key={pembina.id} className="hover:bg-muted/40 transition-colors">
+                    {/* Name & Avatar */}
+                    <TableCell className="py-3.5 px-4">
+                      <div className="flex items-center gap-3">
+                        <UserAvatar
+                          name={pembina.namaLengkap}
+                          className="size-9 ring-1 ring-border shrink-0 text-xs"
+                        />
+                        <div>
+                          <div className="font-semibold text-foreground text-sm">
+                            {pembina.namaLengkap}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            NIP: {pembina.nip || '-'}
+                          </div>
+                          {pembina.spesialisasi && (
+                            <Badge variant="outline" className="text-[10px] mt-1 bg-emerald-50 text-emerald-700 border-emerald-200">
+                              {pembina.spesialisasi}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+
+                    {/* Coached Eskuls */}
+                    <TableCell className="py-3.5 px-4">
+                      {coachedEskuls.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {coachedEskuls.map((eskul) => (
+                            <Badge
+                              key={eskul.id}
+                              variant="outline"
+                              className="inline-flex items-center gap-1 py-1 px-2.5 bg-emerald-50 text-emerald-700 border-emerald-200 text-xs font-medium"
+                            >
+                              <Volleyball className="size-3" />
+                              <span>{eskul.namaEskul}</span>
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : pembina.eskulDiampu && pembina.eskulDiampu.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {pembina.eskulDiampu.map((e) => (
+                            <Badge
+                              key={e.id}
+                              variant="outline"
+                              className="inline-flex items-center gap-1 py-1 px-2.5 bg-emerald-50 text-emerald-700 border-emerald-200 text-xs font-medium"
+                            >
+                              <Volleyball className="size-3" />
+                              <span>{e.namaEskul}</span>
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground italic text-xs">Belum ditugaskan</span>
+                      )}
+                    </TableCell>
+
+                    {/* Login Credentials */}
+                    <TableCell className="py-3.5 px-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5 font-mono text-xs">
+                          <span className="text-muted-foreground">User:</span>
+                          <span className="font-semibold bg-muted px-1.5 py-0.5 rounded text-foreground">
+                            {pembina.username}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 text-[11px] font-mono">
+                          <KeyRound className="size-3 text-muted-foreground shrink-0" />
+                          <span className="bg-muted/50 border border-border px-1.5 py-0.5 rounded text-foreground">
+                            {visiblePasswords[pembina.id]
+                              ? (pembina.defaultPassword || pembina.password || `pembina_${pembina.username}`)
+                              : '••••••••'}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            type="button"
+                            onClick={() => togglePasswordVisibility(pembina.id)}
+                            className="size-5 p-0 text-muted-foreground hover:text-foreground"
+                            title={visiblePasswords[pembina.id] ? "Sembunyikan Kata Sandi" : "Tampilkan Kata Sandi"}
+                          >
+                            {visiblePasswords[pembina.id] ? (
+                              <EyeOff className="size-3" />
+                            ) : (
+                              <Eye className="size-3" />
                             )}
-                          </div>
+                          </Button>
                         </div>
-                      </td>
+                      </div>
+                    </TableCell>
 
-                      {/* Coached Eskuls */}
-                      <td className="py-3.5 px-4">
-                        {coachedEskuls.length > 0 ? (
-                          <div className="flex flex-wrap gap-1.5">
-                            {coachedEskuls.map((eskul) => (
-                              <span
-                                key={eskul.id}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-[#00B884] border border-emerald-200/60 text-[11px] font-semibold"
-                              >
-                                <Volleyball className="w-3 h-3" />
-                                <span>{eskul.namaEskul}</span>
-                              </span>
-                            ))}
-                          </div>
-                        ) : pembina.eskulDiampu && pembina.eskulDiampu.length > 0 ? (
-                          <div className="flex flex-wrap gap-1.5">
-                            {pembina.eskulDiampu.map((e) => (
-                              <span
-                                key={e.id}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-[#00B884] border border-emerald-200/60 text-[11px] font-semibold"
-                              >
-                                <Volleyball className="w-3 h-3" />
-                                <span>{e.namaEskul}</span>
-                              </span>
-                            ))}
-                          </div>
+                    {/* Contacts */}
+                    <TableCell className="py-3.5 px-4">
+                      <div className="space-y-1 text-xs">
+                        {pembina.noHp && pembina.noHp !== '-' ? (
+                          <a
+                            href={`https://wa.me/${pembina.noHp.replace(/[^0-9]/g, '')}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-1.5 text-foreground hover:text-emerald-600 transition-colors"
+                          >
+                            <Phone className="size-3 text-emerald-600" />
+                            <span>{pembina.noHp}</span>
+                          </a>
                         ) : (
-                          <span className="text-slate-400 italic text-[11px]">Belum ditugaskan</span>
+                          <span className="text-muted-foreground">-</span>
                         )}
-                      </td>
-
-                      {/* Login Credentials */}
-                      <td className="py-3.5 px-4">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1.5 text-slate-700 font-mono text-[11px]">
-                            <span className="text-slate-400">User:</span>
-                            <span className="font-bold bg-slate-100 px-1.5 py-0.5 rounded text-slate-800">
-                              {pembina.username}
-                            </span>
+                        {pembina.email && pembina.email !== '-' && (
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <Mail className="size-3" />
+                            <span className="truncate max-w-[140px]">{pembina.email}</span>
                           </div>
-                          <div className="flex items-center gap-1 text-[10px] text-slate-600 font-mono">
-                            <KeyRound className="w-3 h-3 text-slate-400 shrink-0" />
-                            <span className="bg-slate-50 border border-slate-200/80 px-1.5 py-0.5 rounded">
-                              {visiblePasswords[pembina.id]
-                                ? (pembina.defaultPassword || pembina.password || `pembina_${pembina.username}`)
-                                : '••••••••'}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => togglePasswordVisibility(pembina.id)}
-                              className="p-0.5 text-slate-400 hover:text-slate-700 cursor-pointer"
-                              title={visiblePasswords[pembina.id] ? "Sembunyikan Kata Sandi" : "Tampilkan Kata Sandi"}
-                            >
-                              {visiblePasswords[pembina.id] ? (
-                                <EyeOff className="w-3 h-3" />
-                              ) : (
-                                <Eye className="w-3 h-3" />
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      </td>
+                        )}
+                      </div>
+                    </TableCell>
 
-                      {/* Contacts */}
-                      <td className="py-3.5 px-4">
-                        <div className="space-y-1 text-[11px]">
-                          {pembina.noHp && pembina.noHp !== '-' ? (
-                            <a
-                              href={`https://wa.me/${pembina.noHp.replace(/[^0-9]/g, '')}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="flex items-center gap-1.5 text-slate-600 hover:text-[#00B884] transition-colors"
-                            >
-                              <Phone className="w-3 h-3 text-[#00B884]" />
-                              <span>{pembina.noHp}</span>
-                            </a>
-                          ) : (
-                            <span className="text-slate-400 text-[11px]">-</span>
-                          )}
-                          {pembina.email && pembina.email !== '-' && (
-                            <div className="flex items-center gap-1.5 text-slate-500">
-                              <Mail className="w-3 h-3 text-slate-400" />
-                              <span className="truncate max-w-[140px]">{pembina.email}</span>
-                            </div>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Status */}
-                      <td className="py-3.5 px-4 text-center">
+                    {/* Status */}
+                    <TableCell className="py-3.5 px-4 text-center">
+                      <Badge
+                        variant={pembina.statusAktif !== false ? 'success' : 'outline'}
+                        className="text-[11px]"
+                      >
                         <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                            pembina.statusAktif !== false
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                              : 'bg-slate-100 text-slate-500 border border-slate-200'
+                          className={`size-1.5 rounded-full mr-1.5 ${
+                            pembina.statusAktif !== false ? 'bg-emerald-500' : 'bg-muted-foreground'
                           }`}
-                        >
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              pembina.statusAktif !== false ? 'bg-[#00B884]' : 'bg-slate-400'
-                            }`}
-                          />
-                          <span>{pembina.statusAktif !== false ? 'Aktif' : 'Non-Aktif'}</span>
-                        </span>
-                      </td>
+                        />
+                        {pembina.statusAktif !== false ? 'Aktif' : 'Non-Aktif'}
+                      </Badge>
+                    </TableCell>
 
-                      {/* Actions */}
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => onEditPembina(pembina)}
-                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                            title="Edit Data Pembina"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (confirm(`Yakin ingin menghapus data pembina "${pembina.namaLengkap}"?`)) {
-                                onDeletePembina(pembina.id);
-                              }
-                            }}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                            title="Hapus Pembina"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                    {/* Actions */}
+                    <TableCell className="py-3.5 px-4 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onEditPembina(pembina)}
+                          className="size-8 text-muted-foreground hover:text-foreground"
+                          title="Edit Data Pembina"
+                        >
+                          <Edit3 className="size-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            if (confirm(`Yakin ingin menghapus data pembina "${pembina.namaLengkap}"?`)) {
+                              onDeletePembina(pembina.id);
+                            }
+                          }}
+                          className="size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                          title="Hapus Pembina"
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Card>
       ) : (
         /* BENTO GRID VIEW */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -500,101 +525,101 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
             );
 
             return (
-              <div
+              <Card
                 key={pembina.id}
-                className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between"
+                className="p-5 flex flex-col justify-between hover:shadow-xs transition-shadow"
               >
                 <div>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <UserAvatar
                         name={pembina.namaLengkap}
-                        className="w-12 h-12 ring-2 ring-emerald-500/20 shrink-0 text-sm shadow-xs"
+                        className="size-11 ring-1 ring-border shrink-0 text-sm"
                       />
                       <div>
-                        <h4 className="font-extrabold text-slate-800 text-sm leading-snug">
+                        <h4 className="font-semibold text-foreground text-sm leading-snug">
                           {pembina.namaLengkap}
                         </h4>
-                        <div className="text-[11px] text-slate-400 mt-0.5">
+                        <div className="text-xs text-muted-foreground mt-0.5">
                           NIP: {pembina.nip || '-'}
                         </div>
                       </div>
                     </div>
-                    <span
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                        pembina.statusAktif !== false
-                          ? 'bg-emerald-50 text-emerald-700'
-                          : 'bg-slate-100 text-slate-500'
-                      }`}
+                    <Badge
+                      variant={pembina.statusAktif !== false ? 'success' : 'outline'}
+                      className="text-[10px]"
                     >
-                      <span className={`w-1.5 h-1.5 rounded-full ${pembina.statusAktif !== false ? 'bg-[#00B884]' : 'bg-slate-400'}`} />
+                      <span className={`size-1.5 rounded-full mr-1 ${pembina.statusAktif !== false ? 'bg-emerald-500' : 'bg-muted-foreground'}`} />
                       {pembina.statusAktif !== false ? 'Aktif' : 'Non-Aktif'}
-                    </span>
+                    </Badge>
                   </div>
 
                   {pembina.spesialisasi && (
-                    <div className="mt-3 text-[11px] text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-100">
-                      <strong>Spesialisasi:</strong> {pembina.spesialisasi}
+                    <div className="mt-3 text-xs text-muted-foreground bg-muted/40 p-2.5 rounded-md border border-border">
+                      <strong className="text-foreground">Spesialisasi:</strong> {pembina.spesialisasi}
                     </div>
                   )}
 
                   {/* Coached Eskuls */}
                   <div className="mt-3.5 space-y-1.5">
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                       Cabang Eskul Binaan:
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {coachedEskuls.length > 0 ? (
                         coachedEskuls.map((eskul) => (
-                          <span
+                          <Badge
                             key={eskul.id}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-[#00B884] border border-emerald-200/60 text-[11px] font-semibold"
+                            variant="outline"
+                            className="inline-flex items-center gap-1 py-1 px-2.5 bg-emerald-50 text-emerald-700 border-emerald-200 text-xs font-medium"
                           >
-                            <Volleyball className="w-3 h-3" />
+                            <Volleyball className="size-3" />
                             <span>{eskul.namaEskul}</span>
-                          </span>
+                          </Badge>
                         ))
                       ) : (
-                        <span className="text-slate-400 italic text-[11px]">Belum ditugaskan</span>
+                        <span className="text-muted-foreground italic text-xs">Belum ditugaskan</span>
                       )}
                     </div>
                   </div>
 
                   {/* Credentials & Contact */}
-                  <div className="mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-[11px] text-slate-600">
+                  <div className="mt-4 pt-3 border-t border-border space-y-2 text-xs text-muted-foreground">
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-400">Username:</span>
-                      <span className="font-mono font-bold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded">
+                      <span>Username:</span>
+                      <span className="font-mono font-semibold text-foreground bg-muted px-1.5 py-0.5 rounded">
                         {pembina.username}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-400">Sandi:</span>
-                      <div className="flex items-center gap-1 font-mono text-[10px]">
-                        <span className="bg-slate-50 border border-slate-200/80 px-1.5 py-0.5 rounded font-bold text-slate-700">
+                      <span>Sandi:</span>
+                      <div className="flex items-center gap-1 font-mono text-[11px]">
+                        <span className="bg-muted/50 border border-border px-1.5 py-0.5 rounded font-medium text-foreground">
                           {visiblePasswords[pembina.id]
                             ? (pembina.defaultPassword || pembina.password || `pembina_${pembina.username}`)
                             : '••••••••'}
                         </span>
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           type="button"
                           onClick={() => togglePasswordVisibility(pembina.id)}
-                          className="p-0.5 text-slate-400 hover:text-slate-700 cursor-pointer"
+                          className="size-5 p-0 text-muted-foreground hover:text-foreground"
                         >
-                          {visiblePasswords[pembina.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                        </button>
+                          {visiblePasswords[pembina.id] ? <EyeOff className="size-3" /> : <Eye className="size-3" />}
+                        </Button>
                       </div>
                     </div>
                     {pembina.noHp && pembina.noHp !== '-' && (
                       <div className="flex items-center justify-between">
-                        <span className="text-slate-400">WhatsApp:</span>
+                        <span>WhatsApp:</span>
                         <a
                           href={`https://wa.me/${pembina.noHp.replace(/[^0-9]/g, '')}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="font-medium text-[#00B884] hover:underline flex items-center gap-1"
+                          className="font-medium text-emerald-600 hover:underline flex items-center gap-1"
                         >
-                          <Phone className="w-3 h-3" />
+                          <Phone className="size-3" />
                           <span>{pembina.noHp}</span>
                         </a>
                       </div>
@@ -603,27 +628,31 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
                 </div>
 
                 {/* Footer Actions */}
-                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
-                  <button
+                <div className="mt-4 pt-3 border-t border-border flex items-center justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => onEditPembina(pembina)}
-                    className="flex-1 py-1.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="flex-1 h-8 text-xs gap-1.5"
                   >
-                    <Edit3 className="w-3.5 h-3.5" />
+                    <Edit3 className="size-3.5" />
                     <span>Ubah Data</span>
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => {
                       if (confirm(`Yakin ingin menghapus data pembina "${pembina.namaLengkap}"?`)) {
                         onDeletePembina(pembina.id);
                       }
                     }}
-                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all cursor-pointer"
+                    className="size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                     title="Hapus"
                   >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                    <Trash2 className="size-3.5" />
+                  </Button>
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>

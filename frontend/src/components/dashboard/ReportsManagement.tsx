@@ -199,7 +199,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
           <button
             type="button"
             onClick={handleExportXLSX}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-xl shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-md shadow-xs transition-all active:scale-[0.98] cursor-pointer"
             title="Ekspor tabel rekapitulasi nilai ke format Spreadsheet / CSV"
           >
             <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
@@ -209,7 +209,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
           <button
             type="button"
             onClick={() => setShowPrintModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-[#00B884] hover:bg-[#009e70] active:scale-[0.98] text-white font-semibold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2.5 bg-[#00B884] hover:bg-[#009e70] active:scale-[0.98] text-white font-semibold text-xs rounded-md shadow-xs transition-all cursor-pointer"
             title="Cetak lembar rekapitulasi resmi dengan kop surat dan tanda tangan"
           >
             <Printer className="w-4 h-4" />
@@ -221,8 +221,8 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
       {/* 2. Summary KPI Cards (Responsive 4-Grid) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
         {/* Card 1: Rerata Nilai Akhir */}
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-emerald-50 text-[#00B884] flex items-center justify-center shrink-0">
+        <div className="bg-white p-4 sm:p-5 rounded-lg border border-slate-200/80 shadow-xs flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-md bg-emerald-50 text-[#00B884] flex items-center justify-center shrink-0">
             <TrendingUp className="w-5 h-5" />
           </div>
           <div className="min-w-0">
@@ -239,8 +239,8 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
         </div>
 
         {/* Card 2: Total Data Rekap */}
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+        <div className="bg-white p-4 sm:p-5 rounded-lg border border-slate-200/80 shadow-xs flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
             <Users className="w-5 h-5" />
           </div>
           <div className="min-w-0">
@@ -258,13 +258,13 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
         {/* Card 3: Distribusi Predikat A */}
         <div 
           onClick={() => setSelectedPredikatFilter(selectedPredikatFilter === 'A' ? 'ALL' : 'A')}
-          className={`bg-white p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer flex items-center gap-3.5 ${
+          className={`bg-white p-4 sm:p-5 rounded-lg border transition-all cursor-pointer flex items-center gap-3.5 ${
             selectedPredikatFilter === 'A'
               ? 'border-emerald-400 ring-2 ring-emerald-100 bg-emerald-50/20'
               : 'border-slate-200/80 hover:border-emerald-300'
           }`}
         >
-          <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-md bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
             <Award className="w-5 h-5" />
           </div>
           <div className="min-w-0">
@@ -280,8 +280,8 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
         </div>
 
         {/* Card 4: Predikat B & C */}
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+        <div className="bg-white p-4 sm:p-5 rounded-lg border border-slate-200/80 shadow-xs flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-md bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
             <FileCheck2 className="w-5 h-5" />
           </div>
           <div className="min-w-0">
@@ -298,7 +298,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
       </div>
 
       {/* 3. Toolbar: Search, Filters & Quick Pills */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+      <div className="bg-white p-4 rounded-lg border border-slate-200/80 shadow-xs space-y-3">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           {/* Search Box */}
           <div className="relative flex-1 max-w-md">
@@ -308,7 +308,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Cari nama siswa, NISN, kelas, atau cabang eskul..."
-              className="w-full pl-9 pr-8 py-2 bg-slate-50/80 hover:bg-slate-50 focus:bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884] transition-all"
+              className="w-full pl-9 pr-8 py-2 bg-slate-50/80 hover:bg-slate-50 focus:bg-white border border-slate-200 rounded-md text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884] transition-all"
             />
             {searchTerm && (
               <button
@@ -326,7 +326,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
             <button
               type="button"
               onClick={() => setIsFilterModalOpen(true)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-md text-xs font-semibold border transition-all cursor-pointer ${
                 activeFiltersCount > 0
                   ? 'bg-emerald-50 text-[#00B884] border-emerald-300 ring-2 ring-[#00B884]/20'
                   : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
@@ -436,7 +436,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
       </div>
 
       {/* 4. Rekapitulasi Table (Crisp Typography & Zero Wrapping Bugs) */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden">
+      <div className="bg-white rounded-lg border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -547,7 +547,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
 
                     {/* Predikat */}
                     <td className="py-3.5 px-3 text-center whitespace-nowrap">
-                      <span className={`inline-flex items-center justify-center w-7 h-7 rounded-xl font-black text-xs border shadow-2xs ${
+                      <span className={`inline-flex items-center justify-center w-7 h-7 rounded-md font-black text-xs border shadow-2xs ${
                         item.predikat === 'A'
                           ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
                           : item.predikat === 'B'
@@ -594,12 +594,12 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 10 }}
               transition={{ type: 'spring', duration: 0.25 }}
-              className="bg-white rounded-3xl p-6 w-full max-w-lg shadow-2xl border border-slate-200 relative z-10 space-y-5"
+              className="bg-white rounded-lg p-6 w-full max-w-lg shadow-xl border border-slate-200 relative z-10 space-y-5"
             >
               {/* Modal Header */}
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-50 text-[#00B884] flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-md bg-emerald-50 text-[#00B884] flex items-center justify-center">
                     <SlidersHorizontal className="w-4 h-4" />
                   </div>
                   <div>
@@ -610,7 +610,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsFilterModalOpen(false)}
-                  className="p-1 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+                  className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -629,7 +629,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
                         key={sem}
                         type="button"
                         onClick={() => setSelectedSemester(sem)}
-                        className={`py-2 px-3 rounded-xl text-xs font-semibold border flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                        className={`py-2 px-3 rounded-md text-xs font-semibold border flex items-center justify-center gap-2 transition-all cursor-pointer ${
                           selectedSemester === sem
                             ? 'bg-[#00B884] text-white border-[#00B884] shadow-xs'
                             : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
@@ -674,7 +674,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
                           key={e.id}
                           type="button"
                           onClick={() => toggleEskul(e.id)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border transition-all cursor-pointer ${
                             isSelected
                               ? 'bg-emerald-50 text-[#00B884] border-[#00B884] font-semibold shadow-2xs'
                               : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
@@ -724,7 +724,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
                           key={cls}
                           type="button"
                           onClick={() => toggleClass(cls)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border transition-all cursor-pointer ${
                             isSelected
                               ? 'bg-emerald-50 text-[#00B884] border-[#00B884] font-semibold shadow-2xs'
                               : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
@@ -760,7 +760,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsFilterModalOpen(false)}
-                  className="px-5 py-2.5 bg-[#00B884] hover:bg-[#009e70] active:scale-[0.98] text-white text-xs font-semibold rounded-xl shadow-xs transition-all cursor-pointer"
+                  className="px-5 py-2.5 bg-[#00B884] hover:bg-[#009e70] active:scale-[0.98] text-white text-xs font-semibold rounded-md shadow-xs transition-all cursor-pointer"
                 >
                   Terapkan Filter
                 </button>
@@ -773,7 +773,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
       {/* 6. Modal Preview Cetak Resmi PDF (Official Print Document) */}
       {showPrintModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-4xl w-full p-8 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg max-w-4xl w-full p-6 sm:p-8 shadow-xl border border-slate-200 max-h-[90vh] overflow-y-auto">
             {/* Modal Header Actions */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-200 print:hidden">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
@@ -783,7 +783,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
                 <button
                   type="button"
                   onClick={handlePrint}
-                  className="px-4 py-2 bg-[#00B884] hover:bg-[#009e70] text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-sm cursor-pointer"
+                  className="px-4 py-2 bg-[#00B884] hover:bg-[#009e70] text-white rounded-md text-xs font-semibold flex items-center gap-1.5 shadow-xs cursor-pointer"
                 >
                   <Printer className="w-3.5 h-3.5" />
                   <span>Cetak Dokumen Sekarang</span>
@@ -791,7 +791,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowPrintModal(false)}
-                  className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center cursor-pointer"
+                  className="w-8 h-8 rounded-md bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center cursor-pointer"
                 >
                   ✕
                 </button>

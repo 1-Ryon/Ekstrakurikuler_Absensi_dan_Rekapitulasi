@@ -9,11 +9,11 @@ import {
   ShieldCheck, 
   QrCode, 
   Award,
-  AlertCircle,
-  Check
+  AlertCircle
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { User } from '../../types';
+import { Button, Input, Badge } from '../ui';
 
 interface LoginPageProps {
   onLoginSuccess: (user: User) => void;
@@ -61,90 +61,84 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#EEF1F5] flex items-center justify-center p-4 sm:p-6 lg:p-8 font-sans selection:bg-[#00B884]/20 selection:text-[#00B884]">
-      {/* Background Soft Pattern Elements matching Dashboard */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-emerald-100/40 blur-3xl" />
-        <div className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-[#00B884]/10 blur-3xl" />
-      </div>
-
+    <div className="min-h-screen w-full bg-background flex items-center justify-center p-4 sm:p-6 lg:p-8 font-sans">
       {/* Main Unified Card */}
       <motion.div
-        initial={{ opacity: 0, y: 16 }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-        className="w-full max-w-4xl bg-white rounded-3xl border border-slate-200/90 shadow-[0_20px_50px_rgba(15,23,42,0.06)] relative z-10 overflow-hidden grid grid-cols-1 lg:grid-cols-12"
+        className="w-full max-w-4xl bg-card rounded-lg border border-border shadow-md relative z-10 overflow-hidden grid grid-cols-1 lg:grid-cols-12"
       >
         {/* Left Column: Authentic School Branding & Features (Desktop) */}
-        <div className="hidden lg:flex lg:col-span-5 flex-col justify-between p-8 xl:p-10 bg-gradient-to-br from-[#E8F8F2] via-[#F4FBF8] to-[#FFFFFF] border-r border-slate-200/70 relative">
+        <div className="hidden lg:flex lg:col-span-5 flex-col justify-between p-8 xl:p-10 bg-muted/30 border-r border-border relative">
           <div>
             {/* School Emblem & Header */}
             <div className="flex items-center gap-3.5 mb-6">
               <img
                 src="/logo-smk.png"
                 alt="Logo SMK Al Amanah"
-                className="w-14 h-14 object-contain shrink-0 drop-shadow-sm"
+                className="size-12 object-contain shrink-0"
               />
               <div>
-                <span className="text-[10px] font-bold tracking-wider text-[#00B884] uppercase bg-emerald-100/70 px-2 py-0.5 rounded-full border border-emerald-200/60">
+                <Badge variant="outline" className="text-[10px] text-primary border-primary/30 uppercase py-0 font-bold">
                   SMK AL AMANAH
-                </span>
-                <h1 className="text-base font-bold text-slate-800 tracking-tight mt-0.5">
+                </Badge>
+                <h1 className="text-base font-bold text-foreground tracking-tight mt-1">
                   Kota Tangerang Selatan
                 </h1>
-                <p className="text-[11px] text-slate-500 font-normal">Yayasan Al Amanah Al Bantani</p>
+                <p className="text-[11px] text-muted-foreground font-normal">Yayasan Al Amanah Al Bantani</p>
               </div>
             </div>
 
             {/* Title & Description */}
             <div className="space-y-2 mt-8">
-              <h2 className="text-xl font-extrabold text-slate-800 tracking-tight leading-snug">
+              <h2 className="text-xl font-bold text-foreground tracking-tight leading-snug">
                 Sistem Presensi & Manajemen Ekstrakurikuler
               </h2>
-              <p className="text-xs text-slate-600 leading-relaxed font-normal">
+              <p className="text-xs text-muted-foreground leading-relaxed font-normal">
                 Portal resmi pemantauan kehadiran eskul real-time berbasis Dynamic QR Code, pembinaan karakter, dan pencatatan nilai rapor siswa.
               </p>
             </div>
 
             {/* School Feature Points */}
             <div className="space-y-2.5 mt-8">
-              <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/80 border border-emerald-100 shadow-2xs">
-                <div className="w-8 h-8 rounded-xl bg-[#00B884]/10 text-[#00B884] flex items-center justify-center shrink-0">
-                  <QrCode className="w-4 h-4" />
+              <div className="flex items-center gap-3 p-3 rounded-md bg-card border border-border">
+                <div className="size-8 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                  <QrCode className="size-4" />
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-slate-800">Presensi QR Dinamis</div>
-                  <div className="text-[11px] text-slate-500">Presensi aman anti-titip absen 15 detik</div>
+                  <div className="text-xs font-semibold text-foreground">Presensi QR Dinamis</div>
+                  <div className="text-[11px] text-muted-foreground">Presensi aman anti-titip absen 15 detik</div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/80 border border-emerald-100 shadow-2xs">
-                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                  <ShieldCheck className="w-4 h-4" />
+              <div className="flex items-center gap-3 p-3 rounded-md bg-card border border-border">
+                <div className="size-8 rounded-md bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                  <ShieldCheck className="size-4" />
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-slate-800">Akses Berbasis Peran</div>
-                  <div className="text-[11px] text-slate-500">Koordinator, Pembina, Wali Kelas, & Siswa</div>
+                  <div className="text-xs font-semibold text-foreground">Akses Berbasis Peran</div>
+                  <div className="text-[11px] text-muted-foreground">Koordinator, Pembina, Wali Kelas, & Siswa</div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/80 border border-emerald-100 shadow-2xs">
-                <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                  <Award className="w-4 h-4" />
+              <div className="flex items-center gap-3 p-3 rounded-md bg-card border border-border">
+                <div className="size-8 rounded-md bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                  <Award className="size-4" />
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-slate-800">Rekapitulasi Nilai & Rapor</div>
-                  <div className="text-[11px] text-slate-500">Predikat nilai A/B/C dan ekspor resmi</div>
+                  <div className="text-xs font-semibold text-foreground">Rekapitulasi Nilai & Rapor</div>
+                  <div className="text-[11px] text-muted-foreground">Predikat nilai A/B/C dan ekspor resmi</div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Footer Motto */}
-          <div className="pt-6 border-t border-slate-200/60 flex items-center justify-between text-[11px] text-slate-500">
+          <div className="pt-6 border-t border-border flex items-center justify-between text-[11px] text-muted-foreground">
             <span>T.A. 2026/2027 Ganjil</span>
-            <span className="text-emerald-700 font-medium flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#00B884] inline-block animate-pulse" />
+            <span className="text-primary font-medium flex items-center gap-1.5">
+              <span className="size-2 rounded-full bg-primary inline-block animate-pulse" />
               Sistem Aktif
             </span>
           </div>
@@ -153,26 +147,26 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         {/* Right Column: Clean Form Matching Website Styles */}
         <div className="col-span-1 lg:col-span-7 p-6 sm:p-8 xl:p-10 flex flex-col justify-center">
           {/* Mobile Header (Shown on small screens) */}
-          <div className="flex lg:hidden items-center gap-3 mb-6 pb-4 border-b border-slate-200">
+          <div className="flex lg:hidden items-center gap-3 mb-6 pb-4 border-b border-border">
             <img
               src="/logo-smk.png"
               alt="Logo SMK Al Amanah"
-              className="w-12 h-12 object-contain shrink-0"
+              className="size-10 object-contain shrink-0"
             />
             <div>
-              <span className="text-[10px] font-bold tracking-wider text-[#00B884] uppercase bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
+              <Badge variant="outline" className="text-[10px] text-primary border-primary/30 uppercase py-0 font-bold">
                 SMK AL AMANAH
-              </span>
-              <h2 className="text-base font-bold text-slate-800 mt-0.5">Sistem Presensi Eskul</h2>
+              </Badge>
+              <h2 className="text-base font-bold text-foreground mt-0.5">Sistem Presensi Eskul</h2>
             </div>
           </div>
 
           {/* Heading */}
           <div className="mb-6">
-            <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">
+            <h2 className="text-2xl font-bold text-foreground tracking-tight">
               Selamat Datang
             </h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               Silakan masuk menggunakan kredensial akun sekolah Anda.
             </p>
           </div>
@@ -190,9 +184,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 }}
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.35 }}
-                className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2.5"
+                className="mb-4 p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2.5"
               >
-                <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+                <AlertCircle className="size-4 text-destructive shrink-0" />
                 <span className="font-medium">{errorMessage}</span>
               </motion.div>
             )}
@@ -202,20 +196,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           <form onSubmit={handleFormSubmit} className="space-y-4">
             {/* Username Input */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              <label className="block text-xs font-semibold text-foreground mb-1.5">
                 Nama Pengguna / NIP / NIS
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <UserIcon className="w-4 h-4" />
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                  <UserIcon className="size-4" />
                 </div>
-                <input
+                <Input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Contoh: admin atau 20241001"
                   required
-                  className="w-full pl-10 pr-4 py-2.5 sm:py-3 rounded-xl bg-slate-50/70 border border-slate-200 text-slate-800 text-xs sm:text-sm placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#00B884] focus:ring-2 focus:ring-[#00B884]/20 transition-all font-medium"
+                  className="pl-9 h-10 text-xs sm:text-sm"
                 />
               </div>
             </div>
@@ -223,32 +217,29 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             {/* Password Input */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-semibold text-slate-700">
+                <label className="block text-xs font-semibold text-foreground">
                   Kata Sandi
                 </label>
-                <span className="text-[11px] text-slate-400 hover:text-[#00B884] cursor-pointer transition-colors">
-                  Format sandi siswa: al_amanah_xxx
-                </span>
               </div>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                  <Lock className="w-4 h-4" />
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
+                  <Lock className="size-4" />
                 </div>
-                <input
+                <Input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Masukkan kata sandi"
                   required
-                  className="w-full pl-10 pr-10 py-2.5 sm:py-3 rounded-xl bg-slate-50/70 border border-slate-200 text-slate-800 text-xs sm:text-sm placeholder-slate-400 focus:bg-white focus:outline-none focus:border-[#00B884] focus:ring-2 focus:ring-[#00B884]/20 transition-all font-medium"
+                  className="pl-9 pr-9 h-10 text-xs sm:text-sm"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label="Lihat kata sandi"
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
               </div>
             </div>
@@ -260,30 +251,32 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 text-[#00B884] focus:ring-0 focus:ring-offset-0 transition-colors accent-[#00B884]"
+                  className="size-4 rounded border-input text-primary focus:ring-0 focus:ring-offset-0 transition-colors accent-[#00B884]"
                 />
-                <span className="text-xs text-slate-600">Ingat sesi saya di peramban ini</span>
+                <span className="text-xs text-muted-foreground">Ingat sesi saya di peramban ini</span>
               </label>
             </div>
 
             {/* Submit Button */}
-            <button
+            <Button
               type="submit"
+              variant="brand"
+              size="lg"
               disabled={isLoading}
-              className="w-full py-3 px-4 rounded-xl bg-[#00B884] hover:bg-[#009e70] active:scale-[0.98] text-white font-semibold text-xs sm:text-sm shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed mt-2"
+              className="w-full h-10 text-xs sm:text-sm font-semibold gap-2 mt-2"
             >
               {isLoading ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div className="size-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
                   <span>Memverifikasi Kredensial...</span>
                 </>
               ) : (
                 <>
                   <span>Masuk ke Sistem</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="size-4" />
                 </>
               )}
-            </button>
+            </Button>
           </form>
         </div>
       </motion.div>

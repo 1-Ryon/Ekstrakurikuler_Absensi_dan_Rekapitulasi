@@ -1,7 +1,214 @@
-import test from 'node:test';
+import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import { PrismaClient } from '@prisma/client';
 
-const BASE_URL = 'http://localhost:5000/api';
+const BASE_URL = 'http://127.0.0.1:5000/api';
+let serverProcess = null;
+
+before(async () => {
+  // 1. Persiapkan fixture eskul untuk pengujian integrasi
+  const prisma = new PrismaClient();
+  await prisma.eskul.upsert({
+    where: { id: 'eskul-01' },
+    update: {},
+    create: {
+      id: 'eskul-01',
+      namaEskul: 'Futsal Prestasi',
+      kategori: 'Olahraga',
+      pembinaId: 'guru-pem-01',
+      jadwalHari: 'Kamis',
+      jamMulai: '15:30',
+      jamSelesai: '17:30',
+      lokasi: 'Lapangan Futsal SMK Al Amanah',
+      kuota: 50,
+      status: 'Aktif',
+      deskripsi: 'Pelatihan teknik sepak bola mini, taktik tim, dan persiapan turnamen.',
+    },
+  });
+
+  await prisma.eskul.upsert({
+    where: { id: 'eskul-02' },
+    update: {},
+    create: {
+      id: 'eskul-02',
+      namaEskul: 'Computer & Web Club',
+      kategori: 'Teknologi',
+      pembinaId: 'guru-pem-02',
+      jadwalHari: 'Jumat',
+      jamMulai: '13:30',
+      jamSelesai: '15:30',
+      lokasi: 'Lab Komputer RPL 1',
+      kuota: 50,
+      status: 'Aktif',
+      deskripsi: 'Pengembangan web modern, React, Node.js, UI/UX.',
+    },
+  });
+
+  await prisma.eskul.upsert({
+    where: { id: 'eskul-03' },
+    update: {},
+    create: {
+      id: 'eskul-03',
+      namaEskul: 'Seni Hadroh & Marawis',
+      kategori: 'Seni & Budaya',
+      pembinaId: 'guru-pem-03',
+      jadwalHari: 'Rabu',
+      jamMulai: '15:30',
+      jamSelesai: '17:00',
+      lokasi: 'Aula Masjid SMK Al Amanah',
+      kuota: 35,
+      status: 'Aktif',
+      deskripsi: 'Seni musik perkusi Islami.',
+    },
+  });
+
+  await prisma.eskul.upsert({
+    where: { id: 'eskul-06' },
+    update: {},
+    create: {
+      id: 'eskul-06',
+      namaEskul: 'Pramuka Penegak',
+      kategori: 'Kepemimpinan',
+      pembinaId: 'guru-pem-06',
+      jadwalHari: 'Kamis',
+      jamMulai: '15:30',
+      jamSelesai: '17:30',
+      lokasi: 'Lapangan Utama',
+      kuota: 60,
+      status: 'Aktif',
+      deskripsi: 'Kepanduan pramuka wajib dan penegak.',
+    },
+  });
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  await prisma.sesiPertemuan.upsert({
+    where: { id: 'sesi-01' },
+    update: { tanggal: todayStr, status: 'BERLANGSUNG' },
+    create: {
+      id: 'sesi-01',
+      eskulId: 'eskul-01',
+      pembuatId: 'guru-pem-01',
+      tanggal: todayStr,
+      jamMulai: '15:30',
+      jamSelesai: '17:30',
+      lokasi: 'Lapangan Futsal SMK Al Amanah',
+      judul: 'Latihan Rutin Pekanan & Pembekalan Futsal',
+      deskripsi: 'Materi pemantapan teknik lapangan dan kedisiplinan.',
+      materi: 'Modul Latihan Resmi 2026: Futsal Prestasi',
+      tokenAktif: 'SMK-AMANAH:eskul-01:12345:TEST',
+      status: 'BERLANGSUNG',
+    },
+  });
+
+  await prisma.pengajuanJadwal.upsert({
+    where: { id: 'prop-01' },
+    update: { status: 'MENUNGGU_VALIDASI', hariBaru: 'Sabtu' },
+    create: {
+      id: 'prop-01',
+      eskulId: 'eskul-01',
+      pembinaId: 'guru-pem-01',
+      hariLama: 'Kamis',
+      jamMulaiLama: '15:30',
+      jamSelesaiLama: '17:30',
+      lokasiLama: 'Lapangan Futsal SMK Al Amanah',
+      hariBaru: 'Sabtu',
+      jamMulaiBaru: '08:00',
+      jamSelesaiBaru: '10:30',
+      lokasiBaru: 'Lapangan Futsal & Plaza Upacara',
+      jenisPerubahan: 'PERMANEN',
+      alasan: 'Kondisi cuaca sore sering hujan lebat di hari Kamis.',
+      status: 'MENUNGGU_VALIDASI',
+    },
+  });
+
+  await prisma.pengajuanJadwal.upsert({
+    where: { id: 'prop-02' },
+    update: {},
+    create: {
+      id: 'prop-02',
+      eskulId: 'eskul-02',
+      pembinaId: 'guru-pem-02',
+      hariLama: 'Jumat',
+      jamMulaiLama: '13:30',
+      jamSelesaiLama: '15:30',
+      lokasiLama: 'Lab Komputer RPL 1',
+      hariBaru: 'Sabtu',
+      jamMulaiBaru: '09:00',
+      jamSelesaiBaru: '12:00',
+      lokasiBaru: 'Lab Komputer RPL 1 & 2',
+      jenisPerubahan: 'SEMENTARA',
+      alasan: 'Persiapan LKS.',
+      status: 'MENUNGGU_VALIDASI',
+    },
+  });
+
+  await prisma.pendaftaranEskul.upsert({
+    where: {
+      eskulId_siswaId_tahunAjaran: {
+        eskulId: 'eskul-01',
+        siswaId: 'sis-011',
+        tahunAjaran: '2026/2027',
+      },
+    },
+    update: { status: 'MENUNGGU_SELEKSI' },
+    create: {
+      id: 'pen-test-01',
+      eskulId: 'eskul-01',
+      siswaId: 'sis-011',
+      tahunAjaran: '2026/2027',
+      status: 'MENUNGGU_SELEKSI',
+      alasanDaftar: 'Mengembangkan minat olahraga futsal.',
+    },
+  });
+
+  await prisma.$disconnect();
+
+  let isReady = false;
+  try {
+    const res = await fetch(`${BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: 'admin', password: 'admin123' }),
+    });
+    if (res.ok) isReady = true;
+  } catch {}
+
+  if (!isReady) {
+    serverProcess = spawn('node', ['src/server.js'], {
+      cwd: process.cwd(),
+      stdio: 'pipe',
+      detached: false,
+    });
+
+    for (let i = 0; i < 40; i++) {
+      await new Promise((r) => setTimeout(r, 250));
+      try {
+        const res = await fetch(`${BASE_URL}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: 'admin', password: 'admin123' }),
+        });
+        if (res.ok) {
+          isReady = true;
+          break;
+        }
+      } catch {}
+    }
+  }
+});
+
+after(async () => {
+  if (serverProcess) {
+    serverProcess.kill('SIGTERM');
+  }
+
+  // Cleanup test-created records only (preserve master eskul data for app stability)
+  const prisma = new PrismaClient();
+  await prisma.pendaftaranEskul.deleteMany({ where: { id: { startsWith: 'pen-test-' } } });
+  await prisma.pengajuanJadwal.deleteMany({ where: { id: { startsWith: 'prop-test-' } } });
+  await prisma.$disconnect();
+});
 
 test('1. Auth: Admin login returns ADMIN role & Administrator Sistem profile (not Viska)', async () => {
   const res = await fetch(`${BASE_URL}/auth/login`, {
@@ -516,5 +723,44 @@ test('26. Pendaftaran: Koordinator validates (approves) and officially enrolls s
   assert.ok(found);
   assert.equal(found.status, 'RESMI_TERDAFTAR');
 });
+
+test('27. Prestasi: View competition records, add new achievement, and delete with bonus calculation', async () => {
+  // 1. GET /api/prestasi
+  const getRes = await fetch(`${BASE_URL}/prestasi`);
+  const getData = await getRes.json();
+  assert.equal(getData.success, true);
+  assert.ok(Array.isArray(getData.data));
+
+  // 2. POST /api/prestasi
+  const postRes = await fetch(`${BASE_URL}/prestasi`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      eskulId: 'eskul-01',
+      siswaId: 'sis-001',
+      namaLomba: 'Turnamen Futsal Antar Pelajar Se-Jabodetabek 2026',
+      penyelenggara: 'Dispora Tangsel',
+      tingkat: 'PROVINSI',
+      peringkat: 'JUARA_1',
+      tanggal: '2026-05-15',
+      keterangan: 'Top scorer dengan 7 gol.',
+    }),
+  });
+  assert.equal(postRes.status, 201);
+  const postData = await postRes.json();
+  assert.equal(postData.success, true);
+  assert.ok(postData.data?.id);
+
+  const createdId = postData.data.id;
+
+  // 3. DELETE /api/prestasi/:id
+  const delRes = await fetch(`${BASE_URL}/prestasi/${createdId}`, {
+    method: 'DELETE',
+  });
+  assert.equal(delRes.status, 200);
+  const delData = await delRes.json();
+  assert.equal(delData.success, true);
+});
+
 
 

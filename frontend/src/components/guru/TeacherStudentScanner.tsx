@@ -22,6 +22,7 @@ import {
   Award,
   FileText,
   HeartPulse,
+  UserCheck,
   X
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -31,7 +32,7 @@ import { UserAvatar } from '../common/UserAvatar';
 import { api } from '../../services/api';
 
 interface TeacherStudentScannerProps {
-  currentSession: SesiPertemuan;
+  currentSession?: SesiPertemuan | null;
   sessions?: SesiPertemuan[];
   onSelectSession?: (session: SesiPertemuan) => void;
   students: StudentProfile[];
@@ -95,15 +96,17 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
 
   // Filter students enrolled in this eskul
   const enrolledStudents = useMemo(() => {
+    if (!currentSession) return [];
     const filtered = students.filter(s => s.enrolledEskulIds?.includes(currentSession.eskulId));
     return filtered.length > 0 ? filtered : students;
-  }, [students, currentSession.eskulId]);
+  }, [students, currentSession?.eskulId]);
 
   // Attendance Map for multi-stage workflow
   const [attendanceMap, setAttendanceMap] = useState<Record<string, StudentAttendanceItem>>({});
 
   // Initialize attendance map from enrolled students and past session logs
   useEffect(() => {
+    if (!currentSession) return;
     const sessionLogs = recentLogs.filter(l => l.sesiId === currentSession.id);
     const initial: Record<string, StudentAttendanceItem> = {};
 
@@ -126,7 +129,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
     });
 
     setAttendanceMap(initial);
-  }, [currentSession.id, enrolledStudents]);
+  }, [currentSession?.id, enrolledStudents]);
 
   // Derived lists
   const attendanceList = useMemo(() => Object.values(attendanceMap), [attendanceMap]);
@@ -139,7 +142,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
     return Math.round(sum / hadirStudents.length);
   }, [hadirStudents]);
 
-  const isSessionLocked = currentSession.isLocked || currentSession.status === 'SELESAI';
+  const isSessionLocked = currentSession ? (currentSession.isLocked || currentSession.status === 'SELESAI') : false;
 
   const playBeep = () => {
     if (!soundEnabled) return;
@@ -280,7 +283,9 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
       };
 
       setLastScannedStudent(verifiedStudent);
-      onRecordAttendance(verifiedStudent, currentSession);
+      if (currentSession) {
+        onRecordAttendance(verifiedStudent, currentSession);
+      }
       showToast(`Presensi ${verifiedStudent.namaLengkap} tercatat HADIR!`, 'success');
     } finally {
       setTimeout(() => {
@@ -365,6 +370,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
 
   // Tahap 4: Final Submit (Kunci Sesi & Masuk ke Log Presensi)
   const handleFinalizeAndLock = async () => {
+    if (!currentSession) return;
     setActionLoading(true);
     try {
       const attendancePayload = Object.values(attendanceMap).map(item => ({
@@ -399,7 +405,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
 
   // Handle Mark Holiday
   const handleConfirmHoliday = async () => {
-    if (!holidayReason.trim()) return;
+    if (!currentSession || !holidayReason.trim()) return;
     setActionLoading(true);
     try {
       await api.markHolidaySession({
@@ -424,11 +430,31 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
     s.kelas.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  if (!currentSession) {
+    return (
+      <div className="space-y-6 pb-8">
+        <div className="bg-white rounded-lg border border-slate-200 p-8 sm:p-12 text-center shadow-xs space-y-4">
+          <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-100">
+            <UserCheck className="w-8 h-8" />
+          </div>
+          <div className="space-y-1.5 max-w-md mx-auto">
+            <h2 className="text-xl font-bold text-slate-800 tracking-tight">
+              Belum Ada Sesi Absensi Aktif
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500">
+              Tidak ada sesi presensi ekstrakurikuler yang sedang aktif untuk dipindai saat ini. Buka sesi absensi terlebih dahulu sebelum memindai kartu siswa.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 pb-8">
       {/* Toast Alert */}
       {toastMessage && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-2.5 rounded-xl shadow-lg border text-xs font-bold flex items-center gap-2 animate-in fade-in slide-in-from-top-2 ${
+        <div className={`fixed top-4 right-4 z-50 px-4 py-2.5 rounded-md shadow-lg border text-xs font-bold flex items-center gap-2 animate-in fade-in slide-in-from-top-2 ${
           toastMessage.type === 'success' 
             ? 'bg-emerald-600 text-white border-emerald-500' 
             : 'bg-rose-600 text-white border-rose-500'
@@ -458,7 +484,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
-            className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-600 hover:text-slate-900 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+            className="p-2.5 bg-white border border-slate-200 rounded-md text-slate-600 hover:text-slate-900 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
           >
             {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-600" /> : <VolumeX className="w-4 h-4 text-slate-400" />}
             <span>{soundEnabled ? 'Beep Aktif' : 'Hening'}</span>
@@ -466,7 +492,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
 
           <button
             onClick={() => setIsHolidayModalOpen(true)}
-            className="px-3.5 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/80 rounded-xl text-xs font-bold shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer"
+            className="px-3.5 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/80 rounded-md text-xs font-bold shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer"
           >
             <CalendarOff className="w-4 h-4 text-amber-600" />
             <span>Tandai Libur</span>
@@ -475,21 +501,23 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
       </div>
 
       {/* Stepper Navigation: 4 Tahap Resmi */}
-      <div className="bg-gradient-to-r from-emerald-800 via-[#00B884] to-teal-700 text-white p-2 sm:p-2.5 rounded-3xl shadow-sm">
+      <div className="bg-white border border-slate-200 p-2 sm:p-2.5 rounded-lg shadow-xs">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           {/* Step 1 */}
           <button
             onClick={() => setCurrentStep(1)}
-            className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+            className={`p-3 rounded-md border text-left transition-all cursor-pointer ${
               currentStep === 1
-                ? 'bg-white text-slate-900 shadow-md font-bold'
-                : 'bg-white/10 text-emerald-100 hover:bg-white/15 border-white/15'
+                ? 'bg-emerald-50 text-slate-900 border-[#00B884] shadow-xs font-bold'
+                : 'bg-slate-50 text-slate-600 hover:bg-slate-100/80 border-slate-200'
             }`}
           >
-            <div className="text-[10px] uppercase font-bold tracking-wider opacity-75">Tahap 1</div>
+            <div className="text-[10px] uppercase font-bold tracking-wider text-slate-500">Tahap 1</div>
             <div className="text-xs font-extrabold flex items-center justify-between mt-0.5">
               <span>Pindai Kartu Siswa</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500 text-white font-mono">
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
+                currentStep === 1 ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-700'
+              }`}>
                 {hadirStudents.length} Hadir
               </span>
             </div>
@@ -498,16 +526,18 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
           {/* Step 2 */}
           <button
             onClick={() => setCurrentStep(2)}
-            className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+            className={`p-3 rounded-md border text-left transition-all cursor-pointer ${
               currentStep === 2
-                ? 'bg-white text-slate-900 shadow-md font-bold'
-                : 'bg-white/10 text-emerald-100 hover:bg-white/15 border-white/15'
+                ? 'bg-emerald-50 text-slate-900 border-[#00B884] shadow-xs font-bold'
+                : 'bg-slate-50 text-slate-600 hover:bg-slate-100/80 border-slate-200'
             }`}
           >
-            <div className="text-[10px] uppercase font-bold tracking-wider opacity-75">Tahap 2</div>
+            <div className="text-[10px] uppercase font-bold tracking-wider text-slate-500">Tahap 2</div>
             <div className="text-xs font-extrabold flex items-center justify-between mt-0.5">
               <span>Nilai Keaktifan</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-400 text-amber-950 font-mono">
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
+                currentStep === 2 ? 'bg-amber-500 text-white' : 'bg-slate-200 text-slate-700'
+              }`}>
                 Rata2 {avgKeaktifan}
               </span>
             </div>
@@ -516,16 +546,18 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
           {/* Step 3 */}
           <button
             onClick={() => setCurrentStep(3)}
-            className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+            className={`p-3 rounded-md border text-left transition-all cursor-pointer ${
               currentStep === 3
-                ? 'bg-white text-slate-900 shadow-md font-bold'
-                : 'bg-white/10 text-emerald-100 hover:bg-white/15 border-white/15'
+                ? 'bg-emerald-50 text-slate-900 border-[#00B884] shadow-xs font-bold'
+                : 'bg-slate-50 text-slate-600 hover:bg-slate-100/80 border-slate-200'
             }`}
           >
-            <div className="text-[10px] uppercase font-bold tracking-wider opacity-75">Tahap 3</div>
+            <div className="text-[10px] uppercase font-bold tracking-wider text-slate-500">Tahap 3</div>
             <div className="text-xs font-extrabold flex items-center justify-between mt-0.5">
               <span>Izin, Sakit &amp; Telat</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-blue-500 text-white font-mono">
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
+                currentStep === 3 ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-700'
+              }`}>
                 {nonHadirStudents.length} Siswa
               </span>
             </div>
@@ -534,19 +566,19 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
           {/* Step 4 */}
           <button
             onClick={() => setCurrentStep(4)}
-            className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+            className={`p-3 rounded-md border text-left transition-all cursor-pointer ${
               currentStep === 4
-                ? 'bg-white text-slate-900 shadow-md font-bold'
-                : 'bg-white/10 text-emerald-100 hover:bg-white/15 border-white/15'
+                ? 'bg-emerald-50 text-slate-900 border-[#00B884] shadow-xs font-bold'
+                : 'bg-slate-50 text-slate-600 hover:bg-slate-100/80 border-slate-200'
             }`}
           >
-            <div className="text-[10px] uppercase font-bold tracking-wider opacity-75">Tahap 4</div>
+            <div className="text-[10px] uppercase font-bold tracking-wider text-slate-500">Tahap 4</div>
             <div className="text-xs font-extrabold flex items-center justify-between mt-0.5">
               <span>Review &amp; Kunci Log</span>
               {isSessionLocked ? (
-                <Lock className="w-3.5 h-3.5 text-amber-300" />
+                <Lock className="w-3.5 h-3.5 text-amber-600" />
               ) : (
-                <span className="text-[10px] text-emerald-200">Submit</span>
+                <span className="text-[10px] text-emerald-700 font-bold">Submit</span>
               )}
             </div>
           </button>
@@ -555,14 +587,14 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
 
       {/* Sesi Selector Tabs */}
       {sessions.length > 1 && onSelectSession && (
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 flex items-center gap-3 overflow-x-auto">
+        <div className="bg-white p-3.5 rounded-lg border border-slate-200 flex items-center gap-3 overflow-x-auto">
           <span className="text-xs font-bold text-slate-600 shrink-0">Pilih Sesi Latihan:</span>
           <div className="flex items-center gap-2">
             {sessions.map((sess) => (
               <button
                 key={sess.id}
                 onClick={() => onSelectSession(sess)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all shrink-0 cursor-pointer ${
                   currentSession.id === sess.id
                     ? 'bg-[#00B884] text-white shadow-xs'
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -582,7 +614,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
         <div className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* Left: Viewfinder Camera */}
-            <div className="lg:col-span-7 bg-slate-950 text-white rounded-3xl p-6 shadow-xl border border-slate-800 flex flex-col items-center justify-between relative overflow-hidden">
+            <div className="lg:col-span-7 bg-slate-950 text-white rounded-lg p-6 shadow-xl border border-slate-800 flex flex-col items-center justify-between relative overflow-hidden">
               <div className="w-full flex items-center justify-between border-b border-slate-800/80 pb-3 mb-4">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
@@ -592,7 +624,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
                 </div>
                 <button
                   onClick={handleToggleCamera}
-                  className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <SwitchCamera className="w-3.5 h-3.5 text-emerald-400" />
                   <span>{facingMode === 'environment' ? 'Kamera Belakang' : 'Kamera Depan'}</span>
@@ -600,7 +632,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
               </div>
 
               {/* Camera Frame */}
-              <div className="relative w-full max-w-sm aspect-square bg-black rounded-2xl border-2 border-slate-700 overflow-hidden flex flex-col items-center justify-center my-2 shadow-2xl">
+              <div className="relative w-full max-w-sm aspect-square bg-black rounded-md border-2 border-slate-700 overflow-hidden flex flex-col items-center justify-center my-2 shadow-2xl">
                 <div
                   id={scannerContainerId}
                   className="w-full h-full overflow-hidden [&_video]:w-full [&_video]:h-full [&_video]:object-cover"
@@ -611,7 +643,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
                 )}
 
                 <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                  <div className="w-56 h-56 border-2 border-dashed border-[#00B884]/80 rounded-2xl relative">
+                  <div className="w-56 h-56 border-2 border-dashed border-[#00B884]/80 rounded-md relative">
                     <div className="absolute -top-1 -left-1 w-6 h-6 border-t-3 border-l-3 border-[#00B884] rounded-tl" />
                     <div className="absolute -top-1 -right-1 w-6 h-6 border-t-3 border-r-3 border-[#00B884] rounded-tr" />
                     <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-3 border-l-3 border-[#00B884] rounded-bl" />
@@ -630,7 +662,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
                     <p className="text-xs text-slate-300 font-medium max-w-xs">{cameraError}</p>
                     <button
                       onClick={() => startCamera(facingMode)}
-                      className="mt-3 px-3 py-1.5 bg-[#00B884] hover:bg-[#009e70] text-white text-xs font-bold rounded-lg cursor-pointer"
+                      className="mt-3 px-3 py-1.5 bg-[#00B884] hover:bg-[#009e70] text-white text-xs font-bold rounded-md cursor-pointer"
                     >
                       Coba Akses Lagi
                     </button>
@@ -639,7 +671,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
               </div>
 
               {/* Pencarian Darurat Siswa */}
-              <div className="w-full mt-4 bg-slate-900/90 p-3 rounded-2xl border border-slate-800">
+              <div className="w-full mt-4 bg-slate-900/90 p-3 rounded-md border border-slate-800">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
                     <Search className="w-3 h-3 text-[#00B884]" />
@@ -653,10 +685,10 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Ketik nama siswa atau NIS..."
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#00B884]"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#00B884]"
                   />
                   {searchQuery && (
-                    <div className="absolute left-0 right-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-xl max-h-40 overflow-y-auto z-20 shadow-xl">
+                    <div className="absolute left-0 right-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-md max-h-40 overflow-y-auto z-20 shadow-xl">
                       {filteredSearchStudents.length > 0 ? (
                         filteredSearchStudents.slice(0, 5).map((stu) => (
                           <div
@@ -687,7 +719,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
 
             {/* Right: Last Scanned Confirmation & Live List */}
             <div className="lg:col-span-5 space-y-5">
-              <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+              <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
                     <FileCheck className="w-4 h-4 text-[#00B884]" />
@@ -699,11 +731,11 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
                 </div>
 
                 {lastScannedStudent ? (
-                  <div className="p-4 bg-emerald-50/80 border border-emerald-200 rounded-2xl animate-in zoom-in-95 duration-200">
+                  <div className="p-4 bg-emerald-50/80 border border-emerald-200 rounded-md animate-in zoom-in-95 duration-200">
                     <div className="flex items-center gap-3.5 mb-2">
                       <UserAvatar
                         name={lastScannedStudent.namaLengkap}
-                        className="w-12 h-12 rounded-2xl ring-2 ring-[#00B884] shadow-xs text-base"
+                        className="w-12 h-12 rounded-md ring-2 ring-[#00B884] shadow-xs text-base"
                       />
                       <div>
                         <h4 className="font-extrabold text-sm text-slate-900 leading-tight">
@@ -720,7 +752,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <div className="p-8 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-center text-xs text-slate-400">
+                  <div className="p-8 bg-slate-50 rounded-md border border-dashed border-slate-200 text-center text-xs text-slate-400">
                     <QrCode className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                     <p>Kamera aktif. Arahkan ke kartu siswa untuk mencatat kehadiran.</p>
                   </div>
@@ -728,7 +760,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
               </div>
 
               {/* Roster Checklist Summary */}
-              <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+              <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs">
                 <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center justify-between">
                   <span>Daftar Siswa Hadir</span>
                   <span className="text-[#00B884] font-extrabold text-sm">
@@ -741,7 +773,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
                     hadirStudents.map((stu) => (
                       <div
                         key={stu.siswaId}
-                        className="p-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl flex items-center justify-between text-xs border border-slate-100"
+                        className="p-2.5 bg-slate-50 hover:bg-slate-100 rounded-md flex items-center justify-between text-xs border border-slate-100"
                       >
                         <div className="flex items-center gap-2">
                           <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -766,13 +798,13 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
           </div>
 
           {/* Bottom Bar: Lanjut ke Tahap 2 */}
-          <div className="p-4 bg-white rounded-2xl border border-slate-200 flex items-center justify-between">
+          <div className="p-4 bg-white rounded-lg border border-slate-200 flex items-center justify-between">
             <span className="text-xs text-slate-600 font-medium">
               Selesai memindai kehadiran? Lanjutkan untuk memberikan nilai keaktifan lapangan.
             </span>
             <button
               onClick={() => setCurrentStep(2)}
-              className="px-6 py-2.5 bg-[#00B884] hover:bg-[#009e70] text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-2 cursor-pointer transition-all"
+              className="px-5 py-2.5 bg-[#00B884] hover:bg-[#009e70] text-white font-bold text-xs rounded-md shadow-xs flex items-center gap-2 cursor-pointer transition-all"
             >
               <span>Lanjut ke Tahap 2: Nilai Keaktifan</span>
               <ArrowRight className="w-4 h-4" />
@@ -785,7 +817,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
       {/* TAHAP 2: NILAI KEAKTIFAN LAPANGAN (BUKAN BINTANG, TAPI RATING TOMBOL SKOR) */}
       {/* ========================================================================= */}
       {currentStep === 2 && (
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-6">
+        <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-xs space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
             <div>
               <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
@@ -803,14 +835,14 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
               <button
                 type="button"
                 onClick={() => handleBatchSetKeaktifan(92, 'Sangat Baik')}
-                className="px-3 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-800 rounded-xl text-xs font-bold border border-teal-200 transition-colors cursor-pointer"
+                className="px-3 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-800 rounded-md text-xs font-bold border border-teal-200 transition-colors cursor-pointer"
               >
                 92 (Sangat Baik)
               </button>
               <button
                 type="button"
                 onClick={() => handleBatchSetKeaktifan(85, 'Baik')}
-                className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-[#00B884] rounded-xl text-xs font-bold border border-emerald-200 transition-colors cursor-pointer"
+                className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-[#00B884] rounded-md text-xs font-bold border border-emerald-200 transition-colors cursor-pointer"
               >
                 85 (Baik)
               </button>
@@ -828,11 +860,11 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
               {hadirStudents.map((s) => (
                 <div
                   key={s.siswaId}
-                  className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-3"
+                  className="p-4 rounded-md border border-slate-200 bg-slate-50/70 space-y-3"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <UserAvatar name={s.namaSiswa} className="w-10 h-10 rounded-xl shrink-0" />
+                      <UserAvatar name={s.namaSiswa} className="w-10 h-10 rounded-md shrink-0" />
                       <div>
                         <div className="font-extrabold text-sm text-slate-900">{s.namaSiswa}</div>
                         <div className="text-[11px] text-slate-500 font-mono">{s.kelas} • NIS: {s.nis}</div>
@@ -855,7 +887,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
                           key={opt.score}
                           type="button"
                           onClick={() => handleSetStudentScore(s.siswaId, opt.score, opt.label)}
-                          className={`py-1.5 px-2 rounded-xl text-center text-[10px] font-extrabold transition-all cursor-pointer ${
+                          className={`py-1.5 px-2 rounded-md text-center text-[10px] font-extrabold transition-all cursor-pointer ${
                             isSelected
                               ? `${opt.color} shadow-xs scale-102`
                               : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
@@ -876,14 +908,14 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
           <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
             <button
               onClick={() => setCurrentStep(1)}
-              className="px-4 py-2 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2 border border-slate-200 text-slate-700 font-bold text-xs rounded-md hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Kembali ke Tahap 1: Scan</span>
             </button>
             <button
               onClick={() => setCurrentStep(3)}
-              className="px-6 py-2.5 bg-[#00B884] hover:bg-[#009e70] text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-2 cursor-pointer transition-all"
+              className="px-5 py-2.5 bg-[#00B884] hover:bg-[#009e70] text-white font-bold text-xs rounded-md shadow-xs flex items-center gap-2 cursor-pointer transition-all"
             >
               <span>Lanjut ke Tahap 3: Izin, Sakit &amp; Telat</span>
               <ArrowRight className="w-4 h-4" />
@@ -896,7 +928,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
       {/* TAHAP 3: SIAPA YANG TIDAK HADIR, TELAT, IZIN, ATAU SAKIT                 */}
       {/* ========================================================================= */}
       {currentStep === 3 && (
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-6">
+        <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-xs space-y-6">
           <div className="border-b border-slate-100 pb-5">
             <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
               <FileText className="w-5 h-5 text-blue-600" />
@@ -909,7 +941,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
 
           <div className="space-y-3.5">
             {nonHadirStudents.length === 0 ? (
-              <div className="p-8 text-center text-slate-500 text-xs bg-emerald-50 rounded-2xl border border-emerald-200">
+              <div className="p-8 text-center text-slate-500 text-xs bg-emerald-50 rounded-md border border-emerald-200">
                 <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
                 <div className="font-bold text-emerald-900">Seluruh anggota hadir lengkap (100%)!</div>
                 <p className="text-[11px] text-emerald-700 mt-1">Tidak ada siswa yang berhalangan atau alpa hari ini.</p>
@@ -918,11 +950,11 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
               nonHadirStudents.map((s) => (
                 <div
                   key={s.siswaId}
-                  className="p-4 rounded-2xl border border-slate-200 bg-slate-50/80 space-y-3"
+                  className="p-4 rounded-md border border-slate-200 bg-slate-50/80 space-y-3"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <UserAvatar name={s.namaSiswa} className="w-10 h-10 rounded-xl shrink-0" />
+                      <UserAvatar name={s.namaSiswa} className="w-10 h-10 rounded-md shrink-0" />
                       <div>
                         <div className="font-extrabold text-sm text-slate-800">{s.namaSiswa}</div>
                         <div className="text-[11px] text-slate-500 font-mono">{s.kelas} • NIS: {s.nis}</div>
@@ -934,7 +966,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
                       <button
                         type="button"
                         onClick={() => handleSetNonHadirStatus(s.siswaId, 'IZIN')}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
                           s.status === 'IZIN'
                             ? 'bg-blue-600 text-white shadow-xs'
                             : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
@@ -945,7 +977,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
                       <button
                         type="button"
                         onClick={() => handleSetNonHadirStatus(s.siswaId, 'SAKIT')}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
                           s.status === 'SAKIT'
                             ? 'bg-amber-500 text-white shadow-xs'
                             : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
@@ -956,7 +988,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
                       <button
                         type="button"
                         onClick={() => handleSetNonHadirStatus(s.siswaId, 'HADIR', true)}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
                           s.isTelat
                             ? 'bg-purple-600 text-white shadow-xs'
                             : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
@@ -967,7 +999,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
                       <button
                         type="button"
                         onClick={() => handleSetNonHadirStatus(s.siswaId, 'ALFA')}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
                           s.status === 'ALFA' && !s.isTelat
                             ? 'bg-rose-600 text-white shadow-xs'
                             : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
@@ -986,7 +1018,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
                       value={s.keterangan}
                       onChange={(e) => handleSetKeterangan(s.siswaId, e.target.value)}
                       placeholder={s.status === 'IZIN' ? 'Keterangan izin orang tua...' : s.status === 'SAKIT' ? 'Keterangan sakit dokter...' : 'Catatan dispensasi...'}
-                      className="flex-1 bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                      className="flex-1 bg-white border border-slate-200 rounded-md px-2.5 py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500"
                     />
                   </div>
                 </div>
@@ -998,14 +1030,14 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
           <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
             <button
               onClick={() => setCurrentStep(2)}
-              className="px-4 py-2 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2 border border-slate-200 text-slate-700 font-bold text-xs rounded-md hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Kembali ke Tahap 2: Keaktifan</span>
             </button>
             <button
               onClick={() => setCurrentStep(4)}
-              className="px-6 py-2.5 bg-[#00B884] hover:bg-[#009e70] text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-2 cursor-pointer transition-all"
+              className="px-5 py-2.5 bg-[#00B884] hover:bg-[#009e70] text-white font-bold text-xs rounded-md shadow-xs flex items-center gap-2 cursor-pointer transition-all"
             >
               <span>Lanjut ke Tahap 4: Review &amp; Kunci Sesi</span>
               <ArrowRight className="w-4 h-4" />
@@ -1018,7 +1050,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
       {/* TAHAP 4: REVIEW REKAPITULASI & FINAL SUBMIT KUNCI LOG PRESENSI            */}
       {/* ========================================================================= */}
       {currentStep === 4 && (
-        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-7 shadow-sm space-y-6">
+        <div className="bg-white rounded-lg border border-slate-200 p-6 sm:p-7 shadow-xs space-y-6">
           <div className="border-b border-slate-100 pb-5">
             <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
               <ShieldCheck className="w-6 h-6 text-[#00B884]" />
@@ -1031,26 +1063,26 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
 
           {/* Metrics Overview */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-900">
+            <div className="p-4 rounded-md bg-emerald-50 border border-emerald-100 text-emerald-900">
               <div className="text-[11px] font-bold text-emerald-700">Hadir</div>
               <div className="text-2xl font-black mt-1">{hadirStudents.length} Siswa</div>
               <div className="text-[10px] text-emerald-600 mt-0.5">Rata-rata Keaktifan: {avgKeaktifan}</div>
             </div>
-            <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100 text-blue-900">
+            <div className="p-4 rounded-md bg-blue-50 border border-blue-100 text-blue-900">
               <div className="text-[11px] font-bold text-blue-700">Izin (Surat)</div>
               <div className="text-2xl font-black mt-1">
                 {attendanceList.filter(s => s.status === 'IZIN').length} Siswa
               </div>
               <div className="text-[10px] text-blue-600 mt-0.5">Dispensasi resmi</div>
             </div>
-            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100 text-amber-900">
+            <div className="p-4 rounded-md bg-amber-50 border border-amber-100 text-amber-900">
               <div className="text-[11px] font-bold text-amber-700">Sakit</div>
               <div className="text-2xl font-black mt-1">
                 {attendanceList.filter(s => s.status === 'SAKIT').length} Siswa
               </div>
               <div className="text-[10px] text-amber-600 mt-0.5">Keterangan medis</div>
             </div>
-            <div className="p-4 rounded-2xl bg-rose-50 border border-rose-100 text-rose-900">
+            <div className="p-4 rounded-md bg-rose-50 border border-rose-100 text-rose-900">
               <div className="text-[11px] font-bold text-rose-700">Alpa</div>
               <div className="text-2xl font-black mt-1">
                 {attendanceList.filter(s => s.status === 'ALFA').length} Siswa
@@ -1060,7 +1092,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
           </div>
 
           {/* Summary Roster List */}
-          <div className="border border-slate-200 rounded-2xl overflow-hidden max-h-72 overflow-y-auto">
+          <div className="border border-slate-200 rounded-md overflow-hidden max-h-72 overflow-y-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold uppercase text-slate-500">
                 <tr>
@@ -1123,7 +1155,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
           <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
             <button
               onClick={() => setCurrentStep(3)}
-              className="w-full sm:w-auto px-4 py-2 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-50 flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full sm:w-auto px-4 py-2 border border-slate-200 text-slate-700 font-bold text-xs rounded-md hover:bg-slate-50 flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Kembali ke Tahap 3: Dispensasi</span>
@@ -1132,7 +1164,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
             <button
               onClick={() => setIsLockModalOpen(true)}
               disabled={isSessionLocked}
-              className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-emerald-600 via-[#00B884] to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs rounded-xl shadow-lg flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50"
+              className="w-full sm:w-auto px-5 py-2.5 bg-[#00B884] hover:bg-[#009e70] text-white font-extrabold text-xs rounded-md shadow-xs flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50"
             >
               <Lock className="w-4 h-4" />
               <span>{isSessionLocked ? 'Sesi Sudah Terkunci' : 'Kunci & Submit Presensi Permanen ke Log'}</span>
@@ -1144,7 +1176,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
       {/* MODAL: Tandai Hari Libur */}
       {isHolidayModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl border border-slate-200">
             <h3 className="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
               <CalendarOff className="w-5 h-5 text-amber-600" />
               <span>Tandai Libur / Tanggal Merah</span>
@@ -1157,7 +1189,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
               <select
                 value={holidayReason}
                 onChange={(e) => setHolidayReason(e.target.value)}
-                className="w-full border border-slate-300 rounded-xl p-2.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-amber-500"
+                className="w-full border border-slate-300 rounded-md p-2.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-amber-500"
               >
                 <option value="Hari Libur Nasional / Tanggal Merah">Hari Libur Nasional / Tanggal Merah</option>
                 <option value="Kegiatan Sekolah / Ujian Semester">Kegiatan Sekolah / Ujian Semester</option>
@@ -1170,7 +1202,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
               <button
                 type="button"
                 onClick={() => setIsHolidayModalOpen(false)}
-                className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                className="px-4 py-2 border border-slate-200 rounded-md text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
               >
                 Batal
               </button>
@@ -1178,7 +1210,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
                 type="button"
                 onClick={handleConfirmHoliday}
                 disabled={actionLoading}
-                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-md text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
               >
                 {actionLoading ? 'Menyimpan...' : 'Simpan Status Libur'}
               </button>
@@ -1190,16 +1222,16 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
       {/* MODAL: Konfirmasi Kunci & Submit Presensi */}
       {isLockModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl border border-slate-200">
             <h3 className="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
-              <Lock className="w-5 h-5 text-emerald-600" />
+              <Lock className="w-5 h-5 text-[#00B884]" />
               <span>Konfirmasi Kunci &amp; Submit Presensi</span>
             </h3>
             <p className="text-xs text-slate-500 mb-4">
               Setelah disubmit, sesi akan menjadi <strong>ARSIP PERMANEN</strong> (status SELESAI), data terkunci tidak dapat diubah lagi, dan langsung masuk ke log presensi hari ini.
             </p>
 
-            <div className="p-3.5 bg-emerald-50 rounded-xl border border-emerald-200 mb-6 text-xs text-emerald-900 space-y-1">
+            <div className="p-3.5 bg-emerald-50 rounded-md border border-emerald-200 mb-6 text-xs text-emerald-900 space-y-1">
               <div>Ekstrakurikuler: <strong>{currentSession.namaEskul}</strong></div>
               <div>Total Hadir: <strong>{hadirStudents.length} Siswa</strong> (Rata2 Keaktifan: {avgKeaktifan})</div>
               <div>Izin &amp; Sakit: <strong>{attendanceList.filter(s => s.status === 'IZIN' || s.status === 'SAKIT').length} Siswa</strong></div>
@@ -1210,7 +1242,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
               <button
                 type="button"
                 onClick={() => setIsLockModalOpen(false)}
-                className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                className="px-4 py-2 border border-slate-200 rounded-md text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
               >
                 Periksa Kembali
               </button>
@@ -1218,7 +1250,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
                 type="button"
                 onClick={handleFinalizeAndLock}
                 disabled={actionLoading}
-                className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                className="px-4 py-2 bg-[#00B884] hover:bg-[#009e70] text-white rounded-md text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
               >
                 {actionLoading ? 'Mengunci...' : 'Ya, Kunci & Submit ke Log'}
               </button>

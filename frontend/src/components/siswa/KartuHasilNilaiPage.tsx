@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Printer, 
   ArrowLeft, 
@@ -8,10 +8,14 @@ import {
   FileText,
   Calendar,
   Download,
-  Share2
+  Share2,
+  Trophy,
+  Medal,
+  Sparkles
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { StudentProfile, Eskul, PenilaianRecord } from '../../types';
+import { StudentProfile, Eskul, PenilaianRecord, PrestasiLombaRecord } from '../../types';
+import { api } from '../../services/api';
 
 interface KartuHasilNilaiPageProps {
   student: StudentProfile;
@@ -26,6 +30,18 @@ export const KartuHasilNilaiPage: React.FC<KartuHasilNilaiPageProps> = ({
   penilaianRecords = [],
   onBack,
 }) => {
+  const [studentPrestasi, setStudentPrestasi] = useState<PrestasiLombaRecord[]>([]);
+
+  useEffect(() => {
+    if (student?.id) {
+      api.getPrestasi({ siswaId: student.id })
+        .then(data => {
+          if (Array.isArray(data)) setStudentPrestasi(data);
+        })
+        .catch(() => {});
+    }
+  }, [student?.id]);
+
   const handlePrint = () => {
     window.print();
   };
@@ -83,11 +99,11 @@ export const KartuHasilNilaiPage: React.FC<KartuHasilNilaiPageProps> = ({
   return (
     <div className="space-y-6 pb-12 animate-in fade-in duration-200">
       {/* Top Document Ribbon / Toolbar (Hidden on Print) */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 print:hidden">
+      <div className="bg-white rounded-lg border border-slate-200/90 p-4 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 print:hidden">
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="p-2 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 rounded-xl transition-all flex items-center justify-center cursor-pointer"
+            className="p-2 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 rounded-md transition-all flex items-center justify-center cursor-pointer"
             title="Kembali ke Beranda Dashboard"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -95,7 +111,7 @@ export const KartuHasilNilaiPage: React.FC<KartuHasilNilaiPageProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-slate-900">Dokumen Lembar Rapor</span>
-              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full border border-emerald-200">
+              <span className="text-[10px] bg-emerald-50 text-emerald-800 font-semibold px-2 py-0.5 rounded-md border border-emerald-200">
                 RESMI
               </span>
             </div>
@@ -108,16 +124,16 @@ export const KartuHasilNilaiPage: React.FC<KartuHasilNilaiPageProps> = ({
         <div className="flex items-center gap-2 self-end sm:self-auto">
           <button
             onClick={handlePrint}
-            className="flex items-center gap-2 px-4 py-2 bg-[#00B884] hover:bg-[#009e70] active:scale-95 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+            className="flex items-center gap-2 px-3.5 py-1.5 bg-[#00B884] hover:bg-[#009e70] active:scale-95 text-white font-semibold text-xs rounded-md shadow-xs transition-all cursor-pointer"
           >
-            <Printer className="w-4 h-4" />
+            <Printer className="size-4" />
             <span>Cetak / Simpan PDF</span>
           </button>
         </div>
       </div>
 
       {/* Word-like Document Container (A4 Page View) */}
-      <div className="max-w-4xl mx-auto bg-white rounded-2xl sm:rounded-3xl border border-slate-200 shadow-lg p-5 sm:p-10 md:p-12 relative print:shadow-none print:border-none print:p-0">
+      <div className="max-w-4xl mx-auto bg-white rounded-lg border border-slate-200 shadow-sm p-5 sm:p-10 md:p-12 relative print:shadow-none print:border-none print:p-0">
         
         {/* KOP SURAT / DOKUMEN HEADER
             Screen: Logo di atas (centered)
@@ -153,7 +169,7 @@ export const KartuHasilNilaiPage: React.FC<KartuHasilNilaiPageProps> = ({
         </div>
 
         {/* Identitas Peserta Didik */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs mb-6 p-4 bg-slate-50 rounded-xl border border-slate-200 print:bg-transparent print:border-none print:p-0">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200 print:bg-transparent print:border-none print:p-0">
           <div className="space-y-1.5">
             <div className="flex">
               <span className="w-32 text-slate-500 font-medium">Nama Peserta Didik</span>
@@ -184,7 +200,7 @@ export const KartuHasilNilaiPage: React.FC<KartuHasilNilaiPageProps> = ({
             <span className="text-[10px] text-slate-400 italic sm:hidden">(Geser ke kanan untuk rincian)</span>
           </div>
 
-          <div className="overflow-x-auto w-full rounded-xl border border-slate-200/90 shadow-2xs">
+          <div className="overflow-x-auto w-full rounded-lg border border-slate-200/90 shadow-2xs">
             <table className="w-full text-xs text-left min-w-[580px] divide-y divide-slate-200">
               <thead className="bg-slate-100 text-slate-800 font-extrabold text-[11px] uppercase tracking-wider">
                 <tr>
@@ -240,7 +256,7 @@ export const KartuHasilNilaiPage: React.FC<KartuHasilNilaiPageProps> = ({
         </div>
 
         {/* Predikat Acuan Kriteria */}
-        <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[10px] text-slate-600 mb-8 flex flex-wrap items-center justify-between gap-2 print:border-none print:p-0">
+        <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-[10px] text-slate-600 mb-6 flex flex-wrap items-center justify-between gap-2 print:border-none print:p-0">
           <div>
             <strong>Keterangan Predikat:</strong> A = Sangat Baik (86-100) • B = Baik (75-85) • C = Cukup (60-74) • D = Kurang (&lt;60)
           </div>
@@ -249,13 +265,57 @@ export const KartuHasilNilaiPage: React.FC<KartuHasilNilaiPageProps> = ({
           </div>
         </div>
 
+        {/* Catatan Prestasi & Rekam Jejak Kejuaraan (Jika Ada) */}
+        {studentPrestasi.length > 0 && (
+          <div className="space-y-2 mb-6">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+              <Trophy className="w-4 h-4 text-amber-500" />
+              <span>Prestasi & Rekam Jejak Kejuaraan Siswa:</span>
+            </div>
+            <div className="border border-slate-200 rounded-lg overflow-hidden">
+              <table className="w-full text-xs text-left divide-y divide-slate-100">
+                <thead className="bg-slate-50 text-slate-700 font-bold text-[10px] uppercase">
+                  <tr>
+                    <th className="py-2.5 px-3">Pencapaian</th>
+                    <th className="py-2.5 px-3">Nama Kejuaraan / Perlombaan</th>
+                    <th className="py-2.5 px-3">Tingkat</th>
+                    <th className="py-2.5 px-3 text-center">Bonus Poin</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 bg-white">
+                  {studentPrestasi.map((p) => (
+                    <tr key={p.id}>
+                      <td className="py-2.5 px-3 font-semibold text-amber-700">
+                        <span className="inline-flex items-center gap-1">
+                          <Medal className="w-3.5 h-3.5" />
+                          <span>{p.peringkat.replace('_', ' ')}</span>
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <span className="font-bold text-slate-900">{p.namaLomba}</span>
+                        <span className="text-slate-400 text-2xs block">{p.penyelenggara}</span>
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold text-[10px] uppercase">
+                          {p.tingkat}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-center font-bold text-emerald-700">+{p.poinTambahan} Poin</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         {/* Tanda Tangan & Pengesahan Digital */}
         <div className="pt-4 border-t border-slate-200 text-xs">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 items-end">
             
             {/* QR Code Verifikasi */}
             <div className="flex items-center gap-3">
-              <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-2xs shrink-0">
+              <div className="bg-white p-2 rounded-md border border-slate-200 shadow-2xs shrink-0">
                 <QRCodeSVG
                   value={`VERIFIKASI-KHN:${student.nis || student.nomorInduk}:SMK-AL-AMANAH:2026`}
                   size={65}

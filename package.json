@@ -9,6 +9,7 @@
     "build:frontend": "cd frontend && npm run build",
     "db:migrate": "cd backend && npx prisma db push",
     "db:seed": "cd backend && node prisma/seed.js",
+    "db:seed:eskul": "cd backend && node prisma/seed-eskul.js",
     "db:studio": "cd backend && npx prisma studio",
     "install:all": "cd backend && npm install && cd ../frontend && npm install"
   },

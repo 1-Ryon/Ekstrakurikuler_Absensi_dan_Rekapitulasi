@@ -41,7 +41,7 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {savedSuccess && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-2 text-emerald-800 text-xs font-semibold animate-in fade-in duration-200">
+        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-md flex items-center gap-2 text-emerald-800 text-xs font-semibold animate-in fade-in duration-200">
           <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
           <span>Konfigurasi sistem berhasil diperbarui secara permanen!</span>
         </div>
@@ -49,9 +49,9 @@ export const SettingsPage: React.FC = () => {
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Card 1: Keamanan Dynamic QR & Anti-Fraud */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+        <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-xs space-y-4">
           <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-[#00B884] flex items-center justify-center">
+            <div className="w-9 h-9 rounded-md bg-emerald-50 text-[#00B884] flex items-center justify-center">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
@@ -73,7 +73,7 @@ export const SettingsPage: React.FC = () => {
               <select
                 value={qrExpiry}
                 onChange={(e) => setQrExpiry(Number(e.target.value))}
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
               >
                 <option value={10}>10 Detik (Sangat Ketat)</option>
                 <option value={15}>15 Detik (Rekomendasi PRD)</option>
@@ -93,7 +93,7 @@ export const SettingsPage: React.FC = () => {
               <select
                 value={geofenceRadius}
                 onChange={(e) => setGeofenceRadius(Number(e.target.value))}
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
               >
                 <option value={50}>50 Meter (Area Inti Gedung)</option>
                 <option value={100}>100 Meter (Seluruh Kompleks SMK Al Amanah)</option>
@@ -108,9 +108,9 @@ export const SettingsPage: React.FC = () => {
         </div>
 
         {/* Card 2: Bobot Penilaian Rapor Semester */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+        <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-xs space-y-4">
           <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-            <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-md bg-amber-50 text-amber-600 flex items-center justify-center">
               <Sliders className="w-5 h-5" />
             </div>
             <div>
@@ -134,7 +134,7 @@ export const SettingsPage: React.FC = () => {
                 max={100}
                 value={kehadiranWeight}
                 onChange={(e) => setKehadiranWeight(Number(e.target.value))}
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
               />
             </div>
 
@@ -148,7 +148,7 @@ export const SettingsPage: React.FC = () => {
                 max={100}
                 value={keaktifanWeight}
                 onChange={(e) => setKeaktifanWeight(Number(e.target.value))}
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
               />
             </div>
 
@@ -162,12 +162,12 @@ export const SettingsPage: React.FC = () => {
                 max={100}
                 value={kinerjaWeight}
                 onChange={(e) => setKinerjaWeight(Number(e.target.value))}
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
               />
             </div>
           </div>
 
-          <div className="p-3 rounded-xl bg-slate-50 flex items-center justify-between text-xs">
+          <div className="p-3 rounded-md bg-slate-50 flex items-center justify-between text-xs">
             <span className="text-slate-600">Total Akumulasi Bobot:</span>
             <span className={`font-bold ${totalWeight === 100 ? 'text-[#00B884]' : 'text-rose-600'}`}>
               {totalWeight}% {totalWeight === 100 ? '(Valid)' : '(Total Harus Tepat 100%)'}
@@ -176,9 +176,9 @@ export const SettingsPage: React.FC = () => {
         </div>
 
         {/* Card 3: Sekolah Profile */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+        <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-xs space-y-4">
           <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-            <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center">
               <Building className="w-5 h-5" />
             </div>
             <div>
@@ -198,7 +198,7 @@ export const SettingsPage: React.FC = () => {
                 type="text"
                 readOnly
                 defaultValue="SMK AL AMANAH KOTA TANGERANG SELATAN"
-                className="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-xl font-semibold text-slate-700 cursor-not-allowed"
+                className="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-md font-semibold text-slate-700 cursor-not-allowed"
               />
             </div>
             <div>
@@ -207,7 +207,7 @@ export const SettingsPage: React.FC = () => {
                 type="text"
                 readOnly
                 defaultValue="20614829"
-                className="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-xl font-semibold text-slate-700 cursor-not-allowed"
+                className="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-md font-semibold text-slate-700 cursor-not-allowed"
               />
             </div>
           </div>
@@ -218,7 +218,7 @@ export const SettingsPage: React.FC = () => {
           <button
             type="submit"
             disabled={totalWeight !== 100}
-            className="flex items-center gap-2 px-6 py-3 bg-[#00B884] hover:bg-[#009e70] active:scale-[0.98] text-white font-semibold text-sm rounded-xl shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-5 py-2.5 bg-[#00B884] hover:bg-[#009e70] active:scale-[0.98] text-white font-semibold text-xs rounded-md shadow-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             <Save className="w-4 h-4" />
             <span>Simpan Pengaturan</span>

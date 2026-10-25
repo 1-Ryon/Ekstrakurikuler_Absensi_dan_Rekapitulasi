@@ -29,6 +29,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { User, Eskul, SesiPertemuan, StudentProfile, PresensiRecord, PenilaianRecord, PengajuanJadwal } from '../../types';
 import { NavItemKey } from '../Sidebar';
 import { UserAvatar } from '../common/UserAvatar';
+import {
+  Card,
+  Button,
+  Badge,
+  Input,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '../ui';
 
 interface PembinaDashboardProps {
   currentPembina: User;
@@ -83,30 +95,16 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
 }) => {
   // Find all eskuls coached by this pembina (support multi-eskul)
   const coachedEskuls = useMemo(() => {
-    const list = eskulList.filter((e) => {
+    return eskulList.filter((e) => {
       if (e.pembinaId === currentPembina.id) return true;
       const nameKeywords = (currentPembina.namaLengkap || '').toLowerCase().split(' ');
       return nameKeywords.some((kw) => kw.length > 2 && (e.pembinaNama || '').toLowerCase().includes(kw));
     });
-    return list.length > 0 ? list : [eskulList[0] || {
-      id: 'esk-01',
-      namaEskul: 'Futsal Prestasi',
-      kategori: 'Olahraga',
-      pembinaId: currentPembina.id,
-      pembinaNama: currentPembina.namaLengkap,
-      pembinaAvatar: '',
-      jadwalHari: 'Jumat',
-      jamMulai: '15:30',
-      jamSelesai: '17:30',
-      lokasi: 'Lapangan Futsal Indoor Utama',
-      kuota: 40,
-      jumlahSiswa: 35,
-    }];
   }, [eskulList, currentPembina]);
 
   // Selected Active Eskul Tab (for multi-eskul coaches)
   const [selectedEskulId, setSelectedEskulId] = useState<string>(() => coachedEskuls[0]?.id || '');
-  const activeCoachedEskul = coachedEskuls.find(e => e.id === selectedEskulId) || coachedEskuls[0];
+  const activeCoachedEskul = coachedEskuls.find(e => e.id === selectedEskulId) || coachedEskuls[0] || null;
 
   // Current Day Information
   const todayDate = useMemo(() => new Date(), []);
@@ -117,6 +115,7 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
 
   // Days until next scheduled session
   const daysUntilNextSession = useMemo(() => {
+    if (!activeCoachedEskul) return 0;
     const daysOrder = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
     const targetIdx = daysOrder.indexOf(activeCoachedEskul.jadwalHari);
     const currentIdx = todayDate.getDay();
@@ -126,6 +125,7 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
 
   // Students enrolled in the active eskul
   const enrolledStudents = useMemo(() => {
+    if (!activeCoachedEskul) return [];
     return students.filter(
       (s) => s.enrolledEskulIds && s.enrolledEskulIds.includes(activeCoachedEskul.id)
     );
@@ -139,6 +139,7 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
 
   // Recent attendance for this eskul
   const eskulLogs = useMemo(() => {
+    if (!activeCoachedEskul) return [];
     return recentLogs.filter(
       (l) => l.sesiId === todaySession?.id || l.namaEskul === activeCoachedEskul.namaEskul
     );
@@ -166,7 +167,7 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
 
   // Editable Agenda / Jurnal State
   const [agendaMateri, setAgendaMateri] = useState(
-    todaySession?.materi || activeCoachedEskul.deskripsi || 'Latihan fisik daya tahan, teknik passing cepat, strategi transisi bertahan ke menyerang.'
+    todaySession?.materi || activeCoachedEskul?.deskripsi || 'Latihan fisik daya tahan, teknik passing cepat, strategi transisi bertahan ke menyerang.'
   );
   const [isSavedMateri, setIsSavedMateri] = useState(false);
 
@@ -194,45 +195,67 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
     ).length;
   }, [jadwalProposals, currentPembina, coachedEskuls]);
 
+  if (!activeCoachedEskul) {
+    return (
+      <div className="space-y-6 pb-16">
+        <Card className="p-8 sm:p-12 text-center border-border shadow-xs space-y-4">
+          <div className="size-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-100">
+            <Users className="size-8" />
+          </div>
+          <div className="space-y-1.5 max-w-md mx-auto">
+            <h2 className="text-xl font-bold text-foreground tracking-tight">
+              Belum Ada Ekstrakurikuler yang Diampu
+            </h2>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Akun Anda terdaftar aktif sebagai Pembina ({currentPembina.namaLengkap}), namun saat ini belum ada cabang ekstrakurikuler yang ditugaskan kepada Anda atau data eskul sedang kosong.
+            </p>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Silakan hubungi Administrator atau Koordinator Ekstrakurikuler untuk mendaftarkan cabang ekstrakurikuler baru.
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 pb-16">
       {/* 1. Welcome Banner */}
-      <div className="bg-gradient-to-r from-emerald-600 via-[#00B884] to-teal-700 text-white rounded-3xl p-6 sm:p-7 shadow-sm relative overflow-hidden">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2.5">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-semibold">
-              <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
-              <span>Portal Kerja Guru Pembina Ekstrakurikuler</span>
+      <Card className="p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2">
+              <Badge variant="brand" className="text-xs">
+                Portal Guru Pembina
+              </Badge>
+              <span className="text-xs text-muted-foreground">T.A. 2026/2027</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
               Selamat Bertugas, {currentPembina.namaLengkap}!
             </h1>
-            <p className="text-emerald-50 text-xs sm:text-sm max-w-xl leading-relaxed">
-              Membina <strong>{coachedEskuls.length} Cabang Ekstrakurikuler</strong> • NIP: {currentPembina.nomorInduk || '-'}
+            <p className="text-muted-foreground text-xs sm:text-sm max-w-xl">
+              Membina <strong className="text-foreground">{coachedEskuls.length} Cabang Ekstrakurikuler</strong> • NIP: {currentPembina.nomorInduk || '-'}
             </p>
 
             {/* Multi-Eskul Tab Pills */}
             {coachedEskuls.length > 1 && (
               <div className="pt-2 flex flex-wrap items-center gap-2">
-                <span className="text-xs font-bold text-emerald-100">Pilih Eskul yang Dikelola:</span>
+                <span className="text-xs font-semibold text-foreground">Pilih Eskul yang Dikelola:</span>
                 {coachedEskuls.map((e) => {
                   const isSelected = e.id === activeCoachedEskul.id;
                   return (
-                    <button
+                    <Button
                       key={e.id}
-                      type="button"
+                      variant={isSelected ? "brand" : "outline"}
+                      size="sm"
                       onClick={() => setSelectedEskulId(e.id)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                        isSelected
-                          ? 'bg-white text-[#00B884] shadow-md scale-105'
-                          : 'bg-white/20 hover:bg-white/30 text-white'
-                      }`}
+                      className="h-8 text-xs gap-1.5"
                     >
                       <span>{e.namaEskul}</span>
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-emerald-100 text-[#00B884]' : 'bg-black/20 text-white'}`}>
+                      <Badge variant={isSelected ? "secondary" : "outline"} className="text-[10px] py-0 px-1">
                         {e.jadwalHari}
-                      </span>
-                    </button>
+                      </Badge>
+                    </Button>
                   );
                 })}
               </div>
@@ -241,66 +264,66 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
 
           {/* Quick Action Buttons */}
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-            <button
-              type="button"
+            <Button
+              variant="brand"
+              size="sm"
               onClick={handleStartSession}
-              className="flex items-center gap-2 px-4 py-3 bg-white text-[#00B884] hover:bg-emerald-50 active:scale-[0.98] font-bold text-xs rounded-2xl shadow-md transition-all cursor-pointer"
+              className="gap-2 h-9"
             >
-              <QrCode className="w-4 h-4" />
+              <QrCode className="size-4" />
               <span>Buka QR Proyektor (15s)</span>
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => onNavigate('scanner-guru')}
-              className="flex items-center gap-2 px-4 py-3 bg-emerald-800/80 hover:bg-emerald-900 text-white font-bold text-xs rounded-2xl border border-white/20 transition-all cursor-pointer"
+              className="gap-2 h-9"
             >
-              <ScanLine className="w-4 h-4" />
+              <ScanLine className="size-4" />
               <span>Pindai Kartu Siswa</span>
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => onNavigate('penilaian')}
-              className="flex items-center gap-2 px-4 py-3 bg-emerald-800/60 hover:bg-emerald-800 text-white font-semibold text-xs rounded-2xl border border-white/20 transition-all cursor-pointer"
+              className="gap-2 h-9"
             >
-              <Award className="w-4 h-4" />
+              <Award className="size-4" />
               <span>Masukkan Nilai Rapor</span>
-            </button>
+            </Button>
           </div>
         </div>
-
-        {/* Decorative background glow */}
-        <div className="absolute right-0 -bottom-10 w-72 h-72 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-      </div>
+      </Card>
 
       {/* 2. Jadwal & Status Sesi Latihan Utama (Hero Schedule Card) */}
-      <div className={`rounded-3xl p-5 sm:p-6 border shadow-2xs transition-all ${
+      <Card className={`p-5 sm:p-6 transition-colors ${
         isTodaySchedule 
-          ? 'bg-gradient-to-br from-emerald-50 via-white to-emerald-50/40 border-emerald-300 ring-2 ring-emerald-200/60' 
-          : 'bg-white border-slate-200/80'
+          ? 'border-emerald-300 bg-emerald-50/30' 
+          : ''
       }`}>
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
           <div className="space-y-3">
             {/* Status Header Badge */}
             <div className="flex flex-wrap items-center gap-2.5">
               {isTodaySchedule ? (
-                <span className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-600 text-white text-xs font-extrabold rounded-full shadow-xs animate-pulse">
-                  <span className="w-2 h-2 rounded-full bg-white" />
-                  <span>HARI INI ADALAH JADWAL LATIHAN RUTIN!</span>
-                </span>
+                <Badge variant="brand" className="text-xs font-semibold gap-1.5 py-1 px-3">
+                  <span className="size-2 rounded-full bg-white animate-pulse" />
+                  <span>HARI INI JADWAL LATIHAN RUTIN</span>
+                </Badge>
               ) : (
-                <span className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 text-slate-700 text-xs font-bold rounded-full border border-slate-200">
-                  <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                <Badge variant="outline" className="text-xs font-medium gap-1.5 py-1 px-3">
+                  <Calendar className="size-3.5 text-muted-foreground" />
                   <span>Hari Ini: {todayName} • Bukan Jadwal Rutin</span>
-                </span>
+                </Badge>
               )}
 
-              <span className="px-2.5 py-1 bg-slate-100 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200">
+              <Badge variant="secondary" className="text-xs font-medium py-1 px-2.5">
                 {activeCoachedEskul.namaEskul} ({activeCoachedEskul.kategori})
-              </span>
+              </Badge>
             </div>
 
             <div>
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              <h2 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
                 {isTodaySchedule ? (
                   <span>Sesi Latihan Hari Ini Siap Dibuka</span>
                 ) : (
@@ -309,12 +332,12 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
                   </span>
                 )}
               </h2>
-              <p className="text-slate-500 text-xs sm:text-sm mt-1 leading-relaxed">
+              <p className="text-muted-foreground text-xs sm:text-sm mt-1 leading-relaxed">
                 {isTodaySchedule ? (
                   <span>Siswa dapat melakukan presensi melalui QR Dinamis proyektor atau dipindai Kartu Siswa-nya oleh pembina.</span>
                 ) : (
                   <span>
-                    Jadwal rutin cabang {activeCoachedEskul.namaEskul} adalah setiap hari <strong>{activeCoachedEskul.jadwalHari}</strong> ({daysUntilNextSession === 1 ? 'Besok' : `${daysUntilNextSession} hari lagi`}). Anda juga dapat membuka sesi tambahan hari ini jika diperlukan.
+                    Jadwal rutin cabang {activeCoachedEskul.namaEskul} adalah setiap hari <strong className="text-foreground">{activeCoachedEskul.jadwalHari}</strong> ({daysUntilNextSession === 1 ? 'Besok' : `${daysUntilNextSession} hari lagi`}). Anda juga dapat membuka sesi tambahan hari ini jika diperlukan.
                   </span>
                 )}
               </p>
@@ -322,37 +345,37 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
 
             {/* 3 Detail Specs: Hari & Jam, Lokasi, Peserta */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-              <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-200/80 shadow-2xs">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-[#00B884] flex items-center justify-center shrink-0">
-                  <Clock className="w-5 h-5" />
+              <div className="flex items-center gap-3 p-3 bg-card rounded-md border border-border">
+                <div className="size-9 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                  <Clock className="size-4" />
                 </div>
                 <div>
-                  <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Jadwal &amp; Jam</div>
-                  <div className="font-bold text-slate-900 text-xs mt-0.5">
+                  <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Jadwal &amp; Jam</div>
+                  <div className="font-semibold text-foreground text-xs mt-0.5">
                     {activeCoachedEskul.jadwalHari}, {activeCoachedEskul.jamMulai} - {activeCoachedEskul.jamSelesai} WIB
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-200/80 shadow-2xs">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                  <MapPin className="w-5 h-5" />
+              <div className="flex items-center gap-3 p-3 bg-card rounded-md border border-border">
+                <div className="size-9 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <MapPin className="size-4" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Lokasi Fasilitas</div>
-                  <div className="font-bold text-slate-900 text-xs mt-0.5 truncate" title={activeCoachedEskul.lokasi}>
+                  <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Lokasi Fasilitas</div>
+                  <div className="font-semibold text-foreground text-xs mt-0.5 truncate" title={activeCoachedEskul.lokasi}>
                     {activeCoachedEskul.lokasi}
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-3 bg-white rounded-2xl border border-slate-200/80 shadow-2xs">
-                <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
-                  <Users className="w-5 h-5" />
+              <div className="flex items-center gap-3 p-3 bg-card rounded-md border border-border">
+                <div className="size-9 rounded-md bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                  <Users className="size-4" />
                 </div>
                 <div>
-                  <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Kapasitas Peserta</div>
-                  <div className="font-bold text-slate-900 text-xs mt-0.5">
+                  <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Kapasitas Peserta</div>
+                  <div className="font-semibold text-foreground text-xs mt-0.5">
                     {enrolledStudents.length} / {activeCoachedEskul.kuota} Siswa Terdaftar
                   </div>
                 </div>
@@ -361,67 +384,72 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
           </div>
 
           {/* Action Callout Button */}
-          <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0 justify-center">
+          <div className="flex flex-col sm:flex-row lg:flex-col gap-2 shrink-0 justify-center">
             {/* 1. Mulai Sesi QR Proyektor */}
-            <button
-              type="button"
+            <Button
+              variant="brand"
+              size="sm"
               onClick={() => onNavigate('dynamic-qr')}
-              className="flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-emerald-600 via-[#00B884] to-teal-600 hover:from-emerald-700 hover:to-teal-700 active:scale-[0.98] text-white font-bold text-xs rounded-2xl shadow-md transition-all cursor-pointer"
+              className="gap-2 h-9"
             >
-              <QrCode className="w-4 h-4 text-white" />
+              <QrCode className="size-4" />
               <span>Buka QR Proyektor (15s)</span>
-            </button>
+            </Button>
 
             {/* 2. Seleksi & Pendaftaran Siswa */}
-            <button
-              type="button"
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => onNavigate('pembina-pendaftaran')}
-              className="flex items-center justify-center gap-2 px-5 py-3 bg-blue-50 hover:bg-blue-100/70 text-blue-800 font-bold text-xs rounded-2xl border border-blue-200/80 shadow-2xs transition-all cursor-pointer"
+              className="gap-2 h-9 text-blue-700 bg-blue-50 hover:bg-blue-100 border-blue-200"
             >
-              <Users className="w-4 h-4 text-blue-600" />
+              <Users className="size-4 text-blue-600" />
               <span>Pendaftaran &amp; Kuota Siswa</span>
-            </button>
+            </Button>
 
             {/* 3. Buka Sesi Standar / Proyektor */}
-            <button
-              type="button"
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleStartSession}
-              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-2xl border border-slate-200/80 shadow-2xs transition-all cursor-pointer"
+              className="gap-2 h-9"
             >
-              <Play className="w-4 h-4 fill-emerald-600 text-emerald-600" />
+              <Play className="size-4 fill-emerald-600 text-emerald-600" />
               <span>{isTodaySchedule ? 'Tampilkan QR Proyektor' : 'Mulai Sesi Latihan'}</span>
-            </button>
+            </Button>
 
             {/* 4. Scanner Cepat Guru */}
-            <button
-              type="button"
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => onNavigate('scanner-guru')}
-              className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-2xl border border-slate-200/80 shadow-2xs transition-all cursor-pointer"
+              className="gap-2 h-9"
             >
-              <ScanLine className="w-4 h-4 text-emerald-600" />
+              <ScanLine className="size-4 text-emerald-600" />
               <span>Pindai Kartu Siswa</span>
-            </button>
+            </Button>
 
             {/* 5. Pengajuan Jadwal */}
             {onOpenAjukanJadwalModal && (
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => onOpenAjukanJadwalModal(activeCoachedEskul)}
-                className="flex items-center justify-center gap-2 px-5 py-2.5 bg-amber-50 hover:bg-amber-100/70 text-amber-800 font-bold text-xs rounded-2xl border border-amber-200/80 transition-all cursor-pointer"
+                className="gap-2 h-9 text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-200"
               >
-                <Calendar className="w-4 h-4 text-amber-600" />
+                <Calendar className="size-4 text-amber-600" />
                 <span>Ajukan Ganti Jadwal</span>
-              </button>
+              </Button>
             )}
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* 3. Kalender Jadwal Mingguan Pembina (Weekly Schedule Strip) */}
-      <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200/80 shadow-2xs space-y-3.5">
+      <Card className="p-5 sm:p-6 space-y-3.5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-[#00B884] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-md bg-emerald-50 text-[#00B884] flex items-center justify-center">
               <CalendarDays className="w-4 h-4" />
             </div>
             <div>
@@ -439,7 +467,7 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
               <button
                 type="button"
                 onClick={() => onOpenAjukanJadwalModal(activeCoachedEskul)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#00B884] hover:bg-[#009e70] text-white rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#00B884] hover:bg-[#009e70] text-white rounded-md text-xs font-bold transition-all shadow-xs cursor-pointer"
               >
                 <Calendar className="w-3.5 h-3.5" />
                 <span>Ajukan Ganti Jadwal</span>
@@ -450,7 +478,7 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
               <button
                 type="button"
                 onClick={onOpenRiwayatJadwalModal}
-                className="relative flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+                className="relative flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-semibold transition-all cursor-pointer"
               >
                 <span>Riwayat Usulan</span>
                 {myPendingProposalsCount > 0 && (
@@ -473,7 +501,7 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
             return (
               <div
                 key={day.key}
-                className={`p-3 rounded-2xl border transition-all flex flex-col justify-between min-h-[110px] ${
+                className={`p-3 rounded-md border transition-all flex flex-col justify-between min-h-[110px] ${
                   isToday 
                     ? 'border-[#00B884] bg-emerald-50/40 ring-2 ring-emerald-200/70 shadow-2xs' 
                     : hasSchedule
@@ -496,7 +524,7 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
                   {hasSchedule ? (
                     <div className="space-y-1">
                       {eskulsOnDay.map((e) => (
-                        <div key={e.id} className="p-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200/60">
+                        <div key={e.id} className="p-1.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200/60">
                           <div className="font-bold text-[11px] leading-tight truncate">{e.namaEskul}</div>
                           <div className="text-[10px] text-emerald-600 font-mono mt-0.5">{e.jamMulai} - {e.jamSelesai}</div>
                         </div>
@@ -516,80 +544,80 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
             );
           })}
         </div>
-      </div>
+      </Card>
 
       {/* 4. KPI Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-2">
+        <Card className="p-4 sm:p-5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-xs text-muted-foreground font-semibold mb-2">
             <span>Eskul Terpilih</span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-[#00B884] flex items-center justify-center">
-              <Activity className="w-4 h-4" />
+            <div className="size-8 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <Activity className="size-4" />
             </div>
           </div>
           <div>
-            <h3 className="text-base font-extrabold text-slate-900 truncate">
+            <h3 className="text-sm sm:text-base font-bold text-foreground truncate">
               {activeCoachedEskul.namaEskul}
             </h3>
             <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1 mt-1">
               Kategori: {activeCoachedEskul.kategori}
             </span>
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-2">
+        <Card className="p-4 sm:p-5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-xs text-muted-foreground font-semibold mb-2">
             <span>Total Siswa Binaan</span>
-            <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-              <Users className="w-4 h-4" />
+            <div className="size-8 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center">
+              <Users className="size-4" />
             </div>
           </div>
           <div>
-            <div className="text-2xl font-black text-slate-900">
+            <div className="text-xl sm:text-2xl font-bold text-foreground">
               {enrolledStudents.length || activeCoachedEskul.jumlahSiswa || 35}
-              <span className="text-xs font-medium text-slate-400 ml-1">Siswa</span>
+              <span className="text-xs font-normal text-muted-foreground ml-1">Siswa</span>
             </div>
-            <span className="text-[11px] text-slate-500 mt-1 block">
+            <span className="text-[11px] text-muted-foreground mt-1 block">
               Dari kuota {activeCoachedEskul.kuota} siswa
             </span>
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-2">
+        <Card className="p-4 sm:p-5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-xs text-muted-foreground font-semibold mb-2">
             <span>Status Pertemuan</span>
-            <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-              <Clock className="w-4 h-4" />
+            <div className="size-8 rounded-md bg-amber-50 text-amber-600 flex items-center justify-center">
+              <Clock className="size-4" />
             </div>
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-[#00B884]">
+              <Badge variant="brand" className="text-[11px]">
                 {todaySession?.status || 'BERLANGSUNG'}
-              </span>
+              </Badge>
             </div>
-            <span className="text-[11px] text-slate-500 mt-1 block font-mono">
+            <span className="text-[11px] text-muted-foreground mt-1 block font-mono">
               {activeCoachedEskul.jamMulai} - {activeCoachedEskul.jamSelesai} WIB
             </span>
           </div>
-        </div>
+        </Card>
 
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-2">
+        <Card className="p-4 sm:p-5 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-xs text-muted-foreground font-semibold mb-2">
             <span>Rata-rata Presensi</span>
-            <div className="w-8 h-8 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center">
-              <TrendingUp className="w-4 h-4" />
+            <div className="size-8 rounded-md bg-purple-50 text-purple-600 flex items-center justify-center">
+              <TrendingUp className="size-4" />
             </div>
           </div>
           <div>
-            <div className="text-2xl font-black text-[#00B884]">
+            <div className="text-xl sm:text-2xl font-bold text-emerald-600">
               95.4%
             </div>
             <span className="text-[11px] text-emerald-600 font-semibold mt-1 block">
               Tingkat disiplin sangat baik
             </span>
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* 5. Main Grid: Agenda & Jurnal Latihan + Live Scan Feed */}
@@ -597,40 +625,40 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
         {/* Left Column (2 Cols): Agenda Latihan & Roster Siswa */}
         <div className="lg:col-span-2 space-y-5">
           {/* Card Jurnal & Agenda Latihan */}
-          <div className="bg-white rounded-3xl border border-slate-200/80 p-5 sm:p-6 shadow-2xs space-y-4">
+          <Card className="p-5 sm:p-6 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-[#00B884] flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
                   <FileText className="w-4 h-4" />
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-slate-900">
                     Jurnal &amp; Agenda Materi Pertemuan
                   </h3>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-[11px] text-slate-500">
                     Catatan materi latihan untuk evaluasi perkembangan kompetensi siswa
                   </p>
                 </div>
               </div>
 
-              <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
+              <Badge variant="outline" className="text-emerald-700 bg-emerald-50 border-emerald-200">
                 Pertemuan Ke-12
-              </span>
+              </Badge>
             </div>
 
             {/* Active Session Topic & Description Highlight */}
             {todaySession?.judul && (
-              <div className="p-3.5 bg-emerald-50/80 border border-emerald-200 rounded-2xl space-y-1 text-xs">
+              <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-lg space-y-1 text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="font-extrabold text-emerald-950 flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-[#00B884]" />
+                  <span className="font-bold text-emerald-950 flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-emerald-600" />
                     Topik Pertemuan Sesi Ini:
                   </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900 uppercase">
+                  <Badge variant="outline" className="text-[10px] bg-emerald-200/60 text-emerald-900 border-emerald-300 uppercase">
                     {todaySession.status}
-                  </span>
+                  </Badge>
                 </div>
-                <div className="font-black text-slate-900 text-sm">{todaySession.judul}</div>
+                <div className="font-semibold text-slate-900 text-sm">{todaySession.judul}</div>
                 <p className="text-slate-600 text-[11px] leading-relaxed mt-0.5">
                   {todaySession.deskripsi}
                 </p>
@@ -638,7 +666,7 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
             )}
 
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700 block">
+              <label className="text-xs font-semibold text-slate-700 block">
                 Materi / Fokus Latihan Hari Ini:
               </label>
               <textarea
@@ -646,42 +674,43 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
                 value={agendaMateri}
                 onChange={(e) => setAgendaMateri(e.target.value)}
                 placeholder="Tuliskan materi latihan, target capaian, atau catatan khusus..."
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884] leading-relaxed"
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884] leading-relaxed resize-none"
               />
               <div className="flex items-center justify-between pt-1">
-                <span className="text-[11px] text-slate-400">
+                <span className="text-[11px] text-slate-500">
                   {isSavedMateri ? (
-                    <span className="text-emerald-600 font-bold flex items-center gap-1">
+                    <span className="text-emerald-600 font-semibold flex items-center gap-1">
                       <Check className="w-3.5 h-3.5" /> Materi berhasil disimpan!
                     </span>
                   ) : (
                     'Materi otomatis dicantumkan pada jurnal absensi.'
                   )}
                 </span>
-                <button
+                <Button
                   type="button"
+                  size="sm"
                   onClick={handleSaveMateri}
-                  className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                  className="bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-medium"
                 >
                   Simpan Catatan
-                </button>
+                </Button>
               </div>
             </div>
 
             {/* 3 Attendance Mode Quick Actions */}
             <div className="pt-2 border-t border-slate-100">
-              <span className="text-xs font-bold text-slate-700 block mb-2.5">
+              <span className="text-xs font-semibold text-slate-700 block mb-2.5">
                 Pilih Metode Pengambilan Presensi:
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <button
                   type="button"
                   onClick={handleStartSession}
-                  className="p-3 bg-emerald-50/70 hover:bg-emerald-100/70 border border-emerald-200/80 rounded-2xl text-left transition-all cursor-pointer group"
+                  className="p-3 bg-emerald-50/60 hover:bg-emerald-100/70 border border-emerald-200 rounded-lg text-left transition-all cursor-pointer group"
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <QrCode className="w-4 h-4 text-[#00B884]" />
-                    <ArrowUpRight className="w-3.5 h-3.5 text-[#00B884] opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <QrCode className="w-4 h-4 text-emerald-600" />
+                    <ArrowUpRight className="w-3.5 h-3.5 text-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                   <h4 className="text-xs font-bold text-slate-900">QR Proyektor</h4>
                   <p className="text-[10px] text-slate-500 mt-0.5">Siswa pindai QR 15 detik</p>
@@ -690,7 +719,7 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => onNavigate('scanner-guru')}
-                  className="p-3 bg-blue-50/70 hover:bg-blue-100/70 border border-blue-200/80 rounded-2xl text-left transition-all cursor-pointer group"
+                  className="p-3 bg-blue-50/60 hover:bg-blue-100/70 border border-blue-200 rounded-lg text-left transition-all cursor-pointer group"
                 >
                   <div className="flex items-center justify-between mb-1">
                     <ScanLine className="w-4 h-4 text-blue-600" />
@@ -703,7 +732,7 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => onNavigate('live-presensi')}
-                  className="p-3 bg-amber-50/70 hover:bg-amber-100/70 border border-amber-200/80 rounded-2xl text-left transition-all cursor-pointer group"
+                  className="p-3 bg-amber-50/60 hover:bg-amber-100/70 border border-amber-200 rounded-lg text-left transition-all cursor-pointer group"
                 >
                   <div className="flex items-center justify-between mb-1">
                     <CheckCircle2 className="w-4 h-4 text-amber-600" />
@@ -714,126 +743,130 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
                 </button>
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Roster Siswa Anggota Eskul */}
-          <div className="bg-white rounded-3xl border border-slate-200/80 p-5 sm:p-6 shadow-2xs space-y-4">
+          <Card className="p-5 sm:p-6 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-bold text-slate-900">
                   Daftar Anggota: {activeCoachedEskul.namaEskul}
                 </h3>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-500">
                   Total {enrolledStudents.length} siswa terdaftar di bawah bimbingan Anda
                 </p>
               </div>
 
               {/* Search input */}
-              <div className="relative w-full sm:w-56">
-                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
+              <div className="relative w-full sm:w-60">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10" />
+                <Input
                   type="text"
                   placeholder="Cari siswa atau kelas..."
                   value={studentSearch}
                   onChange={(e) => setStudentSearch(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#00B884]"
+                  className="pl-8 text-xs h-9 bg-slate-50"
                 />
               </div>
             </div>
 
             {/* Table of students */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left">
-                <thead>
-                  <tr className="text-slate-400 border-b border-slate-100 font-semibold">
-                    <th className="pb-2.5">Siswa</th>
-                    <th className="pb-2.5 whitespace-nowrap">Kelas</th>
-                    <th className="pb-2.5 text-center whitespace-nowrap">Kehadiran</th>
-                    <th className="pb-2.5 text-right whitespace-nowrap">Nilai Rapor</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
+            <div className="rounded-md border border-slate-200 overflow-hidden">
+              <Table>
+                <TableHeader className="bg-slate-50/80">
+                  <TableRow>
+                    <TableHead className="text-xs font-semibold text-slate-600">Siswa</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600 whitespace-nowrap">Kelas</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600 text-center whitespace-nowrap">Kehadiran</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600 text-right whitespace-nowrap">Nilai Rapor</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {filteredStudents.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="py-6 text-center text-slate-400">
+                    <TableRow>
+                      <TableCell colSpan={4} className="py-6 text-center text-slate-400 text-xs">
                         Tidak ada siswa yang cocok dengan pencarian.
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ) : (
                     filteredStudents.slice(0, 7).map((student) => {
                       const grade = penilaianList.find(
                         (p) => p.siswaId === student.id && p.eskulId === activeCoachedEskul.id
                       );
                       return (
-                        <tr key={student.id} className="hover:bg-slate-50/70 transition-colors">
-                          <td className="py-2.5 flex items-center gap-2.5">
-                            <UserAvatar
-                              name={student.namaLengkap}
-                              className="w-7 h-7 shrink-0 text-[10px]"
-                            />
-                            <div>
-                              <span className="font-bold text-slate-900 block truncate max-w-[140px] sm:max-w-[200px]">
-                                {student.namaLengkap}
-                              </span>
-                              <span className="text-[10px] text-slate-400 font-mono">NIS: {student.nis || student.nomorInduk}</span>
+                        <TableRow key={student.id} className="hover:bg-slate-50/70">
+                          <TableCell className="py-2.5">
+                            <div className="flex items-center gap-2.5">
+                              <UserAvatar
+                                name={student.namaLengkap}
+                                className="w-7 h-7 shrink-0 text-[10px]"
+                              />
+                              <div>
+                                <span className="font-semibold text-slate-900 block truncate max-w-[140px] sm:max-w-[200px] text-xs">
+                                  {student.namaLengkap}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-mono">NIS: {student.nis || student.nomorInduk}</span>
+                              </div>
                             </div>
-                          </td>
-                          <td className="py-2.5 font-medium text-slate-600 whitespace-nowrap">
-                            <span className="px-2 py-0.5 bg-slate-100 rounded-md border border-slate-200/80">
+                          </TableCell>
+                          <TableCell className="py-2.5 font-medium text-slate-600 whitespace-nowrap text-xs">
+                            <span className="px-2 py-0.5 bg-slate-100 rounded-md border border-slate-200 text-[11px]">
                               {student.kelas}
                             </span>
-                          </td>
-                          <td className="py-2.5 text-center font-bold text-emerald-600 whitespace-nowrap">
+                          </TableCell>
+                          <TableCell className="py-2.5 text-center font-bold text-emerald-600 whitespace-nowrap text-xs">
                             {student.kehadiranRataRata}%
-                          </td>
-                          <td className="py-2.5 text-right whitespace-nowrap">
+                          </TableCell>
+                          <TableCell className="py-2.5 text-right whitespace-nowrap text-xs">
                             {grade ? (
-                              <span className="inline-block px-2 py-0.5 rounded-md bg-emerald-50 text-[#00B884] font-bold text-xs">
+                              <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold text-xs">
                                 {grade.nilaiAkhir} ({grade.predikat})
-                              </span>
+                              </Badge>
                             ) : (
                               <button
                                 type="button"
                                 onClick={() => onNavigate('penilaian')}
-                                className="text-[10px] text-amber-600 hover:underline font-bold cursor-pointer"
+                                className="text-[11px] text-amber-600 hover:underline font-semibold cursor-pointer"
                               >
                                 + Beri Nilai
                               </button>
                             )}
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       );
                     })
                   )}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
 
             <div className="pt-2 flex items-center justify-between border-t border-slate-100 text-xs">
-              <span className="text-slate-400">Menampilkan {Math.min(7, filteredStudents.length)} dari {enrolledStudents.length} siswa</span>
+              <span className="text-slate-500">Menampilkan {Math.min(7, filteredStudents.length)} dari {enrolledStudents.length} siswa</span>
               <button
                 type="button"
                 onClick={() => onNavigate('penilaian')}
-                className="text-[#00B884] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                className="text-emerald-600 hover:underline font-medium flex items-center gap-1 cursor-pointer"
               >
                 <span>Input &amp; Kelola Rapor Nilai Selengkapnya</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Right Column (1 Col): Live Scan Feed Hari Ini & Pedoman */}
         <div className="space-y-5">
-          <div className="bg-white rounded-3xl border border-slate-200/80 p-5 sm:p-6 shadow-2xs space-y-4">
+          <Card className="p-5 sm:p-6 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 <h3 className="text-sm font-bold text-slate-900">
                   Aktivitas Presensi Terkini
                 </h3>
               </div>
-              <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">Real-time</span>
+              <Badge variant="outline" className="text-[10px] text-emerald-700 bg-emerald-50 border-emerald-200">
+                Real-time
+              </Badge>
             </div>
 
             {/* List of recent checkins */}
@@ -842,24 +875,24 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
                 eskulLogs.slice(0, 6).map((log) => (
                   <div
                     key={log.id}
-                    className="p-3 bg-slate-50/70 rounded-2xl border border-slate-100 flex items-center justify-between gap-2"
+                    className="p-3 bg-slate-50 rounded-lg border border-slate-100 flex items-center justify-between gap-2"
                   >
                     <div className="min-w-0">
-                      <h4 className="text-xs font-bold text-slate-900 truncate">
+                      <h4 className="text-xs font-semibold text-slate-900 truncate">
                         {log.namaSiswa}
                       </h4>
-                      <p className="text-[10px] text-slate-400 truncate mt-0.5">
+                      <p className="text-[10px] text-slate-500 truncate mt-0.5">
                         {log.kelas} • {log.waktuScan} WIB
                       </p>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
+                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold shrink-0 border ${
                       log.status === 'HADIR'
-                        ? 'bg-emerald-100 text-emerald-700'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                         : log.status === 'IZIN'
-                        ? 'bg-blue-100 text-blue-700'
+                        ? 'bg-blue-50 text-blue-700 border-blue-200'
                         : log.status === 'SAKIT'
-                        ? 'bg-amber-100 text-amber-700'
-                        : 'bg-rose-100 text-rose-700'
+                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                        : 'bg-rose-50 text-rose-700 border-rose-200'
                     }`}>
                       {log.status}
                     </span>
@@ -874,23 +907,25 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
               )}
             </div>
 
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={() => onNavigate('live-presensi')}
-              className="w-full py-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold text-xs border border-slate-200/80 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full flex items-center justify-center gap-1.5 text-xs text-slate-700"
             >
               <span>Lihat Log Presensi Lengkap</span>
               <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+            </Button>
+          </Card>
 
           {/* Quick Info & Schedule Guide Box */}
-          <div className="p-4 rounded-3xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 text-xs text-emerald-800 space-y-2">
-            <span className="font-bold flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-[#00B884]" />
+          <div className="p-4 rounded-lg bg-emerald-50/70 border border-emerald-200/80 text-xs text-emerald-900 space-y-2">
+            <span className="font-semibold flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
               Pedoman Jadwal &amp; Sesi Pembina
             </span>
-            <ul className="text-emerald-700/90 text-[11px] space-y-1.5 list-disc list-inside leading-relaxed">
+            <ul className="text-emerald-800 text-[11px] space-y-1.5 list-disc list-inside leading-relaxed">
               <li>
                 Jadwal resmi ekstrakurikuler ditetapkan pada hari <strong>{activeCoachedEskul.jadwalHari} ({activeCoachedEskul.jamMulai} - {activeCoachedEskul.jamSelesai} WIB)</strong>.
               </li>

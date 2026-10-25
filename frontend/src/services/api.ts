@@ -1,4 +1,15 @@
-import { Eskul, SesiPertemuan, PresensiRecord, PenilaianRecord, StudentProfile, Guru, Kelas, PengajuanJadwal } from '../types';
+import { 
+  Eskul, 
+  SesiPertemuan, 
+  PresensiRecord, 
+  PenilaianRecord, 
+  StudentProfile, 
+  Guru, 
+  Kelas, 
+  PengajuanJadwal,
+  PendaftaranEskul,
+  PrestasiLombaRecord
+} from '../types';
 import { 
   INITIAL_ESKUL_LIST, 
   INITIAL_SESSIONS, 
@@ -322,8 +333,71 @@ export const api = {
   // Penilaian Rapor
   getPenilaian: () => fetchWithFallback<PenilaianRecord[]>('/penilaian', undefined, INITIAL_PENILAIAN),
   savePenilaian: (items: PenilaianRecord[]) =>
-    fetchWithFallback<{ success: boolean }>('/penilaian', {
+    fetchWithFallback<{ success: boolean; message?: string; data?: any }>('/penilaian', {
       method: 'POST',
       body: JSON.stringify({ items }),
+    }),
+
+  // Pendaftaran Siswa Eskul (4-Stage Lifecycle)
+  getPendaftaran: (params?: { eskulId?: string; status?: string; siswaId?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.eskulId) query.append('eskulId', params.eskulId);
+    if (params?.status) query.append('status', params.status);
+    if (params?.siswaId) query.append('siswaId', params.siswaId);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return fetchWithFallback<PendaftaranEskul[]>(`/pendaftaran${qs}`, undefined, []);
+  },
+  daftarEskul: (data: { eskulId: string; siswaId: string; alasanDaftar?: string }) =>
+    fetchWithFallback<{ success: boolean; isAlreadyRegistered?: boolean; message: string; data?: any }>('/pendaftaran', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  seleksiPendaftaran: (pendaftaranIds: string[], status: 'DITERIMA_PEMBINA' | 'DITOLAK', catatanPembina?: string) =>
+    fetchWithFallback<{ success: boolean; message: string; count: number }>('/pendaftaran/seleksi-pembina', {
+      method: 'PATCH',
+      body: JSON.stringify({ pendaftaranIds, status, catatanPembina }),
+    }),
+  ajukanPendaftaran: (eskulId: string, pendaftaranIds?: string[], catatanPembina?: string) =>
+    fetchWithFallback<{ success: boolean; message: string; count: number }>('/pendaftaran/ajukan-koordinator', {
+      method: 'POST',
+      body: JSON.stringify({ eskulId, pendaftaranIds, catatanPembina }),
+    }),
+  validasiPendaftaran: (
+    pendaftaranIds: string[], 
+    aksi: 'SETUJUI' | 'TOLAK', 
+    catatanKoordinator?: string, 
+    koordinatorId?: string
+  ) =>
+    fetchWithFallback<{ success: boolean; message: string; count: number }>('/pendaftaran/validasi-koordinator', {
+      method: 'POST',
+      body: JSON.stringify({ pendaftaranIds, aksi, catatanKoordinator, koordinatorId }),
+    }),
+
+  // Prestasi & Perlombaan Siswa
+  getPrestasi: (params?: { eskulId?: string; siswaId?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.eskulId) query.append('eskulId', params.eskulId);
+    if (params?.siswaId) query.append('siswaId', params.siswaId);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    return fetchWithFallback<PrestasiLombaRecord[]>(`/prestasi${qs}`, undefined, []);
+  },
+  createPrestasi: (data: {
+    eskulId: string;
+    siswaId: string;
+    namaLomba: string;
+    penyelenggara?: string;
+    tingkat?: string;
+    peringkat?: string;
+    tanggal?: string;
+    buktiSertifikat?: string;
+    keterangan?: string;
+  }) =>
+    fetchWithFallback<{ success: boolean; message: string; data: PrestasiLombaRecord }>('/prestasi', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  deletePrestasi: (id: string) =>
+    fetchWithFallback<{ success: boolean; message: string; data?: any }>(`/prestasi/${id}`, {
+      method: 'DELETE',
     }),
 };

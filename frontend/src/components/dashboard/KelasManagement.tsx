@@ -20,6 +20,12 @@ import {
 } from 'lucide-react';
 import { Kelas, Guru } from '../../types';
 import { UserAvatar } from '../common/UserAvatar';
+import {
+  Card,
+  Button,
+  Badge,
+  Input,
+} from '../ui';
 
 export interface JurusanInfo {
   kode: string;
@@ -251,78 +257,81 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
+            <Badge variant="brand" className="text-[11px] font-bold uppercase tracking-wider">
               SMK Al-Amanah
-            </span>
-            <span className="text-xs text-slate-400 font-medium">T.A. 2026/2027</span>
+            </Badge>
+            <span className="text-xs text-muted-foreground font-medium">T.A. 2026/2027</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight mt-1">
             Data Kelas & Rombel
           </h1>
-          <p className="text-slate-500 text-sm mt-0.5 max-w-2xl">
+          <p className="text-muted-foreground text-xs sm:text-sm mt-0.5 max-w-2xl">
             Manajemen rombel kelas, struktur kejuruan, penugasan wali kelas, dan integrasi data presensi siswa.
           </p>
         </div>
 
-        <button
+        <Button
+          variant="brand"
+          size="sm"
           type="button"
           onClick={() => {
             setIsCustomJurusan(false);
             setCustomJurusan('');
             setIsAddModalOpen(true);
           }}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#00B884] hover:bg-[#009e70] active:scale-[0.98] text-white font-semibold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+          className="gap-2"
         >
-          <Plus className="w-4 h-4 stroke-[2.5]" />
+          <Plus className="size-4" />
           <span>Tambah Kelas Baru</span>
-        </button>
+        </Button>
       </div>
 
       {/* 2. Search & Filter Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs space-y-3">
+      <Card className="p-4 space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="relative flex-1 max-w-md">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
+            <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Cari nama kelas, jurusan, atau wali kelas..."
-              className="w-full pl-9 pr-8 py-2 bg-slate-50/80 focus:bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884] transition-all"
+              className="pl-9 pr-8 h-9 text-xs font-medium"
             />
             {searchTerm && (
               <button
                 type="button"
                 onClick={() => setSearchTerm('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-0.5 cursor-pointer"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="size-3.5" />
               </button>
             )}
           </div>
 
           <div className="flex items-center gap-2.5">
             {/* Filter Button */}
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               type="button"
               onClick={() => setIsFilterModalOpen(true)}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+              className={`gap-2 h-9 text-xs ${
                 activeFiltersCount > 0
-                  ? 'bg-emerald-50 text-[#00B884] border-emerald-300 ring-2 ring-[#00B884]/20'
-                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                  : ''
               }`}
             >
-              <SlidersHorizontal className="w-3.5 h-3.5 text-[#00B884]" />
+              <SlidersHorizontal className="size-3.5 text-emerald-600" />
               <span>Filter Tingkat & Wali</span>
               {activeFiltersCount > 0 && (
-                <span className="w-4 h-4 rounded-full bg-[#00B884] text-white text-[10px] font-bold flex items-center justify-center">
+                <Badge variant="brand" className="size-4 p-0 text-[10px] flex items-center justify-center rounded-full">
                   {activeFiltersCount}
-                </span>
+                </Badge>
               )}
-            </button>
+            </Button>
 
-            <span className="text-xs text-slate-500 font-medium hidden sm:inline">
-              Total: <strong className="text-slate-900 font-bold">{filteredKelas.length}</strong> Rombel
+            <span className="text-xs text-muted-foreground font-medium hidden sm:inline">
+              Total: <strong className="text-foreground font-semibold">{filteredKelas.length}</strong> Rombel
             </span>
           </div>
         </div>
@@ -410,7 +419,7 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
             </button>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* 4. Filter Modal Window */}
       <AnimatePresence>
@@ -421,115 +430,122 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsFilterModalOpen(false)}
-              className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs"
+              className="fixed inset-0 bg-black/50 backdrop-blur-xs"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.96, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 10 }}
               transition={{ type: 'spring', duration: 0.25 }}
-              className="bg-white rounded-3xl border border-slate-200 shadow-2xl p-6 w-full max-w-md relative z-10 space-y-5"
+              className="w-full max-w-md relative z-10"
             >
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-50 text-[#00B884] flex items-center justify-center">
-                    <SlidersHorizontal className="w-4 h-4" />
+              <Card className="p-6 space-y-5">
+                <div className="flex items-center justify-between pb-3 border-b border-border">
+                  <div className="flex items-center gap-2.5">
+                    <div className="size-8 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                      <SlidersHorizontal className="size-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground">Filter Rombel Kelas</h3>
+                      <p className="text-xs text-muted-foreground">Saring berdasarkan jenjang dan penugasan wali</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-800">Filter Rombel Kelas</h3>
-                    <p className="text-xs text-slate-400">Saring berdasarkan jenjang dan penugasan wali</p>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    type="button"
+                    onClick={() => setIsFilterModalOpen(false)}
+                    className="size-7"
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </div>
+
+                {/* Tingkat */}
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-foreground uppercase tracking-wider block">
+                    Tingkat Kelas
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {['10', '11', '12'].map((t) => {
+                      const isSelected = selectedTingkat.includes(t);
+                      return (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => toggleTingkat(t)}
+                          className={`py-2 px-3 rounded-md text-xs font-medium border transition-colors cursor-pointer ${
+                            isSelected
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                              : 'bg-muted/50 text-foreground border-border hover:bg-muted'
+                          }`}
+                        >
+                          Kelas {t}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsFilterModalOpen(false)}
-                  className="p-1 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
 
-              {/* Tingkat */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
-                  Tingkat Kelas
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {['10', '11', '12'].map((t) => {
-                    const isSelected = selectedTingkat.includes(t);
-                    return (
-                      <button
-                        key={t}
-                        type="button"
-                        onClick={() => toggleTingkat(t)}
-                        className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                          isSelected
-                            ? 'bg-emerald-50 text-[#00B884] border-[#00B884]'
-                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        Kelas {t}
-                      </button>
-                    );
-                  })}
+                {/* Status Wali */}
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-foreground uppercase tracking-wider block">
+                    Status Wali Kelas
+                  </label>
+                  <div className="space-y-1.5">
+                    {[
+                      { val: 'assigned', label: 'Sudah Ditugaskan Wali Kelas' },
+                      { val: 'unassigned', label: 'Belum Ada Wali Kelas' }
+                    ].map((s) => {
+                      const isSelected = selectedStatusWali.includes(s.val);
+                      return (
+                        <button
+                          key={s.val}
+                          type="button"
+                          onClick={() => toggleStatusWali(s.val)}
+                          className={`w-full flex items-center justify-between p-2.5 rounded-md text-xs font-medium border transition-colors cursor-pointer ${
+                            isSelected
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                              : 'bg-muted/50 text-foreground border-border hover:bg-muted'
+                          }`}
+                        >
+                          <span>{s.label}</span>
+                          <div className={`size-4 rounded flex items-center justify-center border text-[9px] ${
+                            isSelected ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-border bg-background'
+                          }`}>
+                            {isSelected && <Check className="size-3 stroke-[3]" />}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
 
-              {/* Status Wali */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
-                  Status Wali Kelas
-                </label>
-                <div className="space-y-1.5">
-                  {[
-                    { val: 'assigned', label: 'Sudah Ditugaskan Wali Kelas' },
-                    { val: 'unassigned', label: 'Belum Ada Wali Kelas' }
-                  ].map((s) => {
-                    const isSelected = selectedStatusWali.includes(s.val);
-                    return (
-                      <button
-                        key={s.val}
-                        type="button"
-                        onClick={() => toggleStatusWali(s.val)}
-                        className={`w-full flex items-center justify-between p-3 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                          isSelected
-                            ? 'bg-emerald-50 text-[#00B884] border-[#00B884]'
-                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        <span>{s.label}</span>
-                        <div className={`w-4 h-4 rounded flex items-center justify-center border text-[9px] ${
-                          isSelected ? 'bg-[#00B884] border-[#00B884] text-white' : 'border-slate-300 bg-white'
-                        }`}>
-                          {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
-                        </div>
-                      </button>
-                    );
-                  })}
+                {/* Actions */}
+                <div className="flex items-center justify-between pt-4 border-t border-border">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    type="button"
+                    onClick={() => {
+                      setSelectedTingkat([]);
+                      setSelectedStatusWali([]);
+                    }}
+                    className="gap-1.5 text-xs text-muted-foreground"
+                  >
+                    <RotateCcw className="size-3.5" />
+                    <span>Reset Filter</span>
+                  </Button>
+                  <Button
+                    variant="brand"
+                    size="sm"
+                    type="button"
+                    onClick={() => setIsFilterModalOpen(false)}
+                  >
+                    Terapkan Filter
+                  </Button>
                 </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedTingkat([]);
-                    setSelectedStatusWali([]);
-                  }}
-                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 cursor-pointer"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Reset Filter</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsFilterModalOpen(false)}
-                  className="px-5 py-2 text-xs font-semibold bg-[#00B884] hover:bg-[#009e70] text-white rounded-xl shadow-xs cursor-pointer"
-                >
-                  Terapkan Filter
-                </button>
-              </div>
+              </Card>
             </motion.div>
           </div>
         )}
@@ -537,15 +553,17 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
 
       {/* 5. Grid of Classes */}
       {filteredKelas.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center shadow-2xs">
-          <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
-            <BookOpen className="w-6 h-6" />
+        <Card className="p-12 text-center">
+          <div className="size-12 rounded-full bg-muted text-muted-foreground flex items-center justify-center mx-auto mb-3">
+            <BookOpen className="size-6" />
           </div>
-          <h3 className="text-base font-bold text-slate-800">Tidak ada rombel kelas yang cocok</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
+          <h3 className="text-sm font-semibold text-foreground">Tidak ada rombel kelas yang cocok</h3>
+          <p className="text-xs text-muted-foreground max-w-sm mx-auto mt-1">
             Tidak ditemukan kelas untuk pencarian atau filter yang sedang diterapkan.
           </p>
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             type="button"
             onClick={() => {
               setSearchTerm('');
@@ -553,54 +571,56 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
               setSelectedStatusWali([]);
               setSelectedJurusanFilter('ALL');
             }}
-            className="mt-4 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-semibold hover:bg-slate-800 transition-colors cursor-pointer"
+            className="mt-4"
           >
             Bersihkan Filter
-          </button>
-        </div>
+          </Button>
+        </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredKelas.map((k) => (
-            <div
+            <Card
               key={k.id}
-              className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between"
+              className="p-5 flex flex-col justify-between hover:shadow-xs transition-shadow"
             >
               <div>
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#00B884] flex items-center justify-center font-black text-lg border border-emerald-100 shadow-2xs">
+                    <div className="size-11 rounded-md bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-base border border-emerald-200 shrink-0">
                       {k.tingkat}
                     </div>
                     <div>
-                      <h3 className="text-lg font-black text-slate-900 leading-tight">
+                      <h3 className="text-base font-semibold text-foreground leading-snug">
                         {k.namaKelas}
                       </h3>
-                      <span className="inline-block mt-0.5 px-2 py-0.5 bg-slate-100 text-slate-700 text-[11px] font-semibold rounded-md border border-slate-200/60">
+                      <Badge variant="outline" className="text-[11px] font-medium mt-0.5">
                         {k.jurusan}
-                      </span>
+                      </Badge>
                     </div>
                   </div>
                   
                   {/* Edit button */}
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     type="button"
                     onClick={() => openEditModal(k)}
-                    className="p-2 rounded-xl text-slate-400 hover:text-[#00B884] hover:bg-emerald-50 transition-colors cursor-pointer border border-transparent hover:border-emerald-200"
+                    className="size-8 text-muted-foreground hover:text-foreground"
                     title="Ubah Rombel / Wali Kelas"
                   >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
+                    <Edit2 className="size-4" />
+                  </Button>
                 </div>
 
                 {/* Wali Kelas Card */}
-                <div className="p-3.5 bg-slate-50/80 rounded-2xl border border-slate-100 mb-4">
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center justify-between">
+                <div className="p-3 bg-muted/40 rounded-md border border-border mb-3">
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2 flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      <UserCheck className="size-3.5 text-emerald-600" />
                       <span>Wali Kelas</span>
                     </div>
                     {k.waliKelas && (
-                      <span className="text-[10px] text-emerald-600 font-semibold">Ditugaskan</span>
+                      <Badge variant="success" className="text-[10px] py-0 px-1.5">Ditugaskan</Badge>
                     )}
                   </div>
 
@@ -608,46 +628,48 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
                     <div className="flex items-center gap-2.5">
                       <UserAvatar
                         name={k.waliKelas.namaLengkap}
-                        className="w-9 h-9 ring-2 ring-emerald-500/20 shrink-0 text-xs shadow-2xs"
+                        className="size-8 ring-1 ring-border shrink-0 text-xs"
                       />
                       <div className="min-w-0">
-                        <div className="text-xs font-bold text-slate-900 truncate">
+                        <div className="text-xs font-semibold text-foreground truncate">
                           {k.waliKelas.namaLengkap}
                         </div>
-                        <div className="text-[10px] text-slate-400 font-mono">
+                        <div className="text-[10px] text-muted-foreground font-mono">
                           NIP: {k.waliKelas.nip || '-'}
                         </div>
                       </div>
                     </div>
                   ) : (
                     <div className="flex items-center justify-between py-1">
-                      <div className="text-xs text-amber-700 font-semibold flex items-center gap-1.5">
-                        <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+                      <div className="text-xs text-amber-600 font-medium flex items-center gap-1.5">
+                        <AlertCircle className="size-3.5" />
                         <span>Belum Ada Wali</span>
                       </div>
-                      <button
+                      <Button
+                        variant="link"
+                        size="sm"
                         type="button"
                         onClick={() => openEditModal(k)}
-                        className="text-[11px] text-[#00B884] hover:underline font-bold cursor-pointer"
+                        className="text-xs text-emerald-600 p-0 h-auto font-medium"
                       >
                         + Tugaskan
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Card Footer */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+              <div className="pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-slate-400" />
+                  <Users className="size-3.5" />
                   <span>{k._count?.siswaList ?? 0} Siswa Terdaftar</span>
                 </span>
-                <span className="text-[11px] font-medium text-slate-400">
+                <span className="text-[11px] font-medium">
                   Semester Ganjil
                 </span>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
@@ -661,158 +683,162 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsAddModalOpen(false)}
-              className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs"
+              className="fixed inset-0 bg-black/50 backdrop-blur-xs"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.96, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 10 }}
               transition={{ type: 'spring', duration: 0.25 }}
-              className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 relative z-10 space-y-4"
+              className="w-full max-w-md relative z-10"
             >
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div>
-                  <h3 className="text-base font-bold text-slate-900">Tambah Rombel Kelas Baru</h3>
-                  <p className="text-xs text-slate-400">Daftarkan rombel kelas dan jurusan ke sistem sekolah</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="p-1 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <form onSubmit={handleSaveKelas} className="space-y-4">
-                {/* Nama Kelas */}
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">
-                    Nama Rombel Kelas (Contoh: X RPL 1, XI DKV 2)
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={namaKelas}
-                    onChange={(e) => handleNamaKelasChange(e.target.value)}
-                    placeholder="Contoh: X DKV 1"
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
-                  />
-                  <p className="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-emerald-600" />
-                    <span>Sistem otomatis mendeteksi tingkat &amp; jurusan dari kode kelas.</span>
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Tingkat */}
+              <Card className="p-6 space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-border">
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">Tingkat</label>
+                    <h3 className="text-base font-semibold text-foreground">Tambah Rombel Kelas Baru</h3>
+                    <p className="text-xs text-muted-foreground">Daftarkan rombel kelas dan jurusan ke sistem sekolah</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    type="button"
+                    onClick={() => setIsAddModalOpen(false)}
+                    className="size-7"
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </div>
+
+                <form onSubmit={handleSaveKelas} className="space-y-4">
+                  {/* Nama Kelas */}
+                  <div>
+                    <label className="text-xs font-semibold text-foreground block mb-1.5">
+                      Nama Rombel Kelas (Contoh: X RPL 1, XI DKV 2)
+                    </label>
+                    <Input
+                      required
+                      value={namaKelas}
+                      onChange={(e) => handleNamaKelasChange(e.target.value)}
+                      placeholder="Contoh: X DKV 1"
+                      className="h-9 text-xs"
+                    />
+                    <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
+                      <Sparkles className="size-3 text-emerald-600" />
+                      <span>Sistem otomatis mendeteksi tingkat &amp; jurusan dari kode kelas.</span>
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Tingkat */}
+                    <div>
+                      <label className="text-xs font-semibold text-foreground block mb-1.5">Tingkat</label>
+                      <select
+                        value={tingkat}
+                        onChange={(e) => setTingkat(Number(e.target.value))}
+                        className="w-full px-3 py-2 bg-background border border-border rounded-md text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                      >
+                        <option value={10}>Kelas 10 (X)</option>
+                        <option value={11}>Kelas 11 (XI)</option>
+                        <option value={12}>Kelas 12 (XII)</option>
+                      </select>
+                    </div>
+
+                    {/* Jurusan Dropdown */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-semibold text-foreground">Jurusan</label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsCustomJurusan(!isCustomJurusan);
+                            if (!isCustomJurusan) setCustomJurusan('');
+                          }}
+                          className="text-[10px] text-emerald-600 hover:underline font-medium cursor-pointer"
+                        >
+                          {isCustomJurusan ? 'Pilih dari List' : '+ Jurusan Baru'}
+                        </button>
+                      </div>
+
+                      {!isCustomJurusan ? (
+                        <select
+                          value={jurusan}
+                          onChange={(e) => {
+                            if (e.target.value === 'CUSTOM_OPTION') {
+                              setIsCustomJurusan(true);
+                              setCustomJurusan('');
+                            } else {
+                              setJurusan(e.target.value);
+                            }
+                          }}
+                          className="w-full px-3 py-2 bg-background border border-border rounded-md text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                        >
+                          {allAvailableJurusan.map((jName) => (
+                            <option key={jName} value={jName}>
+                              {jName}
+                            </option>
+                          ))}
+                          <option value="CUSTOM_OPTION">+ Tambah Jurusan Baru (Kustom)...</option>
+                        </select>
+                      ) : (
+                        <Input
+                          required
+                          value={customJurusan}
+                          onChange={(e) => setCustomJurusan(e.target.value)}
+                          placeholder="Ketik nama jurusan baru..."
+                          className="h-9 text-xs"
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  {isCustomJurusan && (
+                    <div className="p-3 bg-emerald-50 rounded-md border border-emerald-200 text-[11px] text-emerald-800 flex items-start gap-2">
+                      <CheckCircle2 className="size-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span>
+                        Jurusan <strong>{customJurusan || 'baru'}</strong> akan otomatis tersimpan ke database dan tersedia untuk pemilihan rombel kelas berikutnya.
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Pilih Wali Kelas (Opsional) */}
+                  <div>
+                    <label className="text-xs font-semibold text-foreground block mb-1.5">
+                      Pilih Wali Kelas (Opsional)
+                    </label>
                     <select
-                      value={tingkat}
-                      onChange={(e) => setTingkat(Number(e.target.value))}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                      value={selectedWaliId}
+                      onChange={(e) => setSelectedWaliId(e.target.value)}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-md text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                     >
-                      <option value={10}>Kelas 10 (X)</option>
-                      <option value={11}>Kelas 11 (XI)</option>
-                      <option value={12}>Kelas 12 (XII)</option>
+                      <option value="">-- Belum Ditugaskan Wali Kelas --</option>
+                      {guruList.map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.namaLengkap} ({g.nip ? `NIP: ${g.nip}` : 'Guru'})
+                        </option>
+                      ))}
                     </select>
                   </div>
 
-                  {/* Jurusan Dropdown */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs font-bold text-slate-700">Jurusan</label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsCustomJurusan(!isCustomJurusan);
-                          if (!isCustomJurusan) setCustomJurusan('');
-                        }}
-                        className="text-[10px] text-[#00B884] hover:underline font-bold cursor-pointer"
-                      >
-                        {isCustomJurusan ? 'Pilih dari List' : '+ Jurusan Baru'}
-                      </button>
-                    </div>
-
-                    {!isCustomJurusan ? (
-                      <select
-                        value={jurusan}
-                        onChange={(e) => {
-                          if (e.target.value === 'CUSTOM_OPTION') {
-                            setIsCustomJurusan(true);
-                            setCustomJurusan('');
-                          } else {
-                            setJurusan(e.target.value);
-                          }
-                        }}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
-                      >
-                        {allAvailableJurusan.map((jName) => (
-                          <option key={jName} value={jName}>
-                            {jName}
-                          </option>
-                        ))}
-                        <option value="CUSTOM_OPTION">+ Tambah Jurusan Baru (Kustom)...</option>
-                      </select>
-                    ) : (
-                      <input
-                        type="text"
-                        required
-                        value={customJurusan}
-                        onChange={(e) => setCustomJurusan(e.target.value)}
-                        placeholder="Ketik nama jurusan baru..."
-                        className="w-full px-3 py-2 bg-emerald-50/50 border border-emerald-300 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
-                      />
-                    )}
+                  {/* Buttons */}
+                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      type="button"
+                      onClick={() => setIsAddModalOpen(false)}
+                    >
+                      Batal
+                    </Button>
+                    <Button
+                      variant="brand"
+                      size="sm"
+                      type="submit"
+                    >
+                      Simpan Kelas
+                    </Button>
                   </div>
-                </div>
-
-                {isCustomJurusan && (
-                  <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200/80 text-[11px] text-emerald-800 flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <span>
-                      Jurusan <strong>{customJurusan || 'baru'}</strong> akan otomatis tersimpan ke database dan tersedia untuk pemilihan rombel kelas berikutnya.
-                    </span>
-                  </div>
-                )}
-
-                {/* Pilih Wali Kelas (Opsional) */}
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">
-                    Pilih Wali Kelas (Opsional)
-                  </label>
-                  <select
-                    value={selectedWaliId}
-                    onChange={(e) => setSelectedWaliId(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
-                  >
-                    <option value="">-- Belum Ditugaskan Wali Kelas --</option>
-                    {guruList.map((g) => (
-                      <option key={g.id} value={g.id}>
-                        {g.namaLengkap} ({g.nip ? `NIP: ${g.nip}` : 'Guru'})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Buttons */}
-                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={() => setIsAddModalOpen(false)}
-                    className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-semibold hover:bg-slate-50 cursor-pointer"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2 bg-[#00B884] hover:bg-[#009e70] text-white rounded-xl text-xs font-semibold shadow-xs cursor-pointer"
-                  >
-                    Simpan Kelas
-                  </button>
-                </div>
-              </form>
+                </form>
+              </Card>
             </motion.div>
           </div>
         )}
@@ -827,150 +853,156 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setEditingKelas(null)}
-              className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs"
+              className="fixed inset-0 bg-black/50 backdrop-blur-xs"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.96, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 10 }}
               transition={{ type: 'spring', duration: 0.25 }}
-              className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 relative z-10 space-y-4"
+              className="w-full max-w-md relative z-10"
             >
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div>
-                  <h3 className="text-base font-bold text-slate-900">Ubah Data Rombel Kelas</h3>
-                  <p className="text-xs text-slate-400">Perbarui nama kelas, jurusan, atau wali kelas</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setEditingKelas(null)}
-                  className="p-1 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <form onSubmit={handleSaveEditKelas} className="space-y-4">
-                {/* Nama Kelas */}
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Nama Rombel Kelas</label>
-                  <input
-                    type="text"
-                    required
-                    value={editNamaKelas}
-                    onChange={(e) => setEditNamaKelas(e.target.value)}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Tingkat */}
+              <Card className="p-6 space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-border">
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">Tingkat</label>
+                    <h3 className="text-base font-semibold text-foreground">Ubah Data Rombel Kelas</h3>
+                    <p className="text-xs text-muted-foreground">Perbarui nama kelas, jurusan, atau wali kelas</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    type="button"
+                    onClick={() => setEditingKelas(null)}
+                    className="size-7"
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </div>
+
+                <form onSubmit={handleSaveEditKelas} className="space-y-4">
+                  {/* Nama Kelas */}
+                  <div>
+                    <label className="text-xs font-semibold text-foreground block mb-1.5">Nama Rombel Kelas</label>
+                    <Input
+                      required
+                      value={editNamaKelas}
+                      onChange={(e) => setEditNamaKelas(e.target.value)}
+                      className="h-9 text-xs"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Tingkat */}
+                    <div>
+                      <label className="text-xs font-semibold text-foreground block mb-1.5">Tingkat</label>
+                      <select
+                        value={editTingkat}
+                        onChange={(e) => setEditTingkat(Number(e.target.value))}
+                        className="w-full px-3 py-2 bg-background border border-border rounded-md text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                      >
+                        <option value={10}>Kelas 10 (X)</option>
+                        <option value={11}>Kelas 11 (XI)</option>
+                        <option value={12}>Kelas 12 (XII)</option>
+                      </select>
+                    </div>
+
+                    {/* Jurusan */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-semibold text-foreground">Jurusan</label>
+                        <button
+                          type="button"
+                          onClick={() => setIsEditCustomJurusan(!isEditCustomJurusan)}
+                          className="text-[10px] text-emerald-600 hover:underline font-medium cursor-pointer"
+                        >
+                          {isEditCustomJurusan ? 'List' : '+ Kustom'}
+                        </button>
+                      </div>
+
+                      {!isEditCustomJurusan ? (
+                        <select
+                          value={editJurusan}
+                          onChange={(e) => {
+                            if (e.target.value === 'CUSTOM_OPTION') {
+                              setIsEditCustomJurusan(true);
+                              setEditCustomJurusan('');
+                            } else {
+                              setEditJurusan(e.target.value);
+                            }
+                          }}
+                          className="w-full px-3 py-2 bg-background border border-border rounded-md text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                        >
+                          {allAvailableJurusan.map((jName) => (
+                            <option key={jName} value={jName}>
+                              {jName}
+                            </option>
+                          ))}
+                          <option value="CUSTOM_OPTION">+ Tambah Jurusan Baru (Kustom)...</option>
+                        </select>
+                      ) : (
+                        <Input
+                          required
+                          value={editCustomJurusan}
+                          onChange={(e) => setEditCustomJurusan(e.target.value)}
+                          placeholder="Nama jurusan baru..."
+                          className="h-9 text-xs"
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Wali Kelas */}
+                  <div>
+                    <label className="text-xs font-semibold text-foreground block mb-1.5">
+                      Wali Kelas
+                    </label>
                     <select
-                      value={editTingkat}
-                      onChange={(e) => setEditTingkat(Number(e.target.value))}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800"
+                      value={editWaliId}
+                      onChange={(e) => setEditWaliId(e.target.value)}
+                      className="w-full px-3 py-2 bg-background border border-border rounded-md text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                     >
-                      <option value={10}>Kelas 10 (X)</option>
-                      <option value={11}>Kelas 11 (XI)</option>
-                      <option value={12}>Kelas 12 (XII)</option>
+                      <option value="">-- Belum Ditugaskan Wali Kelas --</option>
+                      {guruList.map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.namaLengkap} - {g.nip ? `NIP: ${g.nip}` : 'Guru SMK'}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
-                  {/* Jurusan */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs font-bold text-slate-700">Jurusan</label>
-                      <button
-                        type="button"
-                        onClick={() => setIsEditCustomJurusan(!isEditCustomJurusan)}
-                        className="text-[10px] text-[#00B884] hover:underline font-bold cursor-pointer"
-                      >
-                        {isEditCustomJurusan ? 'List' : '+ Kustom'}
-                      </button>
-                    </div>
-
-                    {!isEditCustomJurusan ? (
-                      <select
-                        value={editJurusan}
-                        onChange={(e) => {
-                          if (e.target.value === 'CUSTOM_OPTION') {
-                            setIsEditCustomJurusan(true);
-                            setEditCustomJurusan('');
-                          } else {
-                            setEditJurusan(e.target.value);
-                          }
-                        }}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800"
-                      >
-                        {allAvailableJurusan.map((jName) => (
-                          <option key={jName} value={jName}>
-                            {jName}
-                          </option>
-                        ))}
-                        <option value="CUSTOM_OPTION">+ Tambah Jurusan Baru (Kustom)...</option>
-                      </select>
-                    ) : (
-                      <input
-                        type="text"
-                        required
-                        value={editCustomJurusan}
-                        onChange={(e) => setEditCustomJurusan(e.target.value)}
-                        placeholder="Nama jurusan baru..."
-                        className="w-full px-3 py-2 bg-emerald-50/50 border border-emerald-300 rounded-xl text-xs font-medium text-slate-800"
-                      />
-                    )}
-                  </div>
-                </div>
-
-                {/* Wali Kelas */}
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">
-                    Wali Kelas
-                  </label>
-                  <select
-                    value={editWaliId}
-                    onChange={(e) => setEditWaliId(e.target.value)}
-                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
-                  >
-                    <option value="">-- Belum Ditugaskan Wali Kelas --</option>
-                    {guruList.map((g) => (
-                      <option key={g.id} value={g.id}>
-                        {g.namaLengkap} - {g.nip ? `NIP: ${g.nip}` : 'Guru SMK'}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Modal Buttons */}
-                <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteClass(editingKelas.id, editingKelas.namaKelas)}
-                    className="flex items-center gap-1.5 px-3 py-2 text-rose-600 hover:bg-rose-50 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Hapus Kelas</span>
-                  </button>
-
-                  <div className="flex items-center gap-2">
-                    <button
+                  {/* Modal Buttons */}
+                  <div className="flex items-center justify-between pt-3 border-t border-border">
+                    <Button
                       type="button"
-                      onClick={() => setEditingKelas(null)}
-                      className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-semibold hover:bg-slate-50 cursor-pointer"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDeleteClass(editingKelas.id, editingKelas.namaKelas)}
+                      className="gap-1.5 text-xs"
                     >
-                      Batal
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-5 py-2 bg-[#00B884] hover:bg-[#009e70] text-white rounded-xl text-xs font-semibold shadow-xs cursor-pointer"
-                    >
-                      Simpan Perubahan
-                    </button>
+                      <Trash2 className="size-3.5" />
+                      <span>Hapus Kelas</span>
+                    </Button>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingKelas(null)}
+                      >
+                        Batal
+                      </Button>
+                      <Button
+                        type="submit"
+                        variant="brand"
+                        size="sm"
+                      >
+                        Simpan Perubahan
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </form>
+                </form>
+              </Card>
             </motion.div>
           </div>
         )}

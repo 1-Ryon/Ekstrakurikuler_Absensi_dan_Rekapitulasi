@@ -92,11 +92,17 @@ export const EditEskulModal: React.FC<EditEskulModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-lg max-w-lg w-full p-6 shadow-xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150"
+      >
         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-[#00B884] flex items-center justify-center">
+            <div className="w-8 h-8 rounded-md bg-emerald-50 text-[#00B884] flex items-center justify-center">
               <Edit3 className="w-4 h-4" />
             </div>
             <div>
@@ -109,8 +115,9 @@ export const EditEskulModal: React.FC<EditEskulModalProps> = ({
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700 cursor-pointer"
+            className="size-8 rounded-md border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -119,7 +126,7 @@ export const EditEskulModal: React.FC<EditEskulModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-3.5 text-xs max-h-[75vh] overflow-y-auto pr-1">
           {/* Nama Eskul */}
           <div>
-            <label className="font-bold text-slate-700 block mb-1">
+            <label className="font-semibold text-slate-700 block mb-1">
               Nama Ekstrakurikuler
             </label>
             <input
@@ -128,18 +135,18 @@ export const EditEskulModal: React.FC<EditEskulModalProps> = ({
               value={namaEskul}
               onChange={(e) => setNamaEskul(e.target.value)}
               placeholder="Contoh: Eskul Futsal Prestasi"
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
             />
           </div>
 
           {/* Kategori & Status */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="font-bold text-slate-700 block mb-1">Kategori</label>
+              <label className="font-semibold text-slate-700 block mb-1">Kategori</label>
               <select
                 value={kategori}
                 onChange={(e) => setKategori(e.target.value as Eskul['kategori'])}
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
               >
                 <option value="Olahraga">Olahraga</option>
                 <option value="Teknologi">Teknologi</option>
@@ -150,11 +157,11 @@ export const EditEskulModal: React.FC<EditEskulModalProps> = ({
             </div>
 
             <div>
-              <label className="font-bold text-slate-700 block mb-1">Status Keaktifan</label>
+              <label className="font-semibold text-slate-700 block mb-1">Status Keaktifan</label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as Eskul['status'])}
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
               >
                 <option value="Aktif">Aktif</option>
                 <option value="Non-Aktif">Non-Aktif</option>
@@ -164,13 +171,13 @@ export const EditEskulModal: React.FC<EditEskulModalProps> = ({
 
           {/* Guru Pembina */}
           <div>
-            <label className="font-bold text-slate-700 block mb-1">
+            <label className="font-semibold text-slate-700 block mb-1">
               Guru Pembina Bertugas
             </label>
             <select
               value={pembinaId}
               onChange={(e) => setPembinaId(e.target.value)}
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
             >
               {allPembinaOptions.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -183,11 +190,11 @@ export const EditEskulModal: React.FC<EditEskulModalProps> = ({
           {/* Jadwal Hari & Kuota */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="font-bold text-slate-700 block mb-1">Jadwal Hari</label>
+              <label className="font-semibold text-slate-700 block mb-1">Jadwal Hari</label>
               <select
                 value={jadwalHari}
                 onChange={(e) => setJadwalHari(e.target.value)}
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
               >
                 <option value="Senin">Senin</option>
                 <option value="Selasa">Selasa</option>
@@ -201,7 +208,7 @@ export const EditEskulModal: React.FC<EditEskulModalProps> = ({
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="font-bold text-slate-700 block">Kapasitas Kuota Siswa</label>
+                <label className="font-semibold text-slate-700 block">Kapasitas Kuota Siswa</label>
                 <span className="text-[10px] text-slate-400">Min 5</span>
               </div>
               <input
@@ -226,7 +233,7 @@ export const EditEskulModal: React.FC<EditEskulModalProps> = ({
                     setKuota(eskul?.kuota || 35);
                   }
                 }}
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
               />
             </div>
           </div>
@@ -234,30 +241,30 @@ export const EditEskulModal: React.FC<EditEskulModalProps> = ({
           {/* Jam Mulai & Selesai */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="font-bold text-slate-700 block mb-1">Jam Mulai</label>
+              <label className="font-semibold text-slate-700 block mb-1">Jam Mulai</label>
               <input
                 type="time"
                 required
                 value={jamMulai}
                 onChange={(e) => setJamMulai(e.target.value)}
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
               />
             </div>
             <div>
-              <label className="font-bold text-slate-700 block mb-1">Jam Selesai</label>
+              <label className="font-semibold text-slate-700 block mb-1">Jam Selesai</label>
               <input
                 type="time"
                 required
                 value={jamSelesai}
                 onChange={(e) => setJamSelesai(e.target.value)}
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
               />
             </div>
           </div>
 
           {/* Lokasi Fasilitas */}
           <div>
-            <label className="font-bold text-slate-700 block mb-1">
+            <label className="font-semibold text-slate-700 block mb-1">
               Lokasi / Fasilitas Sekolah
             </label>
             <input
@@ -266,13 +273,13 @@ export const EditEskulModal: React.FC<EditEskulModalProps> = ({
               value={lokasi}
               onChange={(e) => setLokasi(e.target.value)}
               placeholder="Contoh: Lapangan Futsal SMK Al Amanah"
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
             />
           </div>
 
           {/* Deskripsi */}
           <div>
-            <label className="font-bold text-slate-700 block mb-1">
+            <label className="font-semibold text-slate-700 block mb-1">
               Deskripsi & Agenda Kegiatan
             </label>
             <textarea
@@ -280,7 +287,7 @@ export const EditEskulModal: React.FC<EditEskulModalProps> = ({
               value={deskripsi}
               onChange={(e) => setDeskripsi(e.target.value)}
               placeholder="Deskripsi kegiatan atau kompetensi yang dikembangkan..."
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 resize-none"
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884] resize-none"
             />
           </div>
 
@@ -289,13 +296,13 @@ export const EditEskulModal: React.FC<EditEskulModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold text-xs hover:bg-slate-50 cursor-pointer"
+              className="px-4 py-2 border border-slate-200 text-slate-600 rounded-md text-xs font-medium hover:bg-slate-50 transition-colors cursor-pointer"
             >
               Batal
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-xl bg-[#00B884] hover:bg-emerald-600 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+              className="px-5 py-2 bg-[#00B884] hover:bg-emerald-600 text-white rounded-md text-xs font-semibold shadow-xs transition-colors cursor-pointer"
             >
               Simpan Perubahan
             </button>

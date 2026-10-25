@@ -50,8 +50,14 @@ export const AddEskulModal: React.FC<AddEskulModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-lg max-w-lg w-full p-6 shadow-xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150"
+      >
         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
           <div>
             <h3 className="text-lg font-bold text-slate-800">
@@ -62,8 +68,9 @@ export const AddEskulModal: React.FC<AddEskulModalProps> = ({
             </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700 cursor-pointer"
+            className="size-8 rounded-md border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -72,7 +79,7 @@ export const AddEskulModal: React.FC<AddEskulModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
           {/* Nama Eskul */}
           <div>
-            <label className="font-bold text-slate-700 block mb-1">
+            <label className="font-semibold text-slate-700 block mb-1">
               Nama Ekstrakurikuler
             </label>
             <input
@@ -81,18 +88,18 @@ export const AddEskulModal: React.FC<AddEskulModalProps> = ({
               value={namaEskul}
               onChange={(e) => setNamaEskul(e.target.value)}
               placeholder="Contoh: Eskul Robotik & IoT"
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
             />
           </div>
 
           {/* Kategori & Kuota */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="font-bold text-slate-700 block mb-1">Kategori Eskul</label>
+              <label className="font-semibold text-slate-700 block mb-1">Kategori Eskul</label>
               <select
                 value={kategori}
                 onChange={(e) => setKategori(e.target.value as Eskul['kategori'])}
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
               >
                 <option value="Olahraga">Olahraga</option>
                 <option value="Teknologi">Teknologi</option>
@@ -104,7 +111,7 @@ export const AddEskulModal: React.FC<AddEskulModalProps> = ({
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="font-bold text-slate-700 block">Kapasitas Kuota Siswa</label>
+                <label className="font-semibold text-slate-700 block">Kapasitas Kuota Siswa</label>
                 <span className="text-[10px] text-slate-400">Min 5 siswa</span>
               </div>
               <input
@@ -129,20 +136,20 @@ export const AddEskulModal: React.FC<AddEskulModalProps> = ({
                     setKuota(35);
                   }
                 }}
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
               />
             </div>
           </div>
 
           {/* Pembina */}
           <div>
-            <label className="font-bold text-slate-700 block mb-1">
+            <label className="font-semibold text-slate-700 block mb-1">
               Guru / Pembina Terdaftar
             </label>
             <select
               value={pembinaId}
               onChange={(e) => setPembinaId(e.target.value)}
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
             >
               {PEMBINA_LIST.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -155,11 +162,11 @@ export const AddEskulModal: React.FC<AddEskulModalProps> = ({
           {/* Jadwal & Waktu */}
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <label className="font-bold text-slate-700 block mb-1">Hari Rutin</label>
+              <label className="font-semibold text-slate-700 block mb-1">Hari Rutin</label>
               <select
                 value={jadwalHari}
                 onChange={(e) => setJadwalHari(e.target.value)}
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
               >
                 <option value="Senin">Senin</option>
                 <option value="Selasa">Selasa</option>
@@ -172,50 +179,50 @@ export const AddEskulModal: React.FC<AddEskulModalProps> = ({
             </div>
 
             <div>
-              <label className="font-bold text-slate-700 block mb-1">Jam Mulai</label>
+              <label className="font-semibold text-slate-700 block mb-1">Jam Mulai</label>
               <input
                 type="time"
                 required
                 value={jamMulai}
                 onChange={(e) => setJamMulai(e.target.value)}
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
               />
             </div>
 
             <div>
-              <label className="font-bold text-slate-700 block mb-1">Jam Selesai</label>
+              <label className="font-semibold text-slate-700 block mb-1">Jam Selesai</label>
               <input
                 type="time"
                 required
                 value={jamSelesai}
                 onChange={(e) => setJamSelesai(e.target.value)}
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
               />
             </div>
           </div>
 
           {/* Lokasi */}
           <div>
-            <label className="font-bold text-slate-700 block mb-1">Lokasi Latihan / Ruangan</label>
+            <label className="font-semibold text-slate-700 block mb-1">Lokasi Latihan / Ruangan</label>
             <input
               type="text"
               required
               value={lokasi}
               onChange={(e) => setLokasi(e.target.value)}
               placeholder="Contoh: Lab Komputer RPL 1 / Lapangan Utama"
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
             />
           </div>
 
           {/* Deskripsi */}
           <div>
-            <label className="font-bold text-slate-700 block mb-1">Deskripsi & Tujuan Kegiatan</label>
+            <label className="font-semibold text-slate-700 block mb-1">Deskripsi & Tujuan Kegiatan</label>
             <textarea
               rows={2}
               value={deskripsi}
               onChange={(e) => setDeskripsi(e.target.value)}
               placeholder="Jelaskan silabus singkat atau capaian eskul..."
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 resize-none"
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884] resize-none"
             />
           </div>
 
@@ -224,13 +231,13 @@ export const AddEskulModal: React.FC<AddEskulModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-semibold hover:bg-slate-50 transition-colors cursor-pointer"
+              className="px-4 py-2 border border-slate-200 text-slate-600 rounded-md text-xs font-medium hover:bg-slate-50 transition-colors cursor-pointer"
             >
               Batal
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-[#00B884] hover:bg-[#009e70] text-white rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+              className="px-5 py-2 bg-[#00B884] hover:bg-emerald-600 text-white rounded-md text-xs font-semibold shadow-xs transition-colors cursor-pointer"
             >
               Simpan Ekstrakurikuler
             </button>

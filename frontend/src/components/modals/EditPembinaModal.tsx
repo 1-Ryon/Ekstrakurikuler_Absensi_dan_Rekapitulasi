@@ -94,14 +94,20 @@ export const EditPembinaModal: React.FC<EditPembinaModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150 max-h-[92vh] flex flex-col">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-lg max-w-xl w-full p-6 shadow-xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150 max-h-[92vh] flex flex-col"
+      >
         {/* Header */}
         <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-100 shrink-0">
           <div className="flex items-center gap-3">
             <UserAvatar name={namaLengkap || pembina.namaLengkap} size="lg" className="ring-2 ring-emerald-500/20" />
             <div>
-              <h3 className="text-lg font-extrabold text-slate-800">
+              <h3 className="text-lg font-bold text-slate-800">
                 Ubah Data Guru Pembina
               </h3>
               <p className="text-xs text-slate-500">
@@ -110,8 +116,9 @@ export const EditPembinaModal: React.FC<EditPembinaModalProps> = ({
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+            className="size-8 rounded-md border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -120,7 +127,7 @@ export const EditPembinaModal: React.FC<EditPembinaModalProps> = ({
         {/* Scrollable Form Body */}
         <form onSubmit={handleSubmit} className="space-y-4 text-xs overflow-y-auto pr-1 flex-1">
           <div>
-            <label className="font-bold text-slate-700 block mb-1">
+            <label className="font-semibold text-slate-700 block mb-1">
               Nama Lengkap Pembina *
             </label>
             <input
@@ -128,13 +135,13 @@ export const EditPembinaModal: React.FC<EditPembinaModalProps> = ({
               required
               value={namaLengkap}
               onChange={(e) => setNamaLengkap(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="font-bold text-slate-700 block mb-1">
+              <label className="font-semibold text-slate-700 block mb-1">
                 NIP / NUPTK
               </label>
               <input
@@ -142,17 +149,17 @@ export const EditPembinaModal: React.FC<EditPembinaModalProps> = ({
                 value={nip}
                 onChange={(e) => setNip(e.target.value)}
                 placeholder="19840112 200902 1 001"
-                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
               />
             </div>
             <div>
-              <label className="font-bold text-slate-700 block mb-1">
+              <label className="font-semibold text-slate-700 block mb-1">
                 Status Akun
               </label>
               <select
                 value={statusAktif ? 'AKTIF' : 'NON_AKTIF'}
                 onChange={(e) => setStatusAktif(e.target.value === 'AKTIF')}
-                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
               >
                 <option value="AKTIF">Aktif</option>
                 <option value="NON_AKTIF">Non-Aktif</option>
@@ -162,7 +169,7 @@ export const EditPembinaModal: React.FC<EditPembinaModalProps> = ({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="font-bold text-slate-700 block mb-1">
+              <label className="font-semibold text-slate-700 block mb-1">
                 No. WhatsApp / HP
               </label>
               <input
@@ -170,11 +177,11 @@ export const EditPembinaModal: React.FC<EditPembinaModalProps> = ({
                 value={noHp}
                 onChange={(e) => setNoHp(e.target.value)}
                 placeholder="081234567890"
-                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
               />
             </div>
             <div>
-              <label className="font-bold text-slate-700 block mb-1">
+              <label className="font-semibold text-slate-700 block mb-1">
                 Email
               </label>
               <input
@@ -182,13 +189,13 @@ export const EditPembinaModal: React.FC<EditPembinaModalProps> = ({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="pembina@smk-alamanah.sch.id"
-                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
               />
             </div>
           </div>
 
           <div>
-            <label className="font-bold text-slate-700 block mb-1">
+            <label className="font-semibold text-slate-700 block mb-1">
               Spesialisasi / Keahlian
             </label>
             <input
@@ -196,19 +203,19 @@ export const EditPembinaModal: React.FC<EditPembinaModalProps> = ({
               value={spesialisasi}
               onChange={(e) => setSpesialisasi(e.target.value)}
               placeholder="Contoh: Guru Olahraga & Pembina Futsal"
-              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
             />
           </div>
 
           {/* Penugasan Cabang Eskul (Multi-Select) */}
-          <div className="p-3.5 bg-slate-50/80 rounded-2xl border border-slate-200/80 space-y-2.5">
+          <div className="p-3.5 bg-slate-50/80 rounded-lg border border-slate-200 space-y-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Volleyball className="w-4 h-4 text-[#00B884]" />
-                <label className="font-bold text-slate-800 text-xs">
+                <Volleyball className="w-4 h-4 text-emerald-600" />
+                <label className="font-semibold text-slate-800 text-xs">
                   Tugaskan ke Cabang Eskul
                 </label>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-[#00B884] font-bold text-[10px]">
+                <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-semibold text-[10px]">
                   {assignedEskulIds.length} Eskul Dipilih
                 </span>
               </div>
@@ -216,7 +223,7 @@ export const EditPembinaModal: React.FC<EditPembinaModalProps> = ({
                 <button
                   type="button"
                   onClick={handleSelectAllEskul}
-                  className="text-[#00B884] hover:underline font-semibold cursor-pointer"
+                  className="text-emerald-600 hover:underline font-semibold cursor-pointer"
                 >
                   Pilih Semua
                 </button>
@@ -246,14 +253,14 @@ export const EditPembinaModal: React.FC<EditPembinaModalProps> = ({
                     key={e.id}
                     type="button"
                     onClick={() => toggleEskulSelection(e.id)}
-                    className={`flex items-start gap-2.5 p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                    className={`flex items-start gap-2.5 p-2.5 rounded-md border text-left transition-all cursor-pointer ${
                       isSelected
                         ? 'bg-emerald-50/90 border-[#00B884] shadow-2xs ring-1 ring-[#00B884]/30'
                         : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
                     }`}
                   >
                     <div
-                      className={`w-4 h-4 rounded-md flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
+                      className={`w-4 h-4 rounded flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
                         isSelected
                           ? 'bg-[#00B884] text-white'
                           : 'border border-slate-300 bg-white'
@@ -263,7 +270,7 @@ export const EditPembinaModal: React.FC<EditPembinaModalProps> = ({
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-1">
-                        <span className={`font-bold text-xs truncate ${isSelected ? 'text-emerald-900' : 'text-slate-700'}`}>
+                        <span className={`font-semibold text-xs truncate ${isSelected ? 'text-emerald-900' : 'text-slate-700'}`}>
                           {e.namaEskul}
                         </span>
                         <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 shrink-0">
@@ -292,7 +299,7 @@ export const EditPembinaModal: React.FC<EditPembinaModalProps> = ({
           </div>
 
           <div>
-            <label className="font-bold text-slate-700 block mb-1">
+            <label className="font-semibold text-slate-700 block mb-1">
               Ganti Kata Sandi Akun (Opsional)
             </label>
             <input
@@ -300,7 +307,7 @@ export const EditPembinaModal: React.FC<EditPembinaModalProps> = ({
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Kosongkan jika tidak ingin mengubah kata sandi"
-              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
             />
           </div>
 
@@ -308,13 +315,13 @@ export const EditPembinaModal: React.FC<EditPembinaModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+              className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
             >
               Batal
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-[#00B884] hover:bg-[#009E71] text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95"
+              className="px-5 py-2 bg-[#00B884] hover:bg-emerald-600 text-white rounded-md text-xs font-semibold transition-colors shadow-xs cursor-pointer"
             >
               Simpan Perubahan
             </button>

@@ -33,7 +33,7 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 163 100% 36%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
   }
 
   .dark {
@@ -116,4 +116,35 @@
 
 .pulse-glow {
   animation: pulseGlow 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+/* Print Isolation for Student ID & Attendance Cards */
+@media print {
+  body {
+    background: transparent !important;
+    color: #000 !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  #printable-student-card-area,
+  #printable-student-card-area * {
+    visibility: visible;
+  }
+
+  #printable-student-card-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  @page {
+    size: auto;
+    margin: 8mm;
+  }
 }

@@ -20,6 +20,8 @@ import { PEMBINA_LIST, INITIAL_ESKUL_LIST, INITIAL_STUDENTS, INITIAL_SESSIONS } 
 import { Eskul, SesiPertemuan, PresensiRecord, StudentProfile, Guru, PengajuanJadwal } from '../../types';
 import { NavItemKey } from '../Sidebar';
 import { UserAvatar } from '../common/UserAvatar';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, Badge, Button } from '../ui';
+import { WeeklyScheduleChart } from './WeeklyScheduleChart';
 
 interface AdminDashboardProps {
   eskulList?: Eskul[];
@@ -55,7 +57,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   // 1. Data Fallback & Normalization
   const effectiveEskulList = useMemo(() => {
-    return eskulList && eskulList.length > 0 ? eskulList : INITIAL_ESKUL_LIST;
+    return eskulList || [];
   }, [eskulList]);
 
   const effectiveStudents = useMemo(() => {
@@ -68,7 +70,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   }, [pembinaList]);
 
   const effectiveSessions = useMemo(() => {
-    return sessions && sessions.length > 0 ? sessions : INITIAL_SESSIONS;
+    return sessions || [];
   }, [sessions]);
 
   // 2. Real Date & Day Calculation (0: Senin, ..., 6: Minggu)
@@ -262,114 +264,95 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Title & Top Action Buttons */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#00B884] tracking-tight">
-            Dasbor Koordinator
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#000000] tracking-tight">
+            Dashbord Koordinator
           </h1>
           <p className="text-slate-500 text-xs sm:text-sm mt-0.5 font-normal">
-            Pantau sebaran jadwal mingguan eskul, daftar guru pembina bertugas, dan fasilitas sekolah SMK Al Amanah.
+            Memantau jadwal mingguan eskul, daftar guru pembina bertugas, dan fasilitas yang digunakan Pada Eskul.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 sm:gap-3 self-stretch sm:self-auto flex-wrap">
-          {/* Validasi Jadwal */}
-          <button
-            onClick={() => onNavigate('validasi-jadwal')}
-            className="relative flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 bg-amber-50 hover:bg-amber-100/70 border-2 border-amber-300 active:scale-[0.98] text-amber-800 font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer"
-          >
-            <ShieldCheck className="w-4 h-4 stroke-[2.2] text-amber-600" />
-            <span>Validasi Jadwal</span>
-            {pendingProposalsCount > 0 && (
-              <span className="w-5 h-5 rounded-full bg-amber-500 text-white font-black text-[10px] flex items-center justify-center animate-pulse">
-                {pendingProposalsCount}
-              </span>
-            )}
-          </button>
-
-          {/* Validasi Pendaftaran Siswa */}
-          <button
-            onClick={() => onNavigate('validasi-pendaftaran')}
-            className="relative flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 bg-blue-50 hover:bg-blue-100/70 border-2 border-blue-300 active:scale-[0.98] text-blue-700 font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer"
-          >
-            <UserCheck className="w-4 h-4 stroke-[2.2] text-blue-600" />
-            <span>Validasi Pendaftaran</span>
-            {pendingPendaftaranCount > 0 && (
-              <span className="w-5 h-5 rounded-full bg-blue-600 text-white font-black text-[10px] flex items-center justify-center animate-pulse">
-                {pendingPendaftaranCount}
-              </span>
-            )}
-          </button>
+        <div className="flex items-center gap-2 sm:gap-2.5 self-stretch sm:self-auto flex-wrap">
 
           {/* + Tambah Eskul */}
-          <button
+          <Button
+            variant="brand"
+            size="sm"
             onClick={onOpenAddEskul}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 bg-[#00B884] hover:bg-[#009e70] active:scale-[0.98] text-white font-medium text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer"
+            className="gap-1.5"
           >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <Plus className="size-4" />
             <span>Tambah Eskul</span>
-          </button>
+          </Button>
 
           {/* Impor Data Siswa */}
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={onOpenImport}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 bg-white border-2 border-[#00B884] hover:bg-[#00B884]/5 active:scale-[0.98] text-[#00B884] font-medium text-xs sm:text-sm rounded-xl shadow-xs transition-all cursor-pointer"
+            className="border-[#00B884] text-[#00B884] hover:bg-[#00B884]/10 gap-1.5"
           >
-            <Upload className="w-4 h-4 stroke-[2]" />
+            <Upload className="size-4" />
             <span>Impor Siswa</span>
-          </button>
+          </Button>
         </div>
       </div>
 
-      {/* Action Center for Pending Verifications (Compact & Clean) */}
+      {/* Action Center for Pending Verifications (Clean semantic Cards, no gradient slop) */}
       {(pendingProposalsCount > 0 || pendingPendaftaranCount > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
           {pendingProposalsCount > 0 && (
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-sm flex items-center justify-between gap-3">
+            <Card className="border-amber-200 bg-amber-50/60 p-4 rounded-lg flex items-center justify-between gap-3 shadow-xs">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
-                  <Calendar className="w-5 h-5 text-white" />
+                <div className="size-9 rounded-md bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                  <Calendar className="size-4" />
                 </div>
                 <div className="min-w-0">
-                  <div className="font-extrabold text-xs sm:text-sm truncate">
-                    {pendingProposalsCount} Permohonan Jadwal
+                  <div className="font-semibold text-xs sm:text-sm text-amber-950 truncate flex items-center gap-2">
+                    <span>{pendingProposalsCount} Permohonan Jadwal</span>
+                    <Badge variant="warning" className="text-[10px]">Perlu Verifikasi</Badge>
                   </div>
-                  <div className="text-[11px] text-amber-100 truncate">
-                    Guru pembina mengajukan penyesuaian jadwal
+                  <div className="text-[11px] text-amber-800/80 truncate">
+                    Guru pembina mengajukan penyesuaian jadwal kegiatan
                   </div>
                 </div>
               </div>
-              <button
-                type="button"
+              <Button
+                size="sm"
+                variant="outline"
                 onClick={() => onNavigate('validasi-jadwal')}
-                className="px-3.5 py-2 bg-white text-amber-900 hover:bg-amber-50 active:scale-[0.98] font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer shrink-0"
+                className="bg-white border-amber-300 text-amber-900 hover:bg-amber-100/70 shrink-0 font-semibold"
               >
                 Tinjau Jadwal
-              </button>
-            </div>
+              </Button>
+            </Card>
           )}
 
           {pendingPendaftaranCount > 0 && (
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm flex items-center justify-between gap-3">
+            <Card className="border-blue-200 bg-blue-50/60 p-4 rounded-lg flex items-center justify-between gap-3 shadow-xs">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shrink-0">
-                  <UserCheck className="w-5 h-5 text-white" />
+                <div className="size-9 rounded-md bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+                  <UserCheck className="size-4" />
                 </div>
                 <div className="min-w-0">
-                  <div className="font-extrabold text-xs sm:text-sm truncate">
-                    {pendingPendaftaranCount} Pendaftar Siswa
+                  <div className="font-semibold text-xs sm:text-sm text-blue-950 truncate flex items-center gap-2">
+                    <span>{pendingPendaftaranCount} Pendaftar Siswa</span>
+                    <Badge variant="secondary" className="text-[10px]">Hasil Seleksi</Badge>
                   </div>
-                  <div className="text-[11px] text-blue-100 truncate">
-                    Hasil seleksi pembina menunggu pengesahan
+                  <div className="text-[11px] text-blue-800/80 truncate">
+                    Hasil seleksi pembina menunggu pengesahan resmi
                   </div>
                 </div>
               </div>
-              <button
-                type="button"
+              <Button
+                size="sm"
+                variant="outline"
                 onClick={() => onNavigate('validasi-pendaftaran')}
-                className="px-3.5 py-2 bg-white text-blue-900 hover:bg-blue-50 active:scale-[0.98] font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer shrink-0"
+                className="bg-white border-blue-300 text-blue-900 hover:bg-blue-100/70 shrink-0 font-semibold"
               >
                 Sahkan Siswa
-              </button>
-            </div>
+              </Button>
+            </Card>
           )}
         </div>
       )}
@@ -377,247 +360,109 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* 4 Stat Cards Grid: Eskul, Siswa, Guru Pembina, Sesi Hari Ini */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Card 1: Total Ekstrakurikuler */}
-        <motion.div
-          whileHover={{ y: -3 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+        <Card
           onClick={() => onNavigate('eskul')}
-          className="bg-[#00B884] text-white p-4 sm:p-5 rounded-2xl shadow-xs cursor-pointer relative overflow-hidden flex flex-col justify-between h-36 sm:h-44"
+          className="cursor-pointer hover:border-[#00B884] transition-colors rounded-lg flex flex-col justify-between"
         >
-          <div className="flex items-start justify-between">
-            <span className="text-xs sm:text-sm font-medium text-white/95">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-slate-600">
               Total Ekstrakurikuler
-            </span>
-            <div className="w-6 h-6 rounded-full border border-white/60 flex items-center justify-center text-white/90">
-              <ArrowUpRight className="w-3.5 h-3.5" />
-            </div>
-          </div>
-
-          <div className="my-auto py-1">
-            <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+            </CardTitle>
+            <ArrowUpRight className="size-4 text-slate-400" />
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="text-2xl sm:text-3xl font-extrabold text-[#00B884] tracking-tight">
               {effectiveEskulList.length}
-            </span>
-          </div>
-
-          <div>
-            <span className="inline-block px-2.5 py-0.5 sm:px-3 sm:py-1 bg-white/20 backdrop-blur-xs text-white text-[10px] sm:text-[11px] font-medium rounded-full">
-              {effectiveEskulList.filter(e => e.status !== 'Non-Aktif').length} Cabang Eskul Aktif
-            </span>
-          </div>
-        </motion.div>
+            </div>
+            <div>
+              <Badge variant="brand" className="text-[10px]">
+                {effectiveEskulList.filter(e => e.status !== 'Non-Aktif').length} Cabang Aktif
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Card 2: Total Siswa Terdaftar */}
-        <motion.div
-          whileHover={{ y: -3 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+        <Card
           onClick={() => onNavigate('siswa')}
-          className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-xs cursor-pointer flex flex-col justify-between h-36 sm:h-44 hover:border-emerald-200 transition-colors"
+          className="cursor-pointer hover:border-slate-300 transition-colors rounded-lg flex flex-col justify-between"
         >
-          <div className="flex items-start justify-between">
-            <span className="text-xs sm:text-sm font-medium text-slate-700">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-slate-600">
               Total Siswa Terdaftar
-            </span>
-            <div className="w-6 h-6 rounded-full border border-slate-300 flex items-center justify-center text-slate-600">
-              <ArrowUpRight className="w-3.5 h-3.5" />
-            </div>
-          </div>
-
-          <div className="my-auto py-1">
-            <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-800">
+            </CardTitle>
+            <ArrowUpRight className="size-4 text-slate-400" />
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               {effectiveStudents.length}
-            </span>
-          </div>
-
-          <div>
-            <span className="inline-block px-2.5 py-0.5 sm:px-3 sm:py-1 bg-slate-100 text-slate-600 text-[10px] sm:text-[11px] font-medium rounded-full truncate max-w-full">
-              {enrolledPercentage}% ({enrolledStudentsCount} Siswa Ber-Eskul)
-            </span>
-          </div>
-        </motion.div>
+            </div>
+            <div className="text-xs text-slate-500 truncate">
+              {enrolledPercentage}% ({enrolledStudentsCount} siswa ber-eskul)
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Card 3: Total Guru Pembina */}
-        <motion.div
-          whileHover={{ y: -3 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+        <Card
           onClick={() => onNavigate('pembina')}
-          className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-xs cursor-pointer flex flex-col justify-between h-36 sm:h-44 hover:border-emerald-200 transition-colors"
+          className="cursor-pointer hover:border-slate-300 transition-colors rounded-lg flex flex-col justify-between"
         >
-          <div className="flex items-start justify-between">
-            <span className="text-xs sm:text-sm font-medium text-slate-700">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-slate-600">
               Total Guru Pembina
-            </span>
-            <div className="w-6 h-6 rounded-full border border-slate-300 flex items-center justify-center text-slate-600">
-              <ArrowUpRight className="w-3.5 h-3.5" />
-            </div>
-          </div>
-
-          <div className="my-auto py-1">
-            <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-800">
+            </CardTitle>
+            <ArrowUpRight className="size-4 text-slate-400" />
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               {effectivePembinaList.length}
-            </span>
-          </div>
-
-          <div>
-            <span className="inline-block px-2.5 py-0.5 sm:px-3 sm:py-1 bg-emerald-50 text-emerald-700 text-[10px] sm:text-[11px] font-medium rounded-full border border-emerald-100">
-              {effectivePembinaList.length} Pembina Terverifikasi
-            </span>
-          </div>
-        </motion.div>
+            </div>
+            <div>
+              <Badge variant="success" className="text-[10px]">
+                {effectivePembinaList.length} Terverifikasi
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Card 4: Sesi Eskul Hari Ini */}
-        <motion.div
-          whileHover={{ y: -3 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+        <Card
           onClick={() => onNavigate('dynamic-qr')}
-          className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-xs cursor-pointer flex flex-col justify-between h-36 sm:h-44 hover:border-emerald-200 transition-colors"
+          className="cursor-pointer hover:border-slate-300 transition-colors rounded-lg flex flex-col justify-between"
         >
-          <div className="flex items-start justify-between">
-            <span className="text-xs sm:text-sm font-medium text-slate-700">
-              Sesi Eskul Hari Ini
-            </span>
-            <div className="w-6 h-6 rounded-full border border-slate-300 flex items-center justify-center text-slate-600">
-              <ArrowUpRight className="w-3.5 h-3.5" />
-            </div>
-          </div>
-
-          <div className="my-auto py-1 flex items-baseline gap-2">
-            <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-800">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-slate-600">
+              Sesi Hari Ini ({todayDayName})
+            </CardTitle>
+            <ArrowUpRight className="size-4 text-slate-400" />
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               {todayActiveSessionsCount}
-            </span>
-            <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
-              Hari {todayDayName}
-            </span>
-          </div>
-
-          <div>
-            <span className="inline-block px-2.5 py-0.5 sm:px-3 sm:py-1 bg-slate-100 text-slate-600 text-[10px] sm:text-[11px] font-medium rounded-full truncate max-w-full">
-              {todaySchedule.eskulList.length > 0 
-                ? todaySchedule.eskulList.map(e => e.namaEskul).slice(0, 3).join(', ') + (todaySchedule.eskulList.length > 3 ? '...' : '')
-                : 'Tidak ada jadwal eskul hari ini'
-              }
-            </span>
-          </div>
-        </motion.div>
+            </div>
+            <div className="text-xs text-slate-500 truncate">
+              {todaySchedule.eskulList.length > 0
+                ? todaySchedule.eskulList.map(e => e.namaEskul).slice(0, 2).join(', ')
+                : 'Tidak ada sesi aktif'}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* ========================================================================= */}
-      {/* SEBARAN JADWAL ESKUL MINGGUAN (SENIN — MINGGU) DENGAN INSPEKTOR ROSTER     */}
+      {/* SEBARAN JADWAL ESKUL MINGGUAN (SENIN — MINGGU) DENGAN GRAFIK 2 MODE        */}
       {/* ========================================================================= */}
-      <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-100 shadow-sm space-y-6">
-        {/* Header of Section */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="px-2.5 py-0.5 rounded-md bg-emerald-50 text-[#00B884] font-bold text-xs">
-                Jadwal Mingguan
-              </span>
-              <span className="text-xs text-slate-400">Total {totalWeeklySessions} Sesi Eskul Terjadwal / Pekan</span>
-            </div>
-            <h2 className="text-base sm:text-lg font-extrabold text-slate-800 tracking-tight">
-              Sebaran Eskul & Guru Pembina (Senin — Minggu)
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Pilih hari untuk melihat eskul apa saja yang aktif dan siapa guru pembina yang bertugas pada hari tersebut.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
-            <span className="px-3.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200/60">
-              Hari Terpilih: <strong className="text-[#00B884]">{selectedDay.dayName}</strong> ({selectedDay.jumlahEskul} Eskul Aktif)
-            </span>
-          </div>
-        </div>
-
-        {/* 7-Day Interactive Day Roster Grid */}
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 sm:gap-3 w-full">
-            {weeklySchedule.map((day) => {
-              const isSelected = selectedDay.dayIndex === day.dayIndex;
-              const isToday = day.isToday;
-              const heightPercent = day.jumlahEskul > 0 
-                ? Math.max(25, Math.round((day.jumlahEskul / maxEskulCount) * 100))
-                : 8;
-
-              return (
-                <motion.div
-                  key={day.dayIndex}
-                  whileHover={{ y: -3 }}
-                  whileTap={{ scale: 0.98 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                  onClick={() => setSelectedDayIndex(day.dayIndex)}
-                  className={`relative p-3 sm:p-3.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between select-none ${
-                    isSelected
-                      ? 'border-[#00B884] bg-emerald-50/40 ring-2 ring-[#00B884]/30 shadow-md'
-                      : isToday
-                      ? 'border-emerald-300 bg-white shadow-xs'
-                      : 'border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-slate-300'
-                  }`}
-                >
-                  {/* Today Badge */}
-                  {isToday && (
-                    <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10">
-                      <span className="px-2 py-0.5 bg-[#00B884] text-white text-[9px] font-bold rounded-full shadow-xs uppercase tracking-wider inline-flex items-center gap-1">
-                        Hari Ini
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Day Name & Count */}
-                  <div className="text-center pt-0.5">
-                    <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
-                      {day.shortDay}
-                    </span>
-                    <h4 className="text-xs sm:text-sm font-bold text-slate-800">
-                      {day.dayName}
-                    </h4>
-                  </div>
-
-                  {/* Visual Bar Column */}
-                  <div className="my-2.5 flex flex-col items-center">
-                    <div className="w-full h-20 bg-slate-200/50 rounded-xl relative flex flex-col justify-end p-1 overflow-hidden">
-                      {/* Fill Bar */}
-                      <motion.div
-                        initial={{ height: 0 }}
-                        animate={{ height: `${heightPercent}%` }}
-                        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                        className={`w-full rounded-lg transition-all flex flex-col items-center justify-start pt-1 ${
-                          day.jumlahEskul === 0
-                            ? 'bg-slate-300/60'
-                            : isSelected
-                            ? 'bg-gradient-to-t from-[#00B884] to-[#14d49a] shadow-xs'
-                            : isToday
-                            ? 'bg-gradient-to-t from-[#00B884] to-[#40d7a9]'
-                            : 'bg-gradient-to-t from-slate-400 to-slate-300'
-                        }`}
-                      >
-                        <span className="text-[10px] font-extrabold text-white leading-none drop-shadow-xs">
-                          {day.jumlahEskul}
-                        </span>
-                      </motion.div>
-                    </div>
-                  </div>
-
-                  {/* Footer Info */}
-                  <div className="text-center space-y-1">
-                    <div className="inline-block px-2 py-0.5 rounded-full bg-white border border-slate-200/80 text-[10px] font-semibold text-slate-700">
-                      {day.jumlahEskul} Eskul
-                    </div>
-                    <span className="text-[10px] text-slate-500 font-medium block">
-                      {day.eskulList.length} Sesi Aktif
-                    </span>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-400 pt-1 px-1 gap-1">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-sm bg-[#00B884] inline-block shrink-0"></span>
-              Puncak kegiatan: <strong>{peakDays}</strong>
-            </span>
-            <span>Menampilkan data eskul untuk: <strong className="text-slate-700">Hari {selectedDay.dayName}</strong></span>
-          </div>
-        </div>
+      <Card className="rounded-lg shadow-xs space-y-6 p-5 sm:p-6">
+        <WeeklyScheduleChart
+          weeklySchedule={weeklySchedule}
+          selectedDayIndex={selectedDayIndex}
+          onSelectDay={(idx) => setSelectedDayIndex(idx)}
+          totalWeeklySessions={totalWeeklySessions}
+          peakDays={peakDays}
+          todayDayName={todayDayName}
+          onOpenAddEskul={onOpenAddEskul}
+        />
 
         {/* ========================================================================= */}
         {/* PANEL INSPEKTOR: DAFTAR ESKUL & GURU PEMBINA HARI TERPILIH                */}
@@ -629,91 +474,91 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
-            className="pt-4 border-t border-slate-100"
+            className="pt-4 border-t border-border"
           >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-[#00B884] flex items-center justify-center shrink-0">
-                  <CalendarDays className="w-4 h-4" />
+                <div className="size-8 rounded-md bg-emerald-50 text-[#00B884] flex items-center justify-center shrink-0">
+                  <CalendarDays className="size-4" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm sm:text-base font-bold text-slate-800">
-                      Roster Eskul & Guru Pembina: Hari {selectedDay.dayName}
+                    <h3 className="text-sm sm:text-base font-bold text-slate-900">
+                      Jadwal Eskul & Guru Pembina Pada Hari {selectedDay.dayName}
                     </h3>
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-100/70 text-[#00B884] font-bold text-[11px]">
-                      {selectedDay.jumlahEskul} Eskul Terjadwal
-                    </span>
+                    <Badge variant="brand" className="text-[11px]">
+                      {selectedDay.jumlahEskul} Eskul
+                    </Badge>
                     {selectedDay.isToday && (
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-white font-bold text-[10px]">
+                      <Badge variant="default" className="text-[10px]">
                         Hari Ini
-                      </span>
+                      </Badge>
                     )}
                   </div>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-muted-foreground">
                     {selectedDay.keterangan} • {selectedDay.eskulList.length} sesi eskul terjadwal aktif di SMK Al Amanah
                   </p>
                 </div>
               </div>
 
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => onNavigate('eskul')}
-                className="text-xs text-[#00B884] font-semibold hover:underline flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+                className="text-xs text-[#00B884] hover:text-[#009e70] hover:bg-emerald-50 gap-1 self-start sm:self-auto"
               >
-                <span>Kelola Data Eskul & Pembina</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
+                <span>Kelola Data Eskul</span>
+                <ChevronRight className="size-3.5" />
+              </Button>
             </div>
 
             {/* Eskul & Pembina Cards for Selected Day */}
             {selectedDay.eskulList.length === 0 ? (
-              <div className="py-10 px-4 text-center rounded-2xl bg-slate-50/70 border border-dashed border-slate-200">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#00B884] mx-auto flex items-center justify-center mb-3">
-                  <CalendarDays className="w-6 h-6" />
+              <div className="py-8 px-4 text-center rounded-lg bg-slate-50 border border-dashed border-border space-y-2">
+                <div className="size-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+                  <Clock className="size-5" />
                 </div>
-                <h4 className="text-sm sm:text-base font-bold text-slate-700">
+                <h4 className="text-sm font-bold text-slate-700">
                   Tidak Ada Jadwal Eskul Hari {selectedDay.dayName}
                 </h4>
-                <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 mb-4">
-                  Tidak ada kegiatan ekstrakurikuler yang dijadwalkan pada hari {selectedDay.dayName}. Sekolah tidak mengadakan sesi eskul pada hari ini.
+                <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                  Tidak ada kegiatan ekstrakurikuler yang dijadwalkan pada hari {selectedDay.dayName}.
                 </p>
-                <button
+                <Button
+                  size="sm"
+                  variant="brand"
                   onClick={onOpenAddEskul}
-                  className="inline-flex items-center gap-2 px-3.5 py-2 bg-[#00B884] hover:bg-[#009e70] text-white text-xs font-semibold rounded-xl shadow-xs transition-all cursor-pointer"
+                  className="gap-1.5 mt-2"
                 >
-                  <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <Plus className="size-4" />
                   <span>Jadwalkan Eskul di Hari {selectedDay.dayName}</span>
-                </button>
+                </Button>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
                 {selectedDay.eskulList.map((item) => {
-                  const avatarUrl = getPembinaAvatar(item.pembinaNama);
-
                   return (
-                    <motion.div
+                    <Card
                       key={item.id}
-                      whileHover={{ y: -2 }}
-                      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                      className="p-4 rounded-xl border border-slate-200/80 bg-white hover:border-emerald-300 hover:shadow-xs transition-all flex flex-col justify-between space-y-3"
+                      className="p-4 rounded-lg border-border hover:border-emerald-300 transition-all flex flex-col justify-between space-y-3"
                     >
                       <div>
-                        <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-bold border mb-1.5 ${getCategoryColor(item.kategori)}`}>
+                        <Badge variant="outline" className={`mb-1.5 text-[10px] ${getCategoryColor(item.kategori)}`}>
                           {item.kategori}
-                        </span>
-                        <h4 className="text-sm font-bold text-slate-800 truncate">
+                        </Badge>
+                        <h4 className="text-sm font-bold text-slate-900 truncate">
                           {item.namaEskul}
                         </h4>
                       </div>
 
                       {/* PEMBINA BERTUGAS */}
-                      <div className="p-2.5 rounded-xl bg-slate-50/80 border border-slate-100 flex items-center gap-3">
+                      <div className="p-2.5 rounded-md bg-slate-50 border border-border flex items-center gap-2.5">
                         <UserAvatar
                           name={item.pembinaNama}
-                          className="w-9 h-9 ring-2 ring-emerald-500/20 shrink-0 text-xs shadow-xs"
+                          className="size-8 shrink-0 text-xs"
                         />
                         <div className="min-w-0 flex-1">
-                          <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
+                          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
                             Guru Pembina:
                           </span>
                           <h5 className="text-xs font-bold text-slate-800 truncate">
@@ -724,140 +569,122 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                       <div className="space-y-1.5 text-xs text-slate-600">
                         <div className="flex items-center gap-2 text-slate-500">
-                          <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <Clock className="size-3.5 text-slate-400 shrink-0" />
                           <span>{item.jamMulai} - {item.jamSelesai} WIB</span>
                         </div>
 
                         <div className="flex items-center gap-2 text-slate-500">
-                          <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <MapPin className="size-3.5 text-slate-400 shrink-0" />
                           <span className="truncate">{item.lokasi}</span>
                         </div>
                       </div>
 
-                      <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                      <div className="pt-2 border-t border-border flex items-center justify-between">
                         <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                          <Users className="w-3.5 h-3.5 text-emerald-600" />
+                          <Users className="size-3.5 text-[#00B884]" />
                           <span>{item.jumlahSiswa || item.kuota} / {item.kuota} Siswa</span>
                         </div>
-
-                        <button
-                          onClick={() => {
-                            if (onOpenSession && item.rawEskul) {
-                              onOpenSession(item.rawEskul);
-                            } else {
-                              onNavigate('dynamic-qr');
-                            }
-                          }}
-                          className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-[#00B884] text-[#00B884] hover:text-white font-semibold text-[11px] transition-colors cursor-pointer flex items-center gap-1"
-                        >
-                          <QrCode className="w-3 h-3" />
-                          <span>Buka Sesi</span>
-                        </button>
                       </div>
-                    </motion.div>
+                    </Card>
                   );
                 })}
               </div>
             )}
           </motion.div>
         </AnimatePresence>
-      </div>
+      </Card>
 
       {/* Bottom Section: 2 Columns (Daftar Seluruh Pembina & Kategori/Fasilitas) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
         {/* Left Card: "Daftar Guru Pembina Eskul" */}
-        <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-4 sm:mb-5">
-              <div>
-                <h2 className="text-base font-bold text-slate-800">
-                  Daftar Guru Pembina Eskul
-                </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Guru pembimbing ekstrakurikuler resmi SMK Al Amanah
-                </p>
-              </div>
-              <button 
-                onClick={() => onNavigate('pembina')}
-                className="text-xs text-[#00B884] font-semibold hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <span>Lihat Semua</span>
-                <ExternalLink className="w-3 h-3" />
-              </button>
+        <Card className="rounded-lg shadow-xs flex flex-col justify-between">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <div>
+              <CardTitle className="text-base font-bold text-slate-900">
+                Data Guru Pembina Eskul
+              </CardTitle>
+              <CardDescription className="text-xs text-muted-foreground mt-0.5">
+                Guru pembimbing ekstrakurikuler yang tervalidasi
+              </CardDescription>
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onNavigate('pembina')}
+              className="text-xs text-[#00B884] hover:text-[#009e70] hover:bg-emerald-50 gap-1"
+            >
+              <span>Lihat Semua</span>
+              <ExternalLink className="size-3" />
+            </Button>
+          </CardHeader>
 
-            <div className="space-y-3.5">
-              {effectivePembinaList.slice(0, 4).map((pembina) => (
-                <div key={pembina.id} className="flex items-center gap-3.5 group">
-                  <div className="relative shrink-0">
-                    <UserAvatar
-                      name={pembina.namaLengkap}
-                      className="w-10 h-10 ring-2 ring-emerald-500/20 shadow-xs text-xs"
-                    />
-                    <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white absolute bottom-0 right-0"></div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-[#00B884] transition-colors truncate">
-                      {pembina.namaLengkap}
-                    </h3>
-                    <p className="text-[11px] text-slate-500 truncate">
-                      {pembina.spesialisasi || 'Pembina Ekstrakurikuler'}
-                    </p>
-                  </div>
-                  <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-100 shrink-0">
-                    Aktif
-                  </span>
+          <CardContent className="space-y-3">
+            {effectivePembinaList.slice(0, 4).map((pembina) => (
+              <div key={pembina.id} className="flex items-center gap-3 group">
+                <div className="relative shrink-0">
+                  <UserAvatar
+                    name={pembina.namaLengkap}
+                    className="size-9 text-xs"
+                  />
+                  <div className="size-2 bg-emerald-500 rounded-full border border-white absolute bottom-0 right-0"></div>
                 </div>
-              ))}
-            </div>
-          </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xs sm:text-sm font-semibold text-slate-900 group-hover:text-[#00B884] transition-colors truncate">
+                    {pembina.namaLengkap}
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground truncate">
+                    {pembina.spesialisasi || 'Pembina Ekstrakurikuler'}
+                  </p>
+                </div>
+                <Badge variant="success" className="text-[10px] shrink-0">
+                  Aktif
+                </Badge>
+              </div>
+            ))}
+          </CardContent>
 
-          <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>{effectivePembinaList.length} Pembina Ekstrakurikuler Terdaftar</span>
-            <span className="text-emerald-600 font-medium flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5" /> 100% Terverifikasi
-            </span>
-          </div>
-        </div>
+          <CardFooter className="pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+            <span>{effectivePembinaList.length} Pembina Terdaftar</span>
+          </CardFooter>
+        </Card>
 
         {/* Right Card: Sebaran Kategori & Pemanfaatan Fasilitas Sekolah */}
-        <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-[#00B884]" />
-                  Fasilitas & Lokasi Latihan Eskul
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Sarana sekolah aktif yang diisi Koordinator pada Kelola Eskul
-                </p>
-              </div>
-              {scheduleCollisionInfo.hasCollision ? (
-                <span className="text-xs text-amber-700 font-semibold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
-                  Ada {scheduleCollisionInfo.collisionCount} Jadwal Bersamaan
-                </span>
-              ) : (
-                <span className="text-xs text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md">
-                  Jadwal Terkoordinasi
-                </span>
-              )}
+        <Card className="rounded-lg shadow-xs flex flex-col justify-between">
+          <CardHeader className="flex flex-row items-center justify-between pb-3">
+            <div>
+              <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                Fasilitas & Lokasi Latihan Eskul
+              </CardTitle>
+              <CardDescription className="text-xs text-muted-foreground mt-0.5">
+                Sarana sekolah aktif yang diisi Koordinator pada Kelola Eskul
+              </CardDescription>
             </div>
+            {scheduleCollisionInfo.hasCollision ? (
+              <Badge variant="warning" className="text-[10px]">
+                {scheduleCollisionInfo.collisionCount} Jadwal Bersamaan
+              </Badge>
+            ) : (
+              <Badge variant="success" className="text-[10px]">
+                Jadwal Terkoordinasi
+              </Badge>
+            )}
+          </CardHeader>
 
-            {/* Pemanfaatan Fasilitas Ruang / Lokasi (Dinamis dari Input Koordinator) */}
+          <CardContent className="space-y-4">
+            {/* Pemanfaatan Fasilitas Ruang / Lokasi */}
             {facilityGroups.length === 0 ? (
-              <div className="p-4 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center text-xs text-slate-400 mb-4">
+              <div className="p-4 rounded-md bg-slate-50 border border-dashed border-border text-center text-xs text-muted-foreground">
                 Belum ada lokasi latihan yang diisi oleh Koordinator pada Kelola Eskul.
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs mb-4 max-h-48 overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs max-h-48 overflow-y-auto pr-1">
                 {facilityGroups.map((f, i) => (
-                  <div key={i} className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex flex-col justify-between">
-                    <div className="flex items-center gap-1.5 text-slate-500 font-semibold text-[11px] truncate">
-                      <MapPin className="w-3 h-3 text-[#00B884] shrink-0" />
+                  <div key={i} className="p-2.5 rounded-md bg-slate-50 border border-border flex flex-col justify-between">
+                    <div className="flex items-center gap-1.5 text-muted-foreground font-semibold text-[11px] truncate">
+                      <MapPin className="size-3 text-[#00B884] shrink-0" />
                       <span className="truncate" title={f.title}>{f.title}</span>
                     </div>
-                    <div className="font-bold text-slate-800 text-xs mt-1 truncate" title={f.eskuls.join(', ')}>
+                    <div className="font-semibold text-slate-900 text-xs mt-1 truncate" title={f.eskuls.join(', ')}>
                       {f.eskuls.join(', ')}
                     </div>
                     <div className="text-[10px] text-emerald-600 mt-1 truncate">
@@ -869,21 +696,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             )}
 
             {/* Mini Kategori Progress Bars */}
-            <div className="space-y-2 pt-1 border-t border-slate-100 text-xs">
+            <div className="space-y-2 pt-1 border-t border-border text-xs">
               {categoryStats.map((cat, idx) => (
                 <div key={idx} className="flex justify-between text-slate-600">
                   <span>{cat.name} ({cat.count} Cabang)</span>
-                  <span className={`font-bold ${cat.color}`}>{cat.percent}%</span>
+                  <span className={`font-semibold ${cat.color}`}>{cat.percent}%</span>
                 </div>
               ))}
             </div>
-          </div>
+          </CardContent>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>Total {facilityGroups.length} Sarana Sekolah Terpakai</span>
+          <CardFooter className="pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+            <span>Total {facilityGroups.length} Sarana Terpakai</span>
             <span className="font-medium text-emerald-600">Sinkron dari Kelola Eskul</span>
-          </div>
-        </div>
+          </CardFooter>
+        </Card>
       </div>
     </div>
   );

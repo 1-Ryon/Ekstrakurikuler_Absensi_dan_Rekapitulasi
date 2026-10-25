@@ -62,10 +62,10 @@ export const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.94, y: 10 }}
             transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-            className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden z-10"
+            className="relative w-full max-w-md bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden z-10"
           >
-            {/* Top Decorative Header */}
-            <div className="p-6 bg-gradient-to-br from-rose-50/80 via-white to-slate-50 border-b border-rose-100/60 relative">
+            {/* Top Header */}
+            <div className="p-6 bg-white border-b border-slate-100 relative">
               <button
                 type="button"
                 onClick={onClose}
@@ -76,14 +76,14 @@ export const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({
               </button>
 
               <div className="flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-2xl bg-rose-100/80 text-rose-600 flex items-center justify-center shrink-0 shadow-inner">
-                  <LogOut className="w-6 h-6 stroke-[2.2]" />
+                <div className="w-11 h-11 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 border border-rose-100">
+                  <LogOut className="w-5 h-5 stroke-[2]" />
                 </div>
                 <div>
-                  <h3 id="logout-dialog-title" className="text-base font-extrabold text-slate-900">
+                  <h3 id="logout-dialog-title" className="text-base font-bold text-slate-900">
                     Konfirmasi Keluar Akun
                   </h3>
-                  <p className="text-xs text-rose-600 font-semibold mt-0.5 flex items-center gap-1">
+                  <p className="text-xs text-rose-600 font-medium mt-0.5 flex items-center gap-1">
                     <ShieldAlert className="w-3.5 h-3.5" />
                     <span>Akhiri sesi penggunaan aplikasi</span>
                   </p>
@@ -99,7 +99,7 @@ export const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({
 
               {/* User Account Card */}
               {currentUser && (
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center gap-3">
+                <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center gap-3">
                   <UserAvatar
                     name={currentUser.namaLengkap}
                     className="w-10 h-10 ring-2 ring-white text-xs shrink-0 shadow-2xs"
@@ -123,7 +123,7 @@ export const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({
                 </div>
               )}
 
-              <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200/80 text-amber-900 text-[11px] leading-relaxed">
+              <div className="p-3 rounded-md bg-amber-50/70 border border-amber-200/80 text-amber-900 text-[11px] leading-relaxed">
                 Anda perlu memasukkan kembali kredensial (NIS / NIP / Username) untuk mengakses akun ini setelah keluar.
               </div>
             </div>
@@ -133,7 +133,7 @@ export const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 font-semibold text-xs transition-all active:scale-95 cursor-pointer shadow-2xs"
+                className="px-4 py-2 rounded-md border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 font-medium text-xs transition-colors cursor-pointer"
               >
                 Batal
               </button>
@@ -144,7 +144,7 @@ export const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({
                   onClose();
                   onConfirmLogout();
                 }}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-semibold text-xs transition-all cursor-pointer shadow-xs shadow-rose-600/30"
+                className="flex items-center gap-2 px-5 py-2 rounded-md bg-rose-600 hover:bg-rose-700 active:scale-98 text-white font-semibold text-xs transition-colors cursor-pointer shadow-xs"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>Ya, Keluar Akun</span>

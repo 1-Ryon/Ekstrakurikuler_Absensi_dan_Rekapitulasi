@@ -25,11 +25,28 @@ import {
 import { PresensiRecord, SesiPertemuan, StudentProfile, Eskul, User } from '../../types';
 import { UserAvatar } from '../common/UserAvatar';
 import { api } from '../../services/api';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+  Button,
+  Badge,
+  Input,
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '../ui';
 
 interface LiveAttendanceLogProps {
   logs: PresensiRecord[];
   sessions?: SesiPertemuan[];
-  currentSession?: SesiPertemuan;
+  currentSession?: SesiPertemuan | null;
   onSelectSession?: (session: SesiPertemuan) => void;
   students?: StudentProfile[];
   eskulList?: Eskul[];
@@ -361,15 +378,15 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
   };
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-6 pb-8 animate-in fade-in-50 duration-300">
       {/* Toast Alert */}
       {toastMessage && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-2.5 rounded-xl shadow-lg border text-xs font-bold flex items-center gap-2 animate-in fade-in slide-in-from-top-2 ${
+        <div className={`fixed top-4 right-4 z-50 px-4 py-2.5 rounded-lg shadow-lg border text-xs font-semibold flex items-center gap-2 animate-in fade-in slide-in-from-top-2 ${
           toastMessage.type === 'success' 
-            ? 'bg-emerald-600 text-white border-emerald-500' 
-            : 'bg-rose-600 text-white border-rose-500'
+            ? 'bg-emerald-950 text-emerald-100 border-emerald-500/40' 
+            : 'bg-rose-950 text-rose-100 border-rose-500/40'
         }`}>
-          <CheckCircle2 className="w-4 h-4" />
+          <CheckCircle2 className="size-4 text-emerald-400" />
           <span>{toastMessage.text}</span>
         </div>
       )}
@@ -377,251 +394,248 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-[#00B884] tracking-tight flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-foreground tracking-tight flex items-center gap-3">
             <span>Presensi Langsung Lapangan</span>
             {isSessionLocked && (
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300">
+              <Badge variant="warning" className="text-xs">
                 Sesi Terkunci
-              </span>
+              </Badge>
             )}
           </h1>
-          <p className="text-slate-500 text-sm mt-0.5">
-            Checklist kehadiran langsung di lapangan dengan alur 4 tahap resmi: Hadir → Nilai Keaktifan → Dispensasi → Kunci &amp; Masuk Log.
+          <p className="text-muted-foreground text-sm mt-0.5">
+            Checklist kehadiran langsung di lapangan dengan alur 4 tahap resmi: Hadir → Nilai Keaktifan → Dispensasi → Kunci & Masuk Log.
           </p>
         </div>
 
         {/* View Mode Switcher */}
-        <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-2xl border border-slate-200">
-          <button
+        <div className="flex items-center gap-1.5 bg-muted/60 p-1 rounded-lg border border-border">
+          <Button
+            variant={mainView === 'CHECKLIST_WORKFLOW' ? 'brand' : 'ghost'}
+            size="sm"
             onClick={() => setMainView('CHECKLIST_WORKFLOW')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              mainView === 'CHECKLIST_WORKFLOW'
-                ? 'bg-white text-[#00B884] shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
+            className="h-8 px-3 text-xs"
           >
             Alur Presensi 4-Tahap
-          </button>
-          <button
+          </Button>
+          <Button
+            variant={mainView === 'RIWAYAT_LOG' ? 'brand' : 'ghost'}
+            size="sm"
             onClick={() => setMainView('RIWAYAT_LOG')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              mainView === 'RIWAYAT_LOG'
-                ? 'bg-white text-[#00B884] shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
+            className="h-8 px-3 text-xs"
           >
-            Riwayat Log &amp; Ekspor CSV
-          </button>
+            Riwayat Log & Ekspor CSV
+          </Button>
         </div>
       </div>
 
       {mainView === 'CHECKLIST_WORKFLOW' ? (
         <div className="space-y-6">
           {/* Stepper Navigation */}
-          <div className="bg-gradient-to-r from-emerald-800 via-[#00B884] to-teal-700 text-white p-2 sm:p-2.5 rounded-3xl shadow-sm">
+          <Card className="p-1.5 bg-muted/40">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <button
                 onClick={() => setCurrentStep(1)}
-                className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                className={`p-3 rounded-md border text-left transition-all cursor-pointer ${
                   currentStep === 1
-                    ? 'bg-white text-slate-900 shadow-md font-bold'
-                    : 'bg-white/10 text-emerald-100 hover:bg-white/15 border-white/15'
+                    ? 'bg-card text-foreground shadow-xs border-primary/50 font-bold'
+                    : 'bg-transparent text-muted-foreground hover:bg-muted/50 border-transparent'
                 }`}
               >
-                <div className="text-[10px] uppercase font-bold tracking-wider opacity-75">Tahap 1</div>
-                <div className="text-xs font-extrabold flex items-center justify-between mt-0.5">
+                <div className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Tahap 1</div>
+                <div className="text-xs font-bold flex items-center justify-between mt-1">
                   <span>Checklist Hadir</span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500 text-white font-mono">
+                  <Badge variant="brand" className="text-[10px] py-0 px-1.5 font-mono">
                     {hadirStudents.length} Hadir
-                  </span>
+                  </Badge>
                 </div>
               </button>
 
               <button
                 onClick={() => setCurrentStep(2)}
-                className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                className={`p-3 rounded-md border text-left transition-all cursor-pointer ${
                   currentStep === 2
-                    ? 'bg-white text-slate-900 shadow-md font-bold'
-                    : 'bg-white/10 text-emerald-100 hover:bg-white/15 border-white/15'
+                    ? 'bg-card text-foreground shadow-xs border-primary/50 font-bold'
+                    : 'bg-transparent text-muted-foreground hover:bg-muted/50 border-transparent'
                 }`}
               >
-                <div className="text-[10px] uppercase font-bold tracking-wider opacity-75">Tahap 2</div>
-                <div className="text-xs font-extrabold flex items-center justify-between mt-0.5">
+                <div className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Tahap 2</div>
+                <div className="text-xs font-bold flex items-center justify-between mt-1">
                   <span>Nilai Keaktifan</span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-amber-400 text-amber-950 font-mono">
+                  <Badge variant="warning" className="text-[10px] py-0 px-1.5 font-mono">
                     Rata2 {avgKeaktifan}
-                  </span>
+                  </Badge>
                 </div>
               </button>
 
               <button
                 onClick={() => setCurrentStep(3)}
-                className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                className={`p-3 rounded-md border text-left transition-all cursor-pointer ${
                   currentStep === 3
-                    ? 'bg-white text-slate-900 shadow-md font-bold'
-                    : 'bg-white/10 text-emerald-100 hover:bg-white/15 border-white/15'
+                    ? 'bg-card text-foreground shadow-xs border-primary/50 font-bold'
+                    : 'bg-transparent text-muted-foreground hover:bg-muted/50 border-transparent'
                 }`}
               >
-                <div className="text-[10px] uppercase font-bold tracking-wider opacity-75">Tahap 3</div>
-                <div className="text-xs font-extrabold flex items-center justify-between mt-0.5">
-                  <span>Izin, Sakit &amp; Telat</span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-blue-500 text-white font-mono">
+                <div className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Tahap 3</div>
+                <div className="text-xs font-bold flex items-center justify-between mt-1">
+                  <span>Izin, Sakit & Telat</span>
+                  <Badge variant="secondary" className="text-[10px] py-0 px-1.5 font-mono">
                     {nonHadirStudents.length} Siswa
-                  </span>
+                  </Badge>
                 </div>
               </button>
 
               <button
                 onClick={() => setCurrentStep(4)}
-                className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                className={`p-3 rounded-md border text-left transition-all cursor-pointer ${
                   currentStep === 4
-                    ? 'bg-white text-slate-900 shadow-md font-bold'
-                    : 'bg-white/10 text-emerald-100 hover:bg-white/15 border-white/15'
+                    ? 'bg-card text-foreground shadow-xs border-primary/50 font-bold'
+                    : 'bg-transparent text-muted-foreground hover:bg-muted/50 border-transparent'
                 }`}
               >
-                <div className="text-[10px] uppercase font-bold tracking-wider opacity-75">Tahap 4</div>
-                <div className="text-xs font-extrabold flex items-center justify-between mt-0.5">
-                  <span>Review &amp; Kunci Log</span>
+                <div className="text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">Tahap 4</div>
+                <div className="text-xs font-bold flex items-center justify-between mt-1">
+                  <span>Review & Kunci Log</span>
                   {isSessionLocked ? (
-                    <Lock className="w-3.5 h-3.5 text-amber-300" />
+                    <Lock className="size-3.5 text-amber-500" />
                   ) : (
-                    <span className="text-[10px] text-emerald-200">Submit</span>
+                    <span className="text-[10px] text-primary font-medium">Submit</span>
                   )}
                 </div>
               </button>
             </div>
-          </div>
+          </Card>
 
           {/* Sesi Picker & Action Controls */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-xs font-bold text-slate-700 shrink-0">Sesi Latihan:</span>
-              <div className="flex items-center gap-2 overflow-x-auto">
-                {sessions.map((sess) => (
-                  <button
-                    key={sess.id}
-                    onClick={() => {
-                      setSelectedSessionId(sess.id);
-                      if (onSelectSession) onSelectSession(sess);
-                    }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
-                      activeSession?.id === sess.id
-                        ? 'bg-[#00B884] text-white shadow-xs'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                    }`}
-                  >
-                    {sess.namaEskul} ({sess.jamMulai} WIB)
-                  </button>
-                ))}
+          <Card>
+            <CardContent className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-xs font-semibold text-foreground shrink-0">Sesi Latihan:</span>
+                <div className="flex items-center gap-2 overflow-x-auto">
+                  {sessions.map((sess) => (
+                    <Button
+                      key={sess.id}
+                      variant={activeSession?.id === sess.id ? 'brand' : 'outline'}
+                      size="sm"
+                      onClick={() => {
+                        setSelectedSessionId(sess.id);
+                        if (onSelectSession) onSelectSession(sess);
+                      }}
+                      className="h-8 text-xs shrink-0"
+                    >
+                      {sess.namaEskul} ({sess.jamMulai} WIB)
+                    </Button>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={handleMarkAllHadir}
-                className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold shadow-2xs transition-colors cursor-pointer"
-              >
-                Tandai Semua Hadir
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleMarkAllHadir}
+                  className="h-8 text-xs font-medium"
+                >
+                  Tandai Semua Hadir
+                </Button>
 
-              <button
-                type="button"
-                onClick={() => setIsHolidayModalOpen(true)}
-                className="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl text-xs font-bold shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
-              >
-                <CalendarOff className="w-4 h-4 text-amber-600" />
-                <span>Tandai Libur</span>
-              </button>
-            </div>
-          </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsHolidayModalOpen(true)}
+                  className="h-8 text-xs font-medium gap-1.5 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 hover:bg-amber-500/10"
+                >
+                  <CalendarOff className="size-4" />
+                  <span>Tandai Libur</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* ========================================================================= */}
           {/* TAHAP 1: CHECKLIST SISWA HADIR                                           */}
           {/* ========================================================================= */}
           {currentStep === 1 && (
             <div className="space-y-6">
-              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+              <Card className="overflow-hidden">
+                <CardHeader className="p-4 sm:p-5 border-b border-border flex flex-row items-center justify-between">
                   <div>
-                    <h3 className="font-extrabold text-slate-800 text-sm">
+                    <CardTitle className="text-sm font-bold">
                       Daftar Anggota: {activeSession?.namaEskul || 'Ekstrakurikuler'}
-                    </h3>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
+                    </CardTitle>
+                    <CardDescription className="text-xs mt-0.5">
                       Klik tombol Hadir untuk menandai siswa yang mengikuti latihan di lapangan.
-                    </p>
+                    </CardDescription>
                   </div>
-                  <span className="text-xs font-bold text-slate-600">
+                  <Badge variant="secondary" className="text-xs font-medium">
                     {hadirStudents.length} / {enrolledStudents.length} Siswa Hadir
-                  </span>
-                </div>
+                  </Badge>
+                </CardHeader>
 
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse min-w-[600px]">
-                    <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-extrabold uppercase text-slate-500">
-                        <th className="py-3 px-4">No</th>
-                        <th className="py-3 px-4">Nama Siswa &amp; Kelas</th>
-                        <th className="py-3 px-4 text-center">Status Kehadiran</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 text-xs">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">No</TableHead>
+                        <TableHead>Nama Siswa & Kelas</TableHead>
+                        <TableHead className="text-center w-36">Status Kehadiran</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {enrolledStudents.map((stu, idx) => {
                         const row = checklistMap[stu.id] || { status: 'ALFA' };
                         const isHadir = row.status === 'HADIR';
 
                         return (
-                          <tr key={stu.id} className="hover:bg-slate-50/60 transition-colors">
-                            <td className="py-3 px-4 font-mono text-slate-400 font-bold">{idx + 1}</td>
-                            <td className="py-3 px-4">
+                          <TableRow key={stu.id}>
+                            <TableCell className="font-mono text-muted-foreground text-xs">{idx + 1}</TableCell>
+                            <TableCell>
                               <div className="flex items-center gap-3">
                                 <UserAvatar
                                   name={stu.namaLengkap}
-                                  className="w-9 h-9 rounded-xl ring-1 ring-slate-200 text-xs"
+                                  className="size-8 rounded-md border text-xs"
                                 />
                                 <div>
-                                  <div className="font-extrabold text-slate-900">{stu.namaLengkap}</div>
-                                  <div className="text-[11px] text-slate-500 font-mono">
+                                  <div className="font-semibold text-foreground text-sm">{stu.namaLengkap}</div>
+                                  <div className="text-[11px] text-muted-foreground font-mono">
                                     NIS: {stu.nomorInduk || stu.nis} • {stu.kelas}
                                   </div>
                                 </div>
                               </div>
-                            </td>
-                            <td className="py-3 px-4 text-center">
-                              <button
-                                type="button"
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Button
+                                variant={isHadir ? 'brand' : 'outline'}
+                                size="sm"
                                 onClick={() => handleToggleHadir(stu.id)}
-                                className={`px-5 py-2 rounded-xl font-black text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 mx-auto ${
-                                  isHadir
-                                    ? 'bg-[#00B884] text-white shadow-md'
-                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                }`}
+                                className="h-8 px-4 text-xs font-semibold gap-1.5 mx-auto"
                               >
-                                {isHadir ? <Check className="w-3.5 h-3.5" /> : null}
+                                {isHadir ? <Check className="size-3.5" /> : null}
                                 <span>{isHadir ? 'HADIR' : 'Belum Hadir'}</span>
-                              </button>
-                            </td>
-                          </tr>
+                              </Button>
+                            </TableCell>
+                          </TableRow>
                         );
                       })}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
-              </div>
+              </Card>
 
               {/* Bottom Bar: Lanjut ke Tahap 2 */}
-              <div className="p-4 bg-white rounded-2xl border border-slate-200 flex items-center justify-between">
-                <span className="text-xs text-slate-600 font-medium">
+              <Card className="p-4 flex items-center justify-between">
+                <span className="text-xs text-muted-foreground font-medium">
                   Selesai menandai kehadiran? Lanjutkan untuk memberikan nilai keaktifan lapangan.
                 </span>
-                <button
+                <Button
+                  variant="brand"
+                  size="sm"
                   onClick={() => setCurrentStep(2)}
-                  className="px-6 py-2.5 bg-[#00B884] hover:bg-[#009e70] text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-2 cursor-pointer transition-all"
+                  className="gap-2"
                 >
                   <span>Lanjut ke Tahap 2: Nilai Keaktifan</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
+                  <ArrowRight className="size-4" />
+                </Button>
+              </Card>
             </div>
           )}
 
@@ -629,68 +643,70 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
           {/* TAHAP 2: NILAI KEAKTIFAN LAPANGAN (RATING TOMBOL SKOR)                     */}
           {/* ========================================================================= */}
           {currentStep === 2 && (
-            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+            <Card className="p-6 space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
                 <div>
-                  <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
-                    <Award className="w-5 h-5 text-amber-500" />
+                  <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+                    <Award className="size-5 text-amber-500" />
                     <span>Tahap 2: Nilai Keaktifan Lapangan Hari Ini</span>
                   </h2>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Tentukan rating dan skor keaktifan untuk seluruh siswa yang hadir mengikuti latihan hari ini.
                   </p>
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs text-slate-400 font-medium">Setel Cepat Semua Hadir:</span>
-                  <button
-                    type="button"
+                  <span className="text-xs text-muted-foreground font-medium">Setel Cepat Semua Hadir:</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => handleBatchSetKeaktifan(92, 'Sangat Baik')}
-                    className="px-3 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-800 rounded-xl text-xs font-bold border border-teal-200 transition-colors cursor-pointer"
+                    className="h-7 text-xs font-medium"
                   >
                     92 (Sangat Baik)
-                  </button>
-                  <button
-                    type="button"
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => handleBatchSetKeaktifan(85, 'Baik')}
-                    className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-[#00B884] rounded-xl text-xs font-bold border border-emerald-200 transition-colors cursor-pointer"
+                    className="h-7 text-xs font-medium"
                   >
                     85 (Baik)
-                  </button>
+                  </Button>
                 </div>
               </div>
 
               {hadirStudents.length === 0 ? (
-                <div className="p-12 text-center text-slate-400 space-y-2">
-                  <Users className="w-10 h-10 mx-auto text-slate-300" />
-                  <div className="font-bold text-slate-700">Belum ada siswa yang ditandai hadir</div>
-                  <p className="text-xs text-slate-400">Silakan kembali ke Tahap 1 untuk mencentang siswa yang hadir.</p>
+                <div className="p-12 text-center text-muted-foreground space-y-2">
+                  <Users className="size-10 mx-auto text-muted-foreground/60" />
+                  <div className="font-semibold text-foreground">Belum ada siswa yang ditandai hadir</div>
+                  <p className="text-xs text-muted-foreground">Silakan kembali ke Tahap 1 untuk mencentang siswa yang hadir.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {hadirStudents.map((s) => (
                     <div
                       key={s.siswaId}
-                      className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-3"
+                      className="p-4 rounded-lg border border-border bg-card space-y-3"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <UserAvatar name={s.namaSiswa} className="w-10 h-10 rounded-xl shrink-0" />
+                          <UserAvatar name={s.namaSiswa} className="size-9 rounded-md shrink-0" />
                           <div>
-                            <div className="font-extrabold text-sm text-slate-900">{s.namaSiswa}</div>
-                            <div className="text-[11px] text-slate-500 font-mono">{s.kelas} • NIS: {s.nis}</div>
+                            <div className="font-semibold text-sm text-foreground">{s.namaSiswa}</div>
+                            <div className="text-[11px] text-muted-foreground font-mono">{s.kelas} • NIS: {s.nis}</div>
                           </div>
                         </div>
                         <div className="text-right">
-                          <span className="text-base font-black text-[#00B884] font-mono">
+                          <span className="text-base font-bold text-primary font-mono">
                             {s.nilaiKeaktifan}
                           </span>
-                          <div className="text-[10px] text-slate-500 font-semibold">{s.ratingKeaktifan}</div>
+                          <div className="text-[10px] text-muted-foreground font-medium">{s.ratingKeaktifan}</div>
                         </div>
                       </div>
 
                       {/* 4 Score Buttons */}
-                      <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-200">
+                      <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-border">
                         {ratingOptions.map((opt) => {
                           const isSelected = s.nilaiKeaktifan === opt.score;
                           return (
@@ -698,10 +714,10 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
                               key={opt.score}
                               type="button"
                               onClick={() => handleSetStudentScore(s.siswaId, opt.score, opt.label)}
-                              className={`py-1.5 px-2 rounded-xl text-center text-[10px] font-extrabold transition-all cursor-pointer ${
+                              className={`py-1.5 px-2 rounded-md text-center text-[10px] font-semibold transition-all cursor-pointer ${
                                 isSelected
-                                  ? `${opt.color} shadow-xs scale-102`
-                                  : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                                  ? 'bg-primary text-primary-foreground shadow-xs'
+                                  : 'bg-muted/50 hover:bg-muted text-muted-foreground border border-border'
                               }`}
                             >
                               <div>{opt.label}</div>
@@ -716,120 +732,112 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
               )}
 
               {/* Navigation Bar */}
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                <button
+              <div className="pt-4 border-t border-border flex items-center justify-between">
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setCurrentStep(1)}
-                  className="px-4 py-2 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer"
+                  className="gap-1.5"
                 >
-                  <ArrowLeft className="w-4 h-4" />
+                  <ArrowLeft className="size-4" />
                   <span>Kembali ke Tahap 1: Checklist</span>
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="brand"
+                  size="sm"
                   onClick={() => setCurrentStep(3)}
-                  className="px-6 py-2.5 bg-[#00B884] hover:bg-[#009e70] text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-2 cursor-pointer transition-all"
+                  className="gap-2"
                 >
-                  <span>Lanjut ke Tahap 3: Izin, Sakit &amp; Telat</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+                  <span>Lanjut ke Tahap 3: Izin, Sakit & Telat</span>
+                  <ArrowRight className="size-4" />
+                </Button>
               </div>
-            </div>
+            </Card>
           )}
 
           {/* ========================================================================= */}
           {/* TAHAP 3: SIAPA YANG TIDAK HADIR, TELAT, IZIN, ATAU SAKIT                 */}
           {/* ========================================================================= */}
           {currentStep === 3 && (
-            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-6">
-              <div className="border-b border-slate-100 pb-5">
-                <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-blue-600" />
-                  <span>Tahap 3: Input Izin, Sakit, Telat &amp; Alasan</span>
+            <Card className="p-6 space-y-6">
+              <div className="border-b border-border pb-5">
+                <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+                  <FileText className="size-5 text-blue-500" />
+                  <span>Tahap 3: Input Izin, Sakit, Telat & Alasan</span>
                 </h2>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Tentukan status bagi siswa yang belum hadir / tidak hadir (Izin resmi, Sakit dokter, Telat, atau Alpa).
                 </p>
               </div>
 
               <div className="space-y-3.5">
                 {nonHadirStudents.length === 0 ? (
-                  <div className="p-8 text-center text-slate-500 text-xs bg-emerald-50 rounded-2xl border border-emerald-200">
-                    <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
-                    <div className="font-bold text-emerald-900">Seluruh anggota hadir lengkap (100%)!</div>
-                    <p className="text-[11px] text-emerald-700 mt-1">Tidak ada siswa yang berhalangan atau alpa hari ini.</p>
+                  <div className="p-8 text-center text-xs bg-primary/5 rounded-lg border border-primary/20">
+                    <CheckCircle2 className="size-8 text-primary mx-auto mb-2" />
+                    <div className="font-bold text-foreground">Seluruh anggota hadir lengkap (100%)!</div>
+                    <p className="text-[11px] text-muted-foreground mt-1">Tidak ada siswa yang berhalangan atau alpa hari ini.</p>
                   </div>
                 ) : (
                   nonHadirStudents.map((s) => (
                     <div
                       key={s.siswaId}
-                      className="p-4 rounded-2xl border border-slate-200 bg-slate-50/80 space-y-3"
+                      className="p-4 rounded-lg border border-border bg-card space-y-3"
                     >
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
-                          <UserAvatar name={s.namaSiswa} className="w-10 h-10 rounded-xl shrink-0" />
+                          <UserAvatar name={s.namaSiswa} className="size-9 rounded-md shrink-0" />
                           <div>
-                            <div className="font-extrabold text-sm text-slate-800">{s.namaSiswa}</div>
-                            <div className="text-[11px] text-slate-500 font-mono">{s.kelas} • NIS: {s.nis}</div>
+                            <div className="font-semibold text-sm text-foreground">{s.namaSiswa}</div>
+                            <div className="text-[11px] text-muted-foreground font-mono">{s.kelas} • NIS: {s.nis}</div>
                           </div>
                         </div>
 
                         {/* Status Buttons */}
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <button
-                            type="button"
+                          <Button
+                            variant={s.status === 'IZIN' ? 'brand' : 'outline'}
+                            size="sm"
                             onClick={() => handleSetNonHadirStatus(s.siswaId, 'IZIN')}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                              s.status === 'IZIN'
-                                ? 'bg-blue-600 text-white shadow-xs'
-                                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
-                            }`}
+                            className="h-7 px-3 text-xs"
                           >
                             Izin
-                          </button>
-                          <button
-                            type="button"
+                          </Button>
+                          <Button
+                            variant={s.status === 'SAKIT' ? 'brand' : 'outline'}
+                            size="sm"
                             onClick={() => handleSetNonHadirStatus(s.siswaId, 'SAKIT')}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                              s.status === 'SAKIT'
-                                ? 'bg-amber-500 text-white shadow-xs'
-                                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
-                            }`}
+                            className="h-7 px-3 text-xs"
                           >
                             Sakit
-                          </button>
-                          <button
-                            type="button"
+                          </Button>
+                          <Button
+                            variant={s.isTelat ? 'brand' : 'outline'}
+                            size="sm"
                             onClick={() => handleSetNonHadirStatus(s.siswaId, 'HADIR', true)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                              s.isTelat
-                                ? 'bg-purple-600 text-white shadow-xs'
-                                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
-                            }`}
+                            className="h-7 px-3 text-xs"
                           >
                             Telat
-                          </button>
-                          <button
-                            type="button"
+                          </Button>
+                          <Button
+                            variant={s.status === 'ALFA' && !s.isTelat ? 'destructive' : 'outline'}
+                            size="sm"
                             onClick={() => handleSetNonHadirStatus(s.siswaId, 'ALFA')}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                              s.status === 'ALFA' && !s.isTelat
-                                ? 'bg-rose-600 text-white shadow-xs'
-                                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
-                            }`}
+                            className="h-7 px-3 text-xs"
                           >
                             Alpa
-                          </button>
+                          </Button>
                         </div>
                       </div>
 
                       {/* Reason Input */}
-                      <div className="pt-2 border-t border-slate-200 flex items-center gap-2">
-                        <span className="text-[11px] font-bold text-slate-500 shrink-0">Keterangan:</span>
-                        <input
+                      <div className="pt-2 border-t border-border flex items-center gap-2">
+                        <span className="text-[11px] font-semibold text-muted-foreground shrink-0">Keterangan:</span>
+                        <Input
                           type="text"
                           value={s.keterangan}
                           onChange={(e) => handleSetKeterangan(s.siswaId, e.target.value)}
                           placeholder={s.status === 'IZIN' ? 'Keterangan izin orang tua...' : s.status === 'SAKIT' ? 'Keterangan surat sakit dokter...' : 'Catatan dispensasi...'}
-                          className="flex-1 bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                          className="h-8 text-xs"
                         />
                       </div>
                     </div>
@@ -838,194 +846,205 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
               </div>
 
               {/* Navigation Bar */}
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                <button
+              <div className="pt-4 border-t border-border flex items-center justify-between">
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setCurrentStep(2)}
-                  className="px-4 py-2 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-50 flex items-center gap-1.5 cursor-pointer"
+                  className="gap-1.5"
                 >
-                  <ArrowLeft className="w-4 h-4" />
+                  <ArrowLeft className="size-4" />
                   <span>Kembali ke Tahap 2: Keaktifan</span>
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="brand"
+                  size="sm"
                   onClick={() => setCurrentStep(4)}
-                  className="px-6 py-2.5 bg-[#00B884] hover:bg-[#009e70] text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-2 cursor-pointer transition-all"
+                  className="gap-2"
                 >
-                  <span>Lanjut ke Tahap 4: Review &amp; Kunci Sesi</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+                  <span>Lanjut ke Tahap 4: Review & Kunci Sesi</span>
+                  <ArrowRight className="size-4" />
+                </Button>
               </div>
-            </div>
+            </Card>
           )}
 
           {/* ========================================================================= */}
           {/* TAHAP 4: REVIEW REKAPITULASI & FINAL SUBMIT KUNCI LOG PRESENSI            */}
           {/* ========================================================================= */}
           {currentStep === 4 && (
-            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-7 shadow-sm space-y-6">
-              <div className="border-b border-slate-100 pb-5">
-                <h2 className="text-xl font-extrabold text-slate-800 flex items-center gap-2">
-                  <ShieldCheck className="w-6 h-6 text-[#00B884]" />
-                  <span>Tahap 4: Review Rekapitulasi &amp; Kunci Log Presensi</span>
+            <Card className="p-6 space-y-6">
+              <div className="border-b border-border pb-5">
+                <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+                  <ShieldCheck className="size-5 text-primary" />
+                  <span>Tahap 4: Review Rekapitulasi & Kunci Log Presensi</span>
                 </h2>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Periksa ringkasan presensi pertemuan hari ini. Begitu disubmit, data akan terkunci permanen dan resmi masuk ke log presensi eskul.
                 </p>
               </div>
 
               {/* Metrics Overview */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-900">
-                  <div className="text-[11px] font-bold text-emerald-700">Hadir</div>
-                  <div className="text-2xl font-black mt-1">{hadirStudents.length} Siswa</div>
-                  <div className="text-[10px] text-emerald-600 mt-0.5">Rata-rata Keaktifan: {avgKeaktifan}</div>
+                <div className="p-4 rounded-lg bg-muted/40 border border-border">
+                  <div className="text-[11px] font-semibold text-muted-foreground">Hadir</div>
+                  <div className="text-2xl font-bold text-foreground mt-1">{hadirStudents.length} Siswa</div>
+                  <div className="text-[10px] text-primary font-medium mt-0.5">Rata-rata Keaktifan: {avgKeaktifan}</div>
                 </div>
-                <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100 text-blue-900">
-                  <div className="text-[11px] font-bold text-blue-700">Izin (Surat)</div>
-                  <div className="text-2xl font-black mt-1">
+                <div className="p-4 rounded-lg bg-muted/40 border border-border">
+                  <div className="text-[11px] font-semibold text-muted-foreground">Izin (Surat)</div>
+                  <div className="text-2xl font-bold text-foreground mt-1">
                     {checklistList.filter(s => s.status === 'IZIN').length} Siswa
                   </div>
-                  <div className="text-[10px] text-blue-600 mt-0.5">Dispensasi resmi</div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">Dispensasi resmi</div>
                 </div>
-                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100 text-amber-900">
-                  <div className="text-[11px] font-bold text-amber-700">Sakit</div>
-                  <div className="text-2xl font-black mt-1">
+                <div className="p-4 rounded-lg bg-muted/40 border border-border">
+                  <div className="text-[11px] font-semibold text-muted-foreground">Sakit</div>
+                  <div className="text-2xl font-bold text-foreground mt-1">
                     {checklistList.filter(s => s.status === 'SAKIT').length} Siswa
                   </div>
-                  <div className="text-[10px] text-amber-600 mt-0.5">Keterangan medis</div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">Keterangan medis</div>
                 </div>
-                <div className="p-4 rounded-2xl bg-rose-50 border border-rose-100 text-rose-900">
-                  <div className="text-[11px] font-bold text-rose-700">Alpa</div>
-                  <div className="text-2xl font-black mt-1">
+                <div className="p-4 rounded-lg bg-muted/40 border border-border">
+                  <div className="text-[11px] font-semibold text-muted-foreground">Alpa</div>
+                  <div className="text-2xl font-bold text-destructive mt-1">
                     {checklistList.filter(s => s.status === 'ALFA').length} Siswa
                   </div>
-                  <div className="text-[10px] text-rose-600 mt-0.5">Tanpa keterangan</div>
+                  <div className="text-[10px] text-muted-foreground mt-0.5">Tanpa keterangan</div>
                 </div>
               </div>
 
               {/* Summary Table */}
-              <div className="border border-slate-200 rounded-2xl overflow-hidden max-h-72 overflow-y-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold uppercase text-slate-500">
-                    <tr>
-                      <th className="p-3">Siswa</th>
-                      <th className="p-3 text-center">Status</th>
-                      <th className="p-3 text-center">Nilai Keaktifan</th>
-                      <th className="p-3">Keterangan</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {checklistList.map((s) => (
-                      <tr key={s.siswaId} className="hover:bg-slate-50/50">
-                        <td className="p-3">
-                          <div className="font-bold text-slate-800">{s.namaSiswa}</div>
-                          <div className="text-[10px] text-slate-400 font-mono">{s.kelas} • NIS: {s.nis}</div>
-                        </td>
-                        <td className="p-3 text-center">
-                          {s.status === 'HADIR' ? (
-                            s.isTelat ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
-                                <Clock className="w-3 h-3 text-purple-600" />
-                                <span>Dispensasi Telat</span>
-                              </span>
+              <Card className="overflow-hidden">
+                <div className="max-h-72 overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Siswa</TableHead>
+                        <TableHead className="text-center">Status</TableHead>
+                        <TableHead className="text-center">Nilai Keaktifan</TableHead>
+                        <TableHead>Keterangan</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {checklistList.map((s) => (
+                        <TableRow key={s.siswaId}>
+                          <TableCell>
+                            <div className="font-semibold text-foreground text-xs">{s.namaSiswa}</div>
+                            <div className="text-[10px] text-muted-foreground font-mono">{s.kelas} • NIS: {s.nis}</div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {s.status === 'HADIR' ? (
+                              s.isTelat ? (
+                                <Badge variant="secondary" className="gap-1 text-[10px]">
+                                  <Clock className="size-3 text-purple-500" />
+                                  <span>Dispensasi Telat</span>
+                                </Badge>
+                              ) : (
+                                <Badge variant="success" className="gap-1 text-[10px]">
+                                  <ShieldCheck className="size-3" />
+                                  <span>Terverifikasi Hadir</span>
+                                </Badge>
+                              )
+                            ) : s.status === 'IZIN' ? (
+                              <Badge variant="outline" className="gap-1 text-[10px] text-blue-500 border-blue-500/30">
+                                <FileText className="size-3" />
+                                <span>Izin (Surat Sah)</span>
+                              </Badge>
+                            ) : s.status === 'SAKIT' ? (
+                              <Badge variant="warning" className="gap-1 text-[10px]">
+                                <HeartPulse className="size-3" />
+                                <span>Surat Dokter</span>
+                              </Badge>
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                                <span>Terverifikasi Hadir</span>
-                              </span>
-                            )
-                          ) : s.status === 'IZIN' ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                              <FileText className="w-3 h-3 text-blue-600" />
-                              <span>Izin (Surat Sah)</span>
-                            </span>
-                          ) : s.status === 'SAKIT' ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                              <HeartPulse className="w-3 h-3 text-amber-600" />
-                              <span>Surat Dokter</span>
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                              <X className="w-3 h-3 text-rose-600" />
-                              <span>Alpa</span>
-                            </span>
-                          )}
-                        </td>
-                        <td className="p-3 text-center font-mono font-bold text-slate-800">
-                          {s.status === 'HADIR' ? `${s.nilaiKeaktifan} (${s.ratingKeaktifan})` : '-'}
-                        </td>
-                        <td className="p-3 text-slate-500 text-[11px]">
-                          {s.keterangan || (s.status === 'HADIR' ? 'Hadir sesi' : '-')}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                              <Badge variant="destructive" className="gap-1 text-[10px]">
+                                <X className="size-3" />
+                                <span>Alpa</span>
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center font-mono font-bold text-foreground text-xs">
+                            {s.status === 'HADIR' ? `${s.nilaiKeaktifan} (${s.ratingKeaktifan})` : '-'}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-xs">
+                            {s.keterangan || (s.status === 'HADIR' ? 'Hadir sesi' : '-')}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </Card>
 
               {/* Navigation & Final Submit */}
-              <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <button
+              <div className="pt-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3">
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setCurrentStep(3)}
-                  className="w-full sm:w-auto px-4 py-2 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-50 flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="w-full sm:w-auto gap-1.5"
                 >
-                  <ArrowLeft className="w-4 h-4" />
+                  <ArrowLeft className="size-4" />
                   <span>Kembali ke Tahap 3: Dispensasi</span>
-                </button>
+                </Button>
 
-                <button
+                <Button
+                  variant="brand"
+                  size="default"
                   onClick={() => setIsLockModalOpen(true)}
                   disabled={isSessionLocked}
-                  className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-emerald-600 via-[#00B884] to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs rounded-xl shadow-lg flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50"
+                  className="w-full sm:w-auto gap-2"
                 >
-                  <Lock className="w-4 h-4" />
+                  <Lock className="size-4" />
                   <span>{isSessionLocked ? 'Sesi Sudah Terkunci' : 'Kunci & Submit Presensi Permanen ke Log'}</span>
-                </button>
+                </Button>
               </div>
-            </div>
+            </Card>
           )}
         </div>
       ) : (
         /* RIWAYAT LOG & EKSPOR DATA CSV */
         <div className="space-y-6">
-          {/* Filter Bar: Pencarian, Filter Hari, Filter Tanggal, Filter Status & Ekspor */}
-          <div className="bg-white rounded-3xl border border-slate-200/80 p-5 shadow-sm space-y-3.5">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-              {/* Search Bar */}
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Cari nama siswa, NISN, kelas, atau nama ekstrakurikuler..."
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#00B884] focus:bg-white transition-all"
-                />
+          {/* Filter Bar */}
+          <Card>
+            <CardContent className="p-4 sm:p-5 space-y-3.5">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+                {/* Search Bar */}
+                <div className="relative flex-1">
+                  <Search className="size-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Cari nama siswa, NISN, kelas, atau nama ekstrakurikuler..."
+                    className="pl-9 h-9 text-xs"
+                  />
+                </div>
+
+                {/* Action: Ekspor CSV */}
+                <Button
+                  variant="brand"
+                  size="sm"
+                  onClick={handleExportCSV}
+                  className="gap-1.5 shrink-0 h-9"
+                >
+                  <Download className="size-4" />
+                  <span>Ekspor CSV ({filteredLogs.length})</span>
+                </Button>
               </div>
 
-              {/* Action: Ekspor CSV */}
-              <button
-                type="button"
-                onClick={handleExportCSV}
-                className="px-4 py-2.5 bg-[#00B884] hover:bg-[#009e70] active:scale-95 text-white rounded-xl text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
-              >
-                <Download className="w-4 h-4" />
-                <span>Ekspor CSV ({filteredLogs.length})</span>
-              </button>
-            </div>
+              {/* Filter Row */}
+              <div className="flex items-center gap-2.5 flex-wrap pt-2 border-t border-border">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-semibold mr-1">
+                  <Filter className="size-3.5 text-primary" />
+                  <span>Filter Log:</span>
+                </div>
 
-            {/* Filter Row: Hari, Tanggal, Status Kehadiran, Reset */}
-            <div className="flex items-center gap-2.5 flex-wrap pt-2 border-t border-slate-100">
-              <div className="flex items-center gap-1.5 text-xs text-slate-500 font-bold mr-1">
-                <Filter className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Filter Log:</span>
-              </div>
-
-              {/* Filter Hari Dropdown */}
-              <div className="relative">
+                {/* Filter Hari Dropdown */}
                 <select
                   value={filterHari}
                   onChange={(e) => setFilterHari(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:border-emerald-500 cursor-pointer"
+                  className="h-8 px-2.5 text-xs font-medium rounded-md border border-input bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                 >
                   <option value="SEMUA">Semua Hari</option>
                   <option value="Senin">Senin</option>
@@ -1036,26 +1055,24 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
                   <option value="Sabtu">Sabtu</option>
                   <option value="Minggu">Minggu</option>
                 </select>
-              </div>
 
-              {/* Filter Tanggal Input */}
-              <div className="relative flex items-center">
-                <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 pointer-events-none" />
-                <input
-                  type="text"
-                  value={filterTanggal}
-                  onChange={(e) => setFilterTanggal(e.target.value)}
-                  placeholder="Filter tanggal (contoh: 3 Okt atau 2026-10-03)..."
-                  className="pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-100 focus:outline-none focus:border-emerald-500 focus:bg-white w-48 sm:w-64"
-                />
-              </div>
+                {/* Filter Tanggal Input */}
+                <div className="relative flex items-center">
+                  <Calendar className="size-3.5 text-muted-foreground absolute left-2.5 pointer-events-none" />
+                  <Input
+                    type="text"
+                    value={filterTanggal}
+                    onChange={(e) => setFilterTanggal(e.target.value)}
+                    placeholder="Filter tanggal (contoh: 3 Okt atau 2026-10-03)..."
+                    className="pl-8 h-8 text-xs w-48 sm:w-64"
+                  />
+                </div>
 
-              {/* Filter Status Kehadiran */}
-              <div className="relative">
+                {/* Filter Status Kehadiran */}
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:border-emerald-500 cursor-pointer"
+                  className="h-8 px-2.5 text-xs font-medium rounded-md border border-input bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                 >
                   <option value="SEMUA">Semua Status</option>
                   <option value="HADIR">Hadir Terverifikasi</option>
@@ -1063,36 +1080,37 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
                   <option value="SAKIT">Sakit (Dokter)</option>
                   <option value="ALPA">Alpa</option>
                 </select>
+
+                {/* Reset Filter Button */}
+                {isFilterActive && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleResetFilters}
+                    className="h-8 px-2.5 text-xs text-destructive hover:bg-destructive/10 ml-auto gap-1"
+                  >
+                    <X className="size-3.5" />
+                    <span>Reset Filter</span>
+                  </Button>
+                )}
               </div>
+            </CardContent>
+          </Card>
 
-              {/* Reset Filter Button */}
-              {isFilterActive && (
-                <button
-                  type="button"
-                  onClick={handleResetFilters}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-xl transition-all cursor-pointer ml-auto"
-                >
-                  <X className="w-3.5 h-3.5" />
-                  <span>Reset Filter</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+          <Card className="overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse min-w-[700px]">
-                <thead>
-                  <tr className="bg-slate-50/80 border-b border-slate-200 text-[11px] font-extrabold uppercase text-slate-500 tracking-wider">
-                    <th className="py-3 px-4">Hari &amp; Tanggal</th>
-                    <th className="py-3 px-4">Waktu Pindai</th>
-                    <th className="py-3 px-4">Siswa</th>
-                    <th className="py-3 px-4">Ekstrakurikuler</th>
-                    <th className="py-3 px-4">Metode Validasi</th>
-                    <th className="py-3 px-4 text-center">Status Kehadiran</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-xs">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Hari & Tanggal</TableHead>
+                    <TableHead>Waktu Pindai</TableHead>
+                    <TableHead>Siswa</TableHead>
+                    <TableHead>Ekstrakurikuler</TableHead>
+                    <TableHead>Metode Validasi</TableHead>
+                    <TableHead className="text-center">Status Kehadiran</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {filteredLogs.length > 0 ? (
                     filteredLogs.map((log) => {
                       const day = getLogDay(log);
@@ -1100,95 +1118,97 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
                       const time = getLogTime(log);
 
                       return (
-                        <tr key={log.id} className="hover:bg-slate-50/70 transition-colors">
-                          <td className="py-3 px-4">
+                        <TableRow key={log.id}>
+                          <TableCell>
                             <div className="flex items-center gap-2">
-                              <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-[11px] shrink-0 border border-emerald-100">
-                                <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+                              <div className="size-7 rounded-md bg-primary/10 text-primary flex items-center justify-center font-bold text-[11px] shrink-0 border border-primary/20">
+                                <Calendar className="size-3.5" />
                               </div>
                               <div>
-                                <div className="font-extrabold text-slate-800 text-xs">{day || 'Hari Latihan'}</div>
-                                <div className="text-[11px] text-slate-400 font-medium">{date || 'Sesi Terjadwal'}</div>
+                                <div className="font-semibold text-foreground text-xs">{day || 'Hari Latihan'}</div>
+                                <div className="text-[11px] text-muted-foreground font-medium">{date || 'Sesi Terjadwal'}</div>
                               </div>
                             </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center gap-1.5 font-mono text-slate-700 font-bold text-xs">
-                              <Clock className="w-3.5 h-3.5 text-slate-400" />
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1.5 font-mono text-foreground font-medium text-xs">
+                              <Clock className="size-3.5 text-muted-foreground" />
                               <span>{time}</span>
                             </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="font-extrabold text-slate-900">{log.namaSiswa}</div>
-                            <div className="text-[11px] text-slate-500 font-mono">{log.kelas} • NISN: {log.nisn}</div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className="font-bold text-slate-700">{log.namaEskul}</span>
-                          </td>
-                          <td className="py-3 px-4 font-mono text-[11px] text-slate-500">
-                            <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200">
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-semibold text-foreground text-xs">{log.namaSiswa}</div>
+                            <div className="text-[11px] text-muted-foreground font-mono">{log.kelas} • NISN: {log.nisn}</div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="font-medium text-foreground text-xs">{log.namaEskul}</span>
+                          </TableCell>
+                          <TableCell className="font-mono text-[11px] text-muted-foreground">
+                            <Badge variant="outline" className="text-[10px] py-0">
                               {log.metode}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-center">
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
                             {log.status === 'HADIR' ? (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-300 shadow-2xs">
-                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                              <Badge variant="success" className="gap-1 text-[10px]">
+                                <ShieldCheck className="size-3" />
                                 <span>Terverifikasi Hadir</span>
-                              </span>
+                              </Badge>
                             ) : log.status === 'IZIN' ? (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold bg-blue-50 text-blue-700 border border-blue-300 shadow-2xs">
-                                <FileText className="w-3.5 h-3.5 text-blue-600" />
+                              <Badge variant="outline" className="gap-1 text-[10px] text-blue-500 border-blue-500/30">
+                                <FileText className="size-3" />
                                 <span>Izin (Dispensasi)</span>
-                              </span>
+                              </Badge>
                             ) : log.status === 'SAKIT' ? (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold bg-amber-50 text-amber-800 border border-amber-300 shadow-2xs">
-                                <HeartPulse className="w-3.5 h-3.5 text-amber-600" />
+                              <Badge variant="warning" className="gap-1 text-[10px]">
+                                <HeartPulse className="size-3" />
                                 <span>Surat Medis</span>
-                              </span>
+                              </Badge>
                             ) : (
-                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold bg-rose-50 text-rose-700 border border-rose-300 shadow-2xs">
-                                <X className="w-3.5 h-3.5 text-rose-600" />
+                              <Badge variant="destructive" className="gap-1 text-[10px]">
+                                <X className="size-3" />
                                 <span>Alpa</span>
-                              </span>
+                              </Badge>
                             )}
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       );
                     })
                   ) : (
-                    <tr>
-                      <td colSpan={6} className="py-12 text-center text-xs text-slate-400">
-                        <Filter className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                        <div className="font-bold text-slate-600">Tidak ada riwayat presensi yang sesuai kriteria filter.</div>
-                        <p className="text-[11px] text-slate-400 mt-1">Coba sesuaikan kata kunci pencarian, filter hari, atau tanggal presensi.</p>
-                      </td>
-                    </tr>
+                    <TableRow>
+                      <TableCell colSpan={6} className="py-12 text-center text-xs text-muted-foreground">
+                        <Filter className="size-8 text-muted-foreground/50 mx-auto mb-2" />
+                        <div className="font-semibold text-foreground">Tidak ada riwayat presensi yang sesuai kriteria filter.</div>
+                        <p className="text-[11px] text-muted-foreground mt-1">Coba sesuaikan kata kunci pencarian, filter hari, atau tanggal presensi.</p>
+                      </TableCell>
+                    </TableRow>
                   )}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
       {/* MODAL: Tandai Hari Libur */}
       {isHolidayModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
-            <h3 className="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
-              <CalendarOff className="w-5 h-5 text-amber-600" />
-              <span>Tandai Libur / Tanggal Merah</span>
-            </h3>
-            <p className="text-xs text-slate-500 mb-4">
-              Menandai sesi libur tanpa mengurangi skor presensi siswa.
-            </p>
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <Card className="max-w-md w-full p-6 shadow-xl space-y-4">
+            <div>
+              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                <CalendarOff className="size-5 text-amber-500" />
+                <span>Tandai Libur / Tanggal Merah</span>
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Menandai sesi libur tanpa mengurangi skor presensi siswa.
+              </p>
+            </div>
 
-            <div className="space-y-3 mb-6">
+            <div className="space-y-3">
               <select
                 value={holidayReason}
                 onChange={(e) => setHolidayReason(e.target.value)}
-                className="w-full border border-slate-300 rounded-xl p-2.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-amber-500"
+                className="w-full border border-input rounded-md p-2.5 text-xs font-medium bg-card text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
               >
                 <option value="Hari Libur Nasional / Tanggal Merah">Hari Libur Nasional / Tanggal Merah</option>
                 <option value="Kegiatan Sekolah / Ujian Semester">Kegiatan Sekolah / Ujian Semester</option>
@@ -1197,64 +1217,67 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
               </select>
             </div>
 
-            <div className="flex items-center justify-end gap-2">
-              <button
-                type="button"
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setIsHolidayModalOpen(false)}
-                className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
               >
                 Batal
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant="brand"
+                size="sm"
                 onClick={handleConfirmHoliday}
                 disabled={actionLoading}
-                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
               >
                 {actionLoading ? 'Menyimpan...' : 'Simpan Status Libur'}
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
       {/* MODAL: Konfirmasi Kunci & Submit Presensi */}
       {isLockModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
-            <h3 className="text-lg font-bold text-slate-900 mb-1 flex items-center gap-2">
-              <Lock className="w-5 h-5 text-emerald-600" />
-              <span>Konfirmasi Kunci &amp; Submit Presensi</span>
-            </h3>
-            <p className="text-xs text-slate-500 mb-4">
-              Setelah disubmit, sesi akan menjadi <strong>ARSIP PERMANEN</strong> (status SELESAI), data terkunci tidak dapat diubah lagi, dan resmi masuk ke log presensi hari ini.
-            </p>
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <Card className="max-w-md w-full p-6 shadow-xl space-y-4">
+            <div>
+              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                <Lock className="size-5 text-primary" />
+                <span>Konfirmasi Kunci & Submit Presensi</span>
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Setelah disubmit, sesi akan menjadi <strong>ARSIP PERMANEN</strong> (status SELESAI), data terkunci tidak dapat diubah lagi, dan resmi masuk ke log presensi hari ini.
+              </p>
+            </div>
 
-            <div className="p-3.5 bg-emerald-50 rounded-xl border border-emerald-200 mb-6 text-xs text-emerald-900 space-y-1">
+            <div className="p-3.5 bg-muted/50 rounded-lg border border-border text-xs text-foreground space-y-1">
               <div>Ekstrakurikuler: <strong>{activeSession?.namaEskul}</strong></div>
               <div>Total Hadir: <strong>{hadirStudents.length} Siswa</strong> (Rata2 Keaktifan: {avgKeaktifan})</div>
-              <div>Izin &amp; Sakit: <strong>{checklistList.filter(s => s.status === 'IZIN' || s.status === 'SAKIT').length} Siswa</strong></div>
+              <div>Izin & Sakit: <strong>{checklistList.filter(s => s.status === 'IZIN' || s.status === 'SAKIT').length} Siswa</strong></div>
               <div>Alpa: <strong>{checklistList.filter(s => s.status === 'ALFA').length} Siswa</strong></div>
             </div>
 
-            <div className="flex items-center justify-end gap-2">
-              <button
-                type="button"
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setIsLockModalOpen(false)}
-                className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 cursor-pointer"
               >
                 Periksa Kembali
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
+                variant="brand"
+                size="sm"
                 onClick={handleFinalizeAndLock}
                 disabled={actionLoading}
-                className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                className="gap-1.5"
               >
                 {actionLoading ? 'Mengunci...' : 'Ya, Kunci & Submit ke Log'}
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
         </div>
       )}
     </div>

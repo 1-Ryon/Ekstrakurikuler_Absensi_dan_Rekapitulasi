@@ -385,7 +385,7 @@ export const Header: React.FC<HeaderProps> = ({
             type="button"
             onClick={onToggleMobileMenu}
             aria-label="Buka Menu Navigasi"
-            className={`lg:hidden p-2 rounded-xl bg-white border border-slate-200/90 text-slate-700 hover:bg-slate-50 active:scale-95 transition-all shadow-xs shrink-0 cursor-pointer ${
+            className={`lg:hidden p-2 rounded-md bg-white border border-slate-200/90 text-slate-700 hover:bg-slate-50 active:scale-95 transition-all shadow-xs shrink-0 cursor-pointer ${
               isSearchFocused ? 'hidden sm:flex' : 'flex'
             }`}
           >
@@ -400,7 +400,7 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onToggleDesktopSidebar}
             aria-label="Sembunyikan / Tampilkan Menu Sidebar"
             title={isDesktopSidebarOpen ? "Sembunyikan Menu Sidebar" : "Tampilkan Menu Sidebar"}
-            className="hidden lg:flex p-2 rounded-xl bg-white border border-slate-200/90 text-slate-700 hover:text-[#00B884] hover:bg-slate-50 active:scale-95 transition-all shadow-xs shrink-0 cursor-pointer items-center justify-center"
+            className="hidden lg:flex p-2 rounded-md bg-white border border-slate-200/90 text-slate-700 hover:text-[#00B884] hover:bg-slate-50 active:scale-95 transition-all shadow-xs shrink-0 cursor-pointer items-center justify-center"
           >
             <Menu className="w-4 h-4" />
           </button>
@@ -450,7 +450,7 @@ export const Header: React.FC<HeaderProps> = ({
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -6, scale: 0.98 }}
                 transition={{ duration: 0.16, ease: 'easeOut' }}
-                className="absolute left-0 right-0 sm:-right-20 top-full mt-2 bg-white/98 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-200/90 overflow-hidden z-50 flex flex-col max-h-[460px] animate-in"
+                className="absolute left-0 right-0 sm:-right-20 top-full mt-2 bg-white/98 backdrop-blur-md rounded-lg shadow-xl border border-slate-200/90 overflow-hidden z-50 flex flex-col max-h-[460px] animate-in"
               >
                 {/* Header Summary & Category Filters */}
                 <div className="p-3 bg-slate-50/90 border-b border-slate-100 flex items-center justify-between gap-2 shrink-0">
@@ -546,7 +546,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <div className="flex-1 overflow-y-auto p-2 space-y-3" style={{ scrollbarWidth: 'thin' }}>
                   {results.total === 0 ? (
                     <div className="py-8 px-4 text-center">
-                      <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto text-slate-400 mb-2.5">
+                      <div className="w-12 h-12 rounded-md bg-slate-100 flex items-center justify-center mx-auto text-slate-400 mb-2.5">
                         <Search className="w-5 h-5" />
                       </div>
                       <p className="text-xs font-semibold text-slate-700">Tidak ada hasil untuk "{searchVal}"</p>
@@ -573,7 +573,7 @@ export const Header: React.FC<HeaderProps> = ({
                                   onClick={() => handleItemClick(() => {
                                     onNavigateTab?.(menu.tab);
                                   })}
-                                  className="w-full text-left p-2.5 rounded-xl hover:bg-emerald-50/70 border border-transparent hover:border-emerald-200/60 transition-all flex items-center justify-between gap-3 group cursor-pointer"
+                                  className="w-full text-left p-2.5 rounded-md hover:bg-emerald-50/70 border border-transparent hover:border-emerald-200/60 transition-all flex items-center justify-between gap-3 group cursor-pointer"
                                 >
                                   <div className="flex items-center gap-2.5 min-w-0">
                                     <div className="w-8 h-8 rounded-lg bg-emerald-100 text-[#00B884] flex items-center justify-center font-bold text-xs shrink-0 group-hover:scale-105 transition-transform">
@@ -618,7 +618,7 @@ export const Header: React.FC<HeaderProps> = ({
                                     setPreviewDetail({ type: 'eskul', item: eskul });
                                   }
                                 })}
-                                className="w-full text-left p-2.5 rounded-xl hover:bg-emerald-50/60 border border-transparent hover:border-emerald-100 transition-all flex items-center justify-between gap-3 group cursor-pointer"
+                                className="w-full text-left p-2.5 rounded-md hover:bg-emerald-50/60 border border-transparent hover:border-emerald-100 transition-all flex items-center justify-between gap-3 group cursor-pointer"
                               >
                                 <div className="flex items-center gap-2.5 min-w-0">
                                   <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs shrink-0">
@@ -663,7 +663,7 @@ export const Header: React.FC<HeaderProps> = ({
                                     setPreviewDetail({ type: 'guru', item: guru });
                                   }
                                 })}
-                                className="w-full text-left p-2.5 rounded-xl hover:bg-blue-50/60 border border-transparent hover:border-blue-100 transition-all flex items-center justify-between gap-3 group cursor-pointer"
+                                className="w-full text-left p-2.5 rounded-md hover:bg-blue-50/60 border border-transparent hover:border-blue-100 transition-all flex items-center justify-between gap-3 group cursor-pointer"
                               >
                                 <div className="flex items-center gap-2.5 min-w-0">
                                   <UserAvatar
@@ -721,7 +721,7 @@ export const Header: React.FC<HeaderProps> = ({
                                     onSelectStudent?.(student);
                                   }
                                 })}
-                                className="w-full text-left p-2.5 rounded-xl hover:bg-amber-50/60 border border-transparent hover:border-amber-100 transition-all flex items-center justify-between gap-3 group cursor-pointer"
+                                className="w-full text-left p-2.5 rounded-md hover:bg-amber-50/60 border border-transparent hover:border-amber-100 transition-all flex items-center justify-between gap-3 group cursor-pointer"
                               >
                                 <div className="flex items-center gap-2.5 min-w-0">
                                   <UserAvatar
@@ -770,7 +770,7 @@ export const Header: React.FC<HeaderProps> = ({
                                     setPreviewDetail({ type: 'kelas', item: kls });
                                   }
                                 })}
-                                className="w-full text-left p-2.5 rounded-xl hover:bg-purple-50/60 border border-transparent hover:border-purple-100 transition-all flex items-center justify-between gap-3 group cursor-pointer"
+                                className="w-full text-left p-2.5 rounded-md hover:bg-purple-50/60 border border-transparent hover:border-purple-100 transition-all flex items-center justify-between gap-3 group cursor-pointer"
                               >
                                 <div className="flex items-center gap-2.5 min-w-0">
                                   <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-800 flex items-center justify-center font-bold text-xs shrink-0">
@@ -813,86 +813,101 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Right controls: Role Selector, Action Buttons, and User Profile */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-        {/* Role Selector Simulator Pill - Khusus Admin Testing */}
+        {/* Multi-Role Switcher Feature - Khusus Administrator */}
         {canSwitchRole && (
           <div className="relative">
             <button
               onClick={() => setShowRoleMenu(!showRoleMenu)}
-              title="Simulasi Tampilan Role (Khusus Admin Testing)"
+              title="Fitur Administrator: Beralih Mode Tampilan Peran"
               className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border text-[11px] sm:text-xs font-semibold shadow-xs transition-all cursor-pointer ${badge.bg}`}
             >
               <IconComponent className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden sm:inline">Simulasi:</span>
+              <span className="hidden sm:inline">Mode:</span>
               <span>{badge.label}</span>
               <span className="text-[10px] opacity-60">▼</span>
             </button>
 
             {showRoleMenu && (
-              <div className="absolute right-0 mt-2 w-64 max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                <div className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center justify-between">
-                  <span>Pilih Simulasi Peran</span>
-                  <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">UJI COBA ADMIN</span>
+              <div className="absolute right-0 mt-2 w-72 max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="px-3.5 py-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center justify-between border-b border-slate-100 mb-1">
+                  <span className="font-bold text-slate-700">Mode Tampilan Peran</span>
+                  <span className="text-[9px] bg-primary/10 text-primary font-bold px-1.5 py-0.5 rounded">
+                    FITUR ADMIN
+                  </span>
                 </div>
                 <button
                   onClick={() => { onRoleChange('ADMIN'); setShowRoleMenu(false); }}
-                  className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2.5 transition-colors cursor-pointer ${
+                  className={`w-full text-left px-3.5 py-2 text-xs flex items-center gap-2.5 transition-colors cursor-pointer ${
                     currentRole === 'ADMIN' ? 'bg-[#00B884]/10 text-[#00B884] font-semibold' : 'text-slate-700 hover:bg-slate-50'
                   }`}
                 >
                   <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
                   <div>
-                    <div className="font-medium">Administrator Sistem</div>
-                    <div className="text-[10px] text-slate-400">Super Admin & Kelola Sistem PKM</div>
+                    <div className="font-semibold text-slate-800">Mode Administrator</div>
+                    <div className="text-[10px] text-slate-400">Super Admin & Pengendalian Sistem PKM</div>
                   </div>
                 </button>
                 <button
                   onClick={() => { onRoleChange('KOORDINATOR'); setShowRoleMenu(false); }}
-                  className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2.5 transition-colors cursor-pointer ${
+                  className={`w-full text-left px-3.5 py-2 text-xs flex items-center gap-2.5 transition-colors cursor-pointer ${
                     currentRole === 'KOORDINATOR' ? 'bg-[#00B884]/10 text-[#00B884] font-semibold' : 'text-slate-700 hover:bg-slate-50'
                   }`}
                 >
                   <ShieldCheck className="w-4 h-4 text-teal-600 shrink-0" />
                   <div>
-                    <div className="font-medium">Koordinator Eskul</div>
-                    <div className="text-[10px] text-slate-400">Viska Adawiyah Z. - Kelola Eskul & Pembina</div>
+                    <div className="font-semibold text-slate-800">Mode Koordinator Eskul</div>
+                    <div className="text-[10px] text-slate-400">Kelola Eskul, Pengesahan &amp; Pembina</div>
                   </div>
                 </button>
                 <button
                   onClick={() => { onRoleChange('PEMBINA'); setShowRoleMenu(false); }}
-                  className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2.5 transition-colors cursor-pointer ${
+                  className={`w-full text-left px-3.5 py-2 text-xs flex items-center gap-2.5 transition-colors cursor-pointer ${
                     currentRole === 'PEMBINA' ? 'bg-[#00B884]/10 text-[#00B884] font-semibold' : 'text-slate-700 hover:bg-slate-50'
                   }`}
                 >
                   <UserCheck className="w-4 h-4 text-blue-600 shrink-0" />
                   <div>
-                    <div className="font-medium">Guru Pembina Eskul</div>
-                    <div className="text-[10px] text-slate-400">QR Dinamis & Masukkan Nilai</div>
+                    <div className="font-semibold text-slate-800">Mode Guru Pembina</div>
+                    <div className="text-[10px] text-slate-400">Presensi QR Dinamis, Scanner &amp; Nilai</div>
                   </div>
                 </button>
                 <button
                   onClick={() => { onRoleChange('WALI_KELAS'); setShowRoleMenu(false); }}
-                  className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2.5 transition-colors cursor-pointer ${
+                  className={`w-full text-left px-3.5 py-2 text-xs flex items-center gap-2.5 transition-colors cursor-pointer ${
                     currentRole === 'WALI_KELAS' ? 'bg-[#00B884]/10 text-[#00B884] font-semibold' : 'text-slate-700 hover:bg-slate-50'
                   }`}
                 >
                   <UserCheck className="w-4 h-4 text-purple-600 shrink-0" />
                   <div>
-                    <div className="font-medium">Wali Kelas</div>
-                    <div className="text-[10px] text-slate-400">Rekap Nilai Siswa Binaan Kelas</div>
+                    <div className="font-semibold text-slate-800">Mode Wali Kelas</div>
+                    <div className="text-[10px] text-slate-400">Pantau Presensi &amp; Rekap Nilai Siswa</div>
                   </div>
                 </button>
                 <button
                   onClick={() => { onRoleChange('SISWA'); setShowRoleMenu(false); }}
-                  className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2.5 transition-colors cursor-pointer ${
+                  className={`w-full text-left px-3.5 py-2 text-xs flex items-center gap-2.5 transition-colors cursor-pointer ${
                     currentRole === 'SISWA' ? 'bg-[#00B884]/10 text-[#00B884] font-semibold' : 'text-slate-700 hover:bg-slate-50'
                   }`}
                 >
                   <Smartphone className="w-4 h-4 text-amber-600 shrink-0" />
                   <div>
-                    <div className="font-medium">Siswa</div>
-                    <div className="text-[10px] text-slate-400">Pindai QR Presensi & Lihat KHN</div>
+                    <div className="font-semibold text-slate-800">Mode Siswa</div>
+                    <div className="text-[10px] text-slate-400">Presensi Kartu Siswa &amp; Riwayat KHN</div>
                   </div>
                 </button>
+
+                {currentRole !== 'ADMIN' && (
+                  <div className="pt-2 mt-1 border-t border-slate-100 px-2.5">
+                    <button
+                      type="button"
+                      onClick={() => { onRoleChange('ADMIN'); setShowRoleMenu(false); }}
+                      className="w-full text-center py-1.5 px-2 rounded-md bg-emerald-50 text-emerald-800 hover:bg-emerald-100 text-[11px] font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                    >
+                      <ShieldCheck className="size-3.5 text-emerald-600" />
+                      <span>Kembali ke Mode Administrator</span>
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -913,7 +928,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={onOpenMail}
                 aria-label="Pesan Masuk"
-                className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-white border border-slate-200/90 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:border-slate-300 shadow-xs transition-all cursor-pointer shrink-0"
+                className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-md bg-white border border-slate-200/90 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:border-slate-300 shadow-xs transition-all cursor-pointer shrink-0"
               >
                 <Mail className="w-4 h-4" />
                 <span className="absolute top-2 right-2 w-2 h-2 bg-[#00B884] rounded-full ring-2 ring-white"></span>
@@ -923,7 +938,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={onOpenNotifications}
                 aria-label="Pemberitahuan"
-                className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-white border border-slate-200/90 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:border-slate-300 shadow-xs transition-all cursor-pointer shrink-0"
+                className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-md bg-white border border-slate-200/90 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:border-slate-300 shadow-xs transition-all cursor-pointer shrink-0"
               >
                 <Bell className="w-4 h-4" />
                 <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white animate-pulse"></span>
@@ -956,7 +971,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {showProfileMenu && (
-            <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-xl border border-slate-200/80 p-3 z-50 animate-in fade-in zoom-in-95">
+            <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-xl border border-slate-200/80 p-3 z-50 animate-in fade-in zoom-in-95">
               {/* Header Info Card */}
               <div className="p-2 border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2.5">
@@ -1011,7 +1026,7 @@ export const Header: React.FC<HeaderProps> = ({
                     setShowProfileMenu(false);
                     setIsProfileModalOpen(true);
                   }}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
                 >
                   <UserCheck className="w-4 h-4 text-[#00B884]" />
                   <span>Lihat Rincian Profil Lengkap</span>
@@ -1023,7 +1038,7 @@ export const Header: React.FC<HeaderProps> = ({
                       setShowProfileMenu(false);
                       onLogout();
                     }}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
                   >
                     <LogOut className="w-4 h-4 text-rose-500" />
                     <span>Keluar dari Akun</span>
@@ -1073,24 +1088,24 @@ const SearchDetailModal: React.FC<SearchDetailModalProps> = ({ preview, onClose 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div 
-        className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200"
+        className="w-full max-w-lg bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200"
         role="dialog"
         aria-modal="true"
       >
         {/* Modal Top Bar */}
         <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
-          <div className="flex items-center gap-2">
-            <span className="p-2 rounded-xl bg-[#00B884]/10 text-[#00B884]">
-              {type === 'eskul' && <Volleyball className="w-5 h-5" />}
-              {type === 'guru' && <UserCheck className="w-5 h-5" />}
-              {type === 'siswa' && <GraduationCap className="w-5 h-5" />}
-              {type === 'kelas' && <Building2 className="w-5 h-5" />}
+          <div className="flex items-center gap-2.5">
+            <span className="p-2 rounded-md bg-[#00B884]/10 text-[#00B884]">
+              {type === 'eskul' && <Volleyball className="size-5" />}
+              {type === 'guru' && <UserCheck className="size-5" />}
+              {type === 'siswa' && <GraduationCap className="size-5" />}
+              {type === 'kelas' && <Building2 className="size-5" />}
             </span>
             <div>
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                 Pratinjau Data Informasi
               </span>
-              <h3 className="text-base font-bold text-slate-800">
+              <h3 className="text-base font-bold text-slate-900">
                 {type === 'eskul' && 'Rincian Ekstrakurikuler'}
                 {type === 'guru' && 'Profil Tenaga Pendidik'}
                 {type === 'siswa' && 'Data Profil Siswa'}
@@ -1101,10 +1116,10 @@ const SearchDetailModal: React.FC<SearchDetailModalProps> = ({ preview, onClose 
           <button
             type="button"
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
+            className="size-8 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-700 flex items-center justify-center transition-colors cursor-pointer"
             aria-label="Tutup"
           >
-            <X className="w-5 h-5" />
+            <X className="size-4" />
           </button>
         </div>
 
@@ -1112,10 +1127,10 @@ const SearchDetailModal: React.FC<SearchDetailModalProps> = ({ preview, onClose 
         <div className="p-5 overflow-y-auto space-y-4 text-xs">
           {type === 'eskul' && (
             <div className="space-y-4">
-              <div className="bg-emerald-50/60 border border-emerald-200/80 rounded-2xl p-4">
+              <div className="bg-emerald-50/60 border border-emerald-200/80 rounded-md p-4">
                 <div className="flex items-center justify-between gap-2">
-                  <h4 className="text-base font-extrabold text-slate-900">{item.namaEskul}</h4>
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#00B884] text-white">
+                  <h4 className="text-base font-bold text-slate-900">{item.namaEskul}</h4>
+                  <span className="px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-[#00B884] text-white">
                     {item.kategori || 'Ekstrakurikuler'}
                   </span>
                 </div>
@@ -1125,33 +1140,33 @@ const SearchDetailModal: React.FC<SearchDetailModalProps> = ({ preview, onClose 
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <div className="p-3 rounded-md bg-slate-50 border border-slate-200">
                   <span className="text-[10px] text-slate-400 font-semibold uppercase">Guru Pembina</span>
-                  <div className="font-bold text-slate-800 text-sm mt-0.5 flex items-center gap-1.5">
-                    <UserCheck className="w-4 h-4 text-[#00B884]" />
+                  <div className="font-semibold text-slate-800 text-sm mt-0.5 flex items-center gap-1.5">
+                    <UserCheck className="size-4 text-[#00B884]" />
                     <span>{item.pembinaNama || '-'}</span>
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <div className="p-3 rounded-md bg-slate-50 border border-slate-200">
                   <span className="text-[10px] text-slate-400 font-semibold uppercase">Jadwal Latihan</span>
-                  <div className="font-bold text-slate-800 text-sm mt-0.5 flex items-center gap-1.5">
-                    <Clock className="w-4 h-4 text-amber-500" />
+                  <div className="font-semibold text-slate-800 text-sm mt-0.5 flex items-center gap-1.5">
+                    <Clock className="size-4 text-amber-500" />
                     <span>{item.jadwalHari}, {item.jamMulai} - {item.jamSelesai}</span>
                   </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 sm:col-span-2">
+                <div className="p-3 rounded-md bg-slate-50 border border-slate-200 sm:col-span-2">
                   <span className="text-[10px] text-slate-400 font-semibold uppercase">Lokasi Kegiatan</span>
-                  <div className="font-bold text-slate-800 text-sm mt-0.5 flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4 text-rose-500" />
+                  <div className="font-semibold text-slate-800 text-sm mt-0.5 flex items-center gap-1.5">
+                    <MapPin className="size-4 text-rose-500" />
                     <span>{item.lokasi || 'Lingkungan SMK Al Amanah'}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="p-3 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-900 flex items-start gap-2 text-[11px]">
-                <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div className="p-3 rounded-md bg-amber-50/80 border border-amber-200 text-amber-900 flex items-start gap-2 text-[11px]">
+                <ShieldCheck className="size-4 text-amber-600 shrink-0 mt-0.5" />
                 <span>
                   Pengaturan jadwal dan penetapan pembina eskul ini dikelola terpusat oleh Koordinator Ekstrakurikuler.
                 </span>
@@ -1161,30 +1176,30 @@ const SearchDetailModal: React.FC<SearchDetailModalProps> = ({ preview, onClose 
 
           {type === 'guru' && (
             <div className="space-y-4">
-              <div className="flex items-center gap-3.5 p-4 bg-blue-50/50 border border-blue-100 rounded-2xl">
+              <div className="flex items-center gap-3.5 p-4 bg-blue-50/50 border border-blue-200 rounded-md">
                 <UserAvatar name={item.namaLengkap} className="w-14 h-14 ring-2 ring-blue-300 text-base shrink-0" />
                 <div className="min-w-0">
                   <h4 className="font-bold text-slate-900 text-base">{item.namaLengkap}</h4>
                   <p className="text-xs text-blue-700 font-medium mt-0.5">{item.spesialisasi || 'Guru Pendidik'}</p>
-                  <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
+                  <span className="inline-block mt-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-100 text-blue-800 border border-blue-200">
                     {item.isPembina ? 'Guru Pembina Eskul' : 'Wali Kelas / Guru Mata Pelajaran'}
                   </span>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                <div className="p-3 rounded-md bg-slate-50 border border-slate-200 flex items-center justify-between">
                   <span className="text-slate-500 font-medium">NIP Resmi:</span>
-                  <span className="font-mono font-bold text-slate-800">{item.nip || '-'}</span>
+                  <span className="font-mono font-semibold text-slate-800">{item.nip || '-'}</span>
                 </div>
                 {item.email && (
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                  <div className="p-3 rounded-md bg-slate-50 border border-slate-200 flex items-center justify-between">
                     <span className="text-slate-500 font-medium">Email Satuan Pendidikan:</span>
                     <span className="font-medium text-slate-800">{item.email}</span>
                   </div>
                 )}
                 {item.noHp && (
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                  <div className="p-3 rounded-md bg-slate-50 border border-slate-200 flex items-center justify-between">
                     <span className="text-slate-500 font-medium">Kontak WhatsApp:</span>
                     <span className="font-medium text-slate-800">{item.noHp}</span>
                   </div>
@@ -1195,7 +1210,7 @@ const SearchDetailModal: React.FC<SearchDetailModalProps> = ({ preview, onClose 
 
           {type === 'siswa' && (
             <div className="space-y-4">
-              <div className="flex items-center gap-3.5 p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
+              <div className="flex items-center gap-3.5 p-4 bg-emerald-50/50 border border-emerald-200 rounded-md">
                 <UserAvatar name={item.namaLengkap} className="w-14 h-14 ring-2 ring-emerald-300 text-base shrink-0" />
                 <div className="min-w-0">
                   <h4 className="font-bold text-slate-900 text-base">{item.namaLengkap}</h4>
@@ -1204,27 +1219,27 @@ const SearchDetailModal: React.FC<SearchDetailModalProps> = ({ preview, onClose 
                     <span>•</span>
                     <span className="font-mono text-slate-500">NIS: {item.nis || item.nomorInduk || '-'}</span>
                   </div>
-                  <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                  <span className="inline-block mt-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
                     Siswa Aktif Terdaftar
                   </span>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2.5">
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <div className="p-3 rounded-md bg-slate-50 border border-slate-200">
                   <span className="text-[10px] text-slate-400 font-semibold uppercase">NISN</span>
-                  <div className="font-mono font-bold text-slate-800 text-xs mt-0.5">{item.nisn || '-'}</div>
+                  <div className="font-mono font-semibold text-slate-800 text-xs mt-0.5">{item.nisn || '-'}</div>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <div className="p-3 rounded-md bg-slate-50 border border-slate-200">
                   <span className="text-[10px] text-slate-400 font-semibold uppercase">Jenis Kelamin</span>
-                  <div className="font-bold text-slate-800 text-xs mt-0.5">
+                  <div className="font-semibold text-slate-800 text-xs mt-0.5">
                     {item.jenisKelamin === 'P' ? 'Perempuan' : 'Laki-Laki'}
                   </div>
                 </div>
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-100/90 border border-slate-200 text-slate-600 text-[11px] flex items-center gap-2">
-                <Lock className="w-4 h-4 text-slate-400 shrink-0" />
+              <div className="p-3 rounded-md bg-slate-100/90 border border-slate-200 text-slate-600 text-[11px] flex items-center gap-2">
+                <Lock className="size-4 text-slate-400 shrink-0" />
                 <span>Kredensial dan sandi login dilindungi ketat demi privasi data siswa.</span>
               </div>
             </div>
@@ -1232,10 +1247,10 @@ const SearchDetailModal: React.FC<SearchDetailModalProps> = ({ preview, onClose 
 
           {type === 'kelas' && (
             <div className="space-y-4">
-              <div className="p-4 bg-purple-50/50 border border-purple-100 rounded-2xl">
+              <div className="p-4 bg-purple-50/50 border border-purple-200 rounded-md">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-lg font-black text-slate-900">{item.namaKelas}</h4>
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-purple-800">
+                  <h4 className="text-lg font-bold text-slate-900">{item.namaKelas}</h4>
+                  <span className="px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-purple-100 text-purple-800 border border-purple-200">
                     Tingkat {item.tingkat || 10}
                   </span>
                 </div>
@@ -1244,10 +1259,10 @@ const SearchDetailModal: React.FC<SearchDetailModalProps> = ({ preview, onClose 
                 </p>
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
+              <div className="p-3 rounded-md bg-slate-50 border border-slate-200">
                 <span className="text-[10px] text-slate-400 font-semibold uppercase">Wali Kelas</span>
-                <div className="font-bold text-slate-800 text-sm mt-0.5 flex items-center gap-2">
-                  <UserCheck className="w-4 h-4 text-purple-600" />
+                <div className="font-semibold text-slate-800 text-sm mt-0.5 flex items-center gap-2">
+                  <UserCheck className="size-4 text-purple-600" />
                   <span>{item.waliKelas?.namaLengkap || 'Belum Ditugaskan'}</span>
                 </div>
               </div>
@@ -1260,7 +1275,7 @@ const SearchDetailModal: React.FC<SearchDetailModalProps> = ({ preview, onClose 
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-semibold text-xs transition-colors cursor-pointer shadow-xs"
+            className="px-4 py-2 rounded-md bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition-colors cursor-pointer shadow-xs"
           >
             Tutup Pratinjau
           </button>

@@ -14,23 +14,27 @@ import {
   RefreshCw,
   ChevronRight,
   ShieldCheck,
-  Check
+  Check,
+  ArrowLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { Eskul, PendaftaranEskul, User } from '../../types';
 import { UserAvatar } from '../common/UserAvatar';
+import { api } from '../../services/api';
 
 interface PendaftaranSiswaPembinaProps {
   currentUser: User;
   coachedEskuls: Eskul[];
   onRefreshData?: () => void;
+  onBack?: () => void;
 }
 
 export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = ({
   currentUser,
   coachedEskuls,
   onRefreshData,
+  onBack,
 }) => {
   const [selectedEskulId, setSelectedEskulId] = useState<string>(
     coachedEskuls[0]?.id || ''
@@ -55,12 +59,9 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
     if (!selectedEskulId) return;
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/pendaftaran?eskulId=${selectedEskulId}`);
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success && Array.isArray(json.data)) {
-          setRegistrations(json.data);
-        }
+      const data = await api.getPendaftaran({ eskulId: selectedEskulId });
+      if (Array.isArray(data)) {
+        setRegistrations(data);
       }
     } catch {
       // Fallback
@@ -106,23 +107,15 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
     }
 
     try {
-      const res = await fetch('/api/pendaftaran/seleksi-pembina', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-Role': currentUser.role,
-        },
-        body: JSON.stringify({
-          pendaftaranIds: [pendaftaranId],
-          status: newStatus,
-          catatanPembina: newStatus === 'DITERIMA_PEMBINA' 
-            ? 'Memenuhi syarat kemampuan dan lolos seleksi pembina.' 
-            : 'Belum memenuhi kualifikasi kuota.',
-        }),
-      });
+      const res = await api.seleksiPendaftaran(
+        [pendaftaranId],
+        newStatus === 'DITERIMA_PEMBINA' ? 'DITERIMA_PEMBINA' : 'DITOLAK',
+        newStatus === 'DITERIMA_PEMBINA'
+          ? 'Memenuhi syarat kemampuan dan lolos seleksi pembina.'
+          : 'Belum memenuhi kualifikasi kuota.'
+      );
 
-      const data = await res.json();
-      if (data.success) {
+      if (res.success) {
         showToast(
           newStatus === 'DITERIMA_PEMBINA' 
             ? 'Siswa diterima masuk daftar seleksi pembina.' 
@@ -142,29 +135,22 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
     setActionLoading(true);
 
     try {
-      const res = await fetch('/api/pendaftaran/ajukan-koordinator', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-Role': currentUser.role,
-        },
-        body: JSON.stringify({
-          eskulId: selectedEskulId,
-          catatanPembina: catatanBatch || `Daftar ${acceptedByPembina.length} siswa terpilih hasil seleksi pembina untuk tahun ajaran 2026/2027.`,
-        }),
-      });
+      const res = await api.ajukanPendaftaran(
+        selectedEskulId,
+        acceptedByPembina.map(p => p.id),
+        catatanBatch || `Daftar ${acceptedByPembina.length} siswa terpilih hasil seleksi pembina untuk tahun ajaran 2026/2027.`
+      );
 
-      const data = await res.json();
-      if (data.success) {
+      if (res.success) {
         confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
-        showToast(data.message || 'Berkas siswa berhasil dikirim ke Koordinator!', 'success');
+        showToast(res.message || 'Berkas siswa berhasil dikirim ke Koordinator!', 'success');
         setIsSubmitModalOpen(false);
         setCatatanBatch('');
         setActiveTab('DITINJAU');
         await fetchRegistrations();
         if (onRefreshData) onRefreshData();
       } else {
-        showToast(data.message || 'Gagal mengirim berkas.', 'error');
+        showToast(res.message || 'Gagal mengirim berkas.', 'error');
       }
     } catch {
       showToast('Terjadi kesalahan koneksi server.', 'error');
@@ -182,7 +168,7 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className={`fixed top-6 right-6 z-50 px-5 py-3.5 rounded-2xl shadow-xl border flex items-center gap-3 text-sm font-semibold ${
+            className={`fixed top-6 right-6 z-50 px-4 py-3 rounded-md shadow-lg border flex items-center gap-3 text-xs font-semibold ${
               toastMessage.type === 'success'
                 ? 'bg-emerald-900/90 text-emerald-100 border-emerald-500/50 backdrop-blur-md'
                 : 'bg-rose-900/90 text-rose-100 border-rose-500/50 backdrop-blur-md'
@@ -199,32 +185,43 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
       </AnimatePresence>
 
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-teal-700 via-[#00B884] to-emerald-700 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
-        <div className="absolute right-0 top-0 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16" />
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-bold text-white tracking-wide">
-              <UserPlus className="w-4 h-4" />
-              <span>Manajemen Seleksi & Penerimaan Siswa Eskul</span>
+      <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-xs relative">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              {onBack && (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-md border border-slate-200 shadow-2xs transition-all cursor-pointer"
+                >
+                  <ArrowLeft className="size-3.5" />
+                  <span>Kembali ke Dasbor</span>
+                </button>
+              )}
+              <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-800">
+                <UserPlus className="size-3.5 text-emerald-600" />
+                <span>Manajemen Seleksi & Penerimaan Siswa Eskul</span>
+              </div>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
               Pendaftaran Siswa: {activeEskul?.namaEskul || 'Ekstrakurikuler'}
             </h1>
-            <p className="text-emerald-50 text-sm max-w-2xl leading-relaxed">
+            <p className="text-slate-500 text-xs sm:text-sm max-w-2xl leading-relaxed">
               Seleksi siswa yang mendaftar hingga kuota maksimal terpenuhi. Setelah daftar siswa terpilih sudah lengkap, kirim seluruh berkas ke Koordinator Eskul untuk divalidasi resmi.
             </p>
           </div>
 
           {/* Eskul Selector if Pembina coaches multiple */}
           {coachedEskuls.length > 1 && (
-            <div className="bg-white/15 backdrop-blur-md p-2 rounded-2xl border border-white/20 self-start md:self-auto">
-              <label className="text-[10px] uppercase tracking-wider text-emerald-100 font-bold block px-2 mb-1">
+            <div className="bg-slate-50 p-2 rounded-md border border-slate-200 self-start md:self-auto">
+              <label className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block px-1 mb-1">
                 Pilih Eskul yang Dikelola:
               </label>
               <select
                 value={selectedEskulId}
                 onChange={(e) => setSelectedEskulId(e.target.value)}
-                className="bg-slate-900/80 text-white rounded-xl px-3 py-1.5 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-white border border-white/30"
+                className="bg-white text-slate-800 rounded-md px-3 py-1.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#00B884]/30 border border-slate-200"
               >
                 {coachedEskuls.map((e) => (
                   <option key={e.id} value={e.id}>{e.namaEskul}</option>
@@ -235,46 +232,46 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
         </div>
 
         {/* Quota Progress Gauge */}
-        <div className="mt-6 pt-6 border-t border-white/20 grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15">
-            <div className="text-[11px] text-emerald-100 font-medium">Batas Maksimal Kuota</div>
-            <div className="text-xl sm:text-2xl font-black text-white mt-0.5">
-              {maxQuota} <span className="text-xs font-normal text-emerald-100">Siswa</span>
+        <div className="mt-6 pt-5 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="bg-slate-50 rounded-md p-3.5 border border-slate-200">
+            <div className="text-[11px] text-slate-500 font-medium">Batas Maksimal Kuota</div>
+            <div className="text-xl sm:text-2xl font-bold text-slate-900 mt-0.5">
+              {maxQuota} <span className="text-xs font-normal text-slate-400">Siswa</span>
             </div>
           </div>
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15">
-            <div className="text-[11px] text-emerald-100 font-medium">Resmi Terdaftar</div>
-            <div className="text-xl sm:text-2xl font-black text-emerald-200 mt-0.5">
-              {officialMembers} <span className="text-xs font-normal text-emerald-100">Aktif</span>
+          <div className="bg-slate-50 rounded-md p-3.5 border border-slate-200">
+            <div className="text-[11px] text-slate-500 font-medium">Resmi Terdaftar</div>
+            <div className="text-xl sm:text-2xl font-bold text-[#00B884] mt-0.5">
+              {officialMembers} <span className="text-xs font-normal text-slate-400">Aktif</span>
             </div>
           </div>
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15">
-            <div className="text-[11px] text-emerald-100 font-medium">Dipilih Pembina</div>
-            <div className="text-xl sm:text-2xl font-black text-amber-300 mt-0.5">
-              {acceptedByPembina.length} <span className="text-xs font-normal text-emerald-100">Siap Kirim</span>
+          <div className="bg-slate-50 rounded-md p-3.5 border border-slate-200">
+            <div className="text-[11px] text-slate-500 font-medium">Dipilih Pembina</div>
+            <div className="text-xl sm:text-2xl font-bold text-amber-600 mt-0.5">
+              {acceptedByPembina.length} <span className="text-xs font-normal text-slate-400">Siap Kirim</span>
             </div>
           </div>
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15">
-            <div className="text-[11px] text-emerald-100 font-medium">Sisa Slot Kuota</div>
-            <div className={`text-xl sm:text-2xl font-black mt-0.5 ${isOverQuota ? 'text-rose-300' : 'text-white'}`}>
-              {remainingQuota} <span className="text-xs font-normal text-emerald-100">Kursi</span>
+          <div className="bg-slate-50 rounded-md p-3.5 border border-slate-200">
+            <div className="text-[11px] text-slate-500 font-medium">Sisa Slot Kuota</div>
+            <div className={`text-xl sm:text-2xl font-bold mt-0.5 ${isOverQuota ? 'text-rose-600' : 'text-slate-900'}`}>
+              {remainingQuota} <span className="text-xs font-normal text-slate-400">Kursi</span>
             </div>
           </div>
         </div>
 
         {/* Progress Bar & Warning */}
         <div className="mt-4">
-          <div className="w-full bg-black/20 h-2 rounded-full overflow-hidden">
+          <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
             <div 
               className={`h-full rounded-full transition-all duration-500 ${
-                isOverQuota ? 'bg-rose-400' : totalApprovedAndPending >= maxQuota ? 'bg-amber-400' : 'bg-white'
+                isOverQuota ? 'bg-rose-500' : totalApprovedAndPending >= maxQuota ? 'bg-amber-500' : 'bg-[#00B884]'
               }`}
               style={{ width: `${Math.min(100, Math.round((totalApprovedAndPending / maxQuota) * 100))}%` }}
             />
           </div>
           {isOverQuota && (
-            <div className="mt-2 text-xs font-bold text-rose-200 flex items-center gap-1.5">
-              <AlertTriangle className="w-4 h-4 shrink-0" />
+            <div className="mt-2 text-xs font-semibold text-rose-600 flex items-center gap-1.5">
+              <AlertTriangle className="size-4 shrink-0" />
               <span>Peringatan: Jumlah siswa yang Anda pilih melebihi batas kapasitas kuota eskul ({totalApprovedAndPending}/{maxQuota}).</span>
             </div>
           )}
@@ -284,38 +281,38 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
       {/* Main Workflow Tabs & Send Button */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         {/* Step tabs */}
-        <div className="flex items-center bg-slate-100 p-1.5 rounded-2xl overflow-x-auto self-start">
+        <div className="flex items-center bg-slate-100 p-1 rounded-md overflow-x-auto self-start gap-1">
           <button
             onClick={() => setActiveTab('SELEKSI')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-              activeTab === 'SELEKSI' ? 'bg-white text-[#00B884] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'SELEKSI' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Clock className="w-3.5 h-3.5" />
+            <Clock className="size-3.5" />
             <span>Pendaftar Baru ({waitingSelection.length})</span>
           </button>
           <button
             onClick={() => setActiveTab('SIAP_KIRIM')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-              activeTab === 'SIAP_KIRIM' ? 'bg-white text-[#00B884] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'SIAP_KIRIM' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <CheckCircle2 className="w-3.5 h-3.5" />
+            <CheckCircle2 className="size-3.5" />
             <span>Dipilih / Siap Kirim ({acceptedByPembina.length})</span>
           </button>
           <button
             onClick={() => setActiveTab('DITINJAU')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-              activeTab === 'DITINJAU' ? 'bg-white text-[#00B884] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'DITINJAU' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <ShieldCheck className="w-3.5 h-3.5" />
+            <ShieldCheck className="size-3.5" />
             <span>Ditinjau Koordinator ({waitingKoordinator.length})</span>
           </button>
           <button
             onClick={() => setActiveTab('RESMI')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-              activeTab === 'RESMI' ? 'bg-white text-[#00B884] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'RESMI' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             <span>Resmi Terdaftar ({registrations.filter(r => r.status === 'RESMI_TERDAFTAR').length})</span>
@@ -327,13 +324,13 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
           <button
             onClick={() => setIsSubmitModalOpen(true)}
             disabled={acceptedByPembina.length === 0 || isOverQuota}
-            className={`px-5 py-2.5 rounded-2xl text-xs font-extrabold text-white shadow-lg transition-all flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed ${
+            className={`px-4 py-2 rounded-md text-xs font-semibold text-white shadow-xs transition-all flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed ${
               acceptedByPembina.length > 0 && !isOverQuota
-                ? 'bg-gradient-to-r from-emerald-600 to-[#00B884] hover:shadow-emerald-500/25 ring-2 ring-emerald-500/30 animate-pulse'
+                ? 'bg-[#00B884] hover:bg-[#009e70]'
                 : 'bg-slate-400'
             }`}
           >
-            <Send className="w-4 h-4" />
+            <Send className="size-4" />
             <span>Kirim Rekap Siswa ke Koordinator ({acceptedByPembina.length} Siswa)</span>
           </button>
         </div>
@@ -342,19 +339,19 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
       {/* Search Input */}
       <div className="flex items-center justify-between gap-4">
         <div className="relative flex-1 sm:max-w-md">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="size-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Cari siswa yang mendaftar..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+            className="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-200 rounded-md text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
           />
         </div>
       </div>
 
       {/* Roster Cards */}
-      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden p-5">
+      <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden p-5">
         {isLoading ? (
           <div className="p-12 text-center text-slate-400 flex flex-col items-center justify-center gap-2">
             <RefreshCw className="w-6 h-6 animate-spin text-[#00B884]" />
@@ -377,13 +374,13 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
             {filteredList.map((item) => (
               <div 
                 key={item.id}
-                className="p-4 rounded-2xl border border-slate-100 bg-slate-50/60 hover:bg-slate-100/60 transition-all flex flex-col justify-between gap-3"
+                className="p-4 rounded-md border border-slate-100 bg-slate-50/60 hover:bg-slate-100/60 transition-all flex flex-col justify-between gap-3"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <UserAvatar
                       name={item.namaSiswa}
-                      className="w-12 h-12 rounded-2xl ring-2 ring-white shadow-xs shrink-0 text-sm"
+                      className="w-11 h-11 rounded-md ring-2 ring-white shadow-xs shrink-0 text-sm"
                     />
                     <div className="min-w-0">
                       <h4 className="font-extrabold text-sm text-slate-800 truncate">
@@ -430,13 +427,13 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
                   <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200/60">
                     <button
                       onClick={() => handleUpdateStatusSingle(item.id, 'DITOLAK')}
-                      className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-xl border border-rose-200 transition-colors cursor-pointer"
+                      className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-md border border-rose-200 transition-colors cursor-pointer"
                     >
                       Tolak
                     </button>
                     <button
                       onClick={() => handleUpdateStatusSingle(item.id, 'DITERIMA_PEMBINA')}
-                      className="px-4 py-1.5 bg-[#00B884] hover:bg-[#009e70] text-white text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                      className="px-4 py-1.5 bg-[#00B884] hover:bg-[#009e70] text-white text-xs font-bold rounded-md shadow-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
                     >
                       <Check className="w-3.5 h-3.5" />
                       <span>Terima ke Kuota</span>
@@ -472,27 +469,27 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl border border-slate-100 space-y-4"
+              className="bg-white rounded-lg p-6 sm:p-7 max-w-lg w-full shadow-xl border border-slate-200 space-y-4"
             >
               <div className="flex items-center gap-3">
-                <div className="p-3 rounded-2xl bg-emerald-100 text-emerald-800">
-                  <Send className="w-6 h-6" />
+                <div className="size-10 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center justify-center">
+                  <Send className="size-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-extrabold text-slate-800">
+                  <h3 className="text-lg font-bold text-slate-900">
                     Kirim Berkas Siswa ke Koordinator
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Ekstrakurikuler: <span className="font-bold text-slate-700">{activeEskul.namaEskul}</span>
+                    Ekstrakurikuler: <span className="font-semibold text-slate-800">{activeEskul.namaEskul}</span>
                   </p>
                 </div>
               </div>
 
-              <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200/70 space-y-1 text-xs text-emerald-900">
-                <div className="font-bold">Ringkasan Kuota yang Diajukan:</div>
+              <div className="p-3.5 bg-emerald-50/70 rounded-md border border-emerald-200/80 space-y-1 text-xs text-emerald-900">
+                <div className="font-semibold">Ringkasan Kuota yang Diajukan:</div>
                 <div className="flex items-center justify-between">
                   <span>Siswa Terpilih yang Dikirim:</span>
-                  <span className="font-black font-mono text-sm">{acceptedByPembina.length} Siswa</span>
+                  <span className="font-bold font-mono text-sm">{acceptedByPembina.length} Siswa</span>
                 </div>
                 <div className="flex items-center justify-between text-slate-500 text-[11px]">
                   <span>Anggota Resmi Saat Ini:</span>
@@ -500,35 +497,35 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
                 </div>
                 <div className="flex items-center justify-between text-slate-500 text-[11px]">
                   <span>Total Setelah Divalidasi:</span>
-                  <span className="font-bold text-emerald-800">{officialMembers + acceptedByPembina.length} / {maxQuota} Kuota</span>
+                  <span className="font-semibold text-emerald-800">{officialMembers + acceptedByPembina.length} / {maxQuota} Kuota</span>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-700">Catatan Pengantar untuk Koordinator (Opsional):</label>
+                <label className="text-xs font-semibold text-slate-700">Catatan Pengantar untuk Koordinator (Opsional):</label>
                 <textarea
                   value={catatanBatch}
                   onChange={(e) => setCatatanBatch(e.target.value)}
                   rows={3}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
                   placeholder="Contoh: Seluruh siswa telah memenuhi tes fisik dan uji bakat. Kuota telah terpenuhi."
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2.5 pt-3">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
                 <button
                   onClick={() => setIsSubmitModalOpen(false)}
                   disabled={actionLoading}
-                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-semibold border border-slate-200 transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   onClick={handleSubmitBatchToKoordinator}
                   disabled={actionLoading}
-                  className="px-5 py-2.5 bg-[#00B884] hover:bg-[#009e70] active:scale-95 text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer flex items-center gap-2"
+                  className="px-4 py-2 bg-[#00B884] hover:bg-[#009e70] active:scale-95 text-white rounded-md text-xs font-semibold shadow-xs transition-all cursor-pointer flex items-center gap-2"
                 >
-                  {actionLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  {actionLoading ? <RefreshCw className="size-4 animate-spin" /> : <Send className="size-4" />}
                   <span>Kirim Sekarang</span>
                 </button>
               </div>

@@ -126,38 +126,40 @@ export const AjukanPerubahanJadwalModal: React.FC<AjukanPerubahanJadwalModalProp
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+      <div
+        onClick={onClose}
+        className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+      >
         <motion.div
+          onClick={(e) => e.stopPropagation()}
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
-          className="bg-white rounded-3xl max-w-xl w-full shadow-2xl border border-slate-100 overflow-hidden my-auto"
+          className="bg-white rounded-lg max-w-xl w-full shadow-xl border border-slate-200 overflow-hidden my-auto"
         >
           {/* Header */}
-          <div className="p-6 bg-gradient-to-r from-teal-700 via-[#00B884] to-emerald-700 text-white relative">
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-1">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-white/20 backdrop-blur-md rounded-full text-[11px] font-semibold">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>Validasi Resmi Koordinator Eskul</span>
-                </div>
-                <h2 className="text-xl sm:text-2xl font-black tracking-tight">
-                  Pengajuan Perubahan Jadwal
-                </h2>
-                <p className="text-teal-50 text-xs leading-relaxed">
-                  Permohonan akan diteruskan ke Koordinator Ekstrakurikuler untuk divalidasi &amp; disahkan.
-                </p>
+          <div className="p-5 sm:p-6 border-b border-slate-100 flex items-start justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-md text-[11px] font-semibold">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Validasi Resmi Koordinator Eskul</span>
               </div>
-
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <h2 className="text-xl font-bold tracking-tight text-slate-900">
+                Pengajuan Perubahan Jadwal
+              </h2>
+              <p className="text-slate-500 text-xs leading-relaxed">
+                Permohonan akan diteruskan ke Koordinator Ekstrakurikuler untuk divalidasi &amp; disahkan.
+              </p>
             </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="size-8 rounded-md border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-500 hover:text-slate-700 transition-colors cursor-pointer shrink-0"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
 
           <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
@@ -165,7 +167,7 @@ export const AjukanPerubahanJadwalModal: React.FC<AjukanPerubahanJadwalModalProp
               <motion.div
                 initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 font-medium"
+                className="p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 font-medium"
               >
                 <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
                 <span>{errorMsg}</span>
@@ -175,13 +177,13 @@ export const AjukanPerubahanJadwalModal: React.FC<AjukanPerubahanJadwalModalProp
             {/* 1. Pilih Eskul yang dibina */}
             {coachedEskuls.length > 1 ? (
               <div className="space-y-1">
-                <label className="font-bold text-slate-800 block">
+                <label className="font-semibold text-slate-800 block">
                   Pilih Cabang Ekstrakurikuler:
                 </label>
                 <select
                   value={selectedEskulId}
                   onChange={(e) => setSelectedEskulId(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/30"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
                 >
                   {coachedEskuls.map((e) => (
                     <option key={e.id} value={e.id}>
@@ -191,12 +193,12 @@ export const AjukanPerubahanJadwalModal: React.FC<AjukanPerubahanJadwalModalProp
                 </select>
               </div>
             ) : (
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
+              <div className="p-3 rounded-md bg-slate-50 border border-slate-200 flex items-center justify-between">
                 <div>
                   <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Cabang Eskul Binaan</span>
-                  <div className="font-extrabold text-slate-900 text-sm">{activeEskul.namaEskul}</div>
+                  <div className="font-bold text-slate-900 text-sm">{activeEskul.namaEskul}</div>
                 </div>
-                <span className="px-2.5 py-1 bg-emerald-50 text-[#00B884] font-bold rounded-lg border border-emerald-100 text-[11px]">
+                <span className="px-2.5 py-1 bg-emerald-50 text-emerald-800 font-semibold rounded-md border border-emerald-200 text-[11px]">
                   {activeEskul.kategori}
                 </span>
               </div>
@@ -205,15 +207,15 @@ export const AjukanPerubahanJadwalModal: React.FC<AjukanPerubahanJadwalModalProp
             {/* 2. Side-by-side comparison: Jadwal Sekarang vs Jadwal Baru */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Box Jadwal Saat Ini (Read-only) */}
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+              <div className="p-3.5 rounded-md bg-slate-50 border border-slate-200 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                  <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                     Jadwal Saat Ini
                   </span>
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-semibold">Aktif</span>
                 </div>
                 <div className="space-y-1 text-slate-700">
-                  <div className="flex items-center gap-2 font-bold text-xs">
+                  <div className="flex items-center gap-2 font-semibold text-xs">
                     <Calendar className="w-3.5 h-3.5 text-slate-400" />
                     <span>Hari {activeEskul.jadwalHari}</span>
                   </div>
@@ -229,22 +231,22 @@ export const AjukanPerubahanJadwalModal: React.FC<AjukanPerubahanJadwalModalProp
               </div>
 
               {/* Box Jadwal Baru Yang Diajukan */}
-              <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/90 space-y-2">
+              <div className="p-3.5 rounded-md bg-emerald-50/70 border border-emerald-200 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1">
-                    <ArrowRight className="w-3.5 h-3.5 text-[#00B884]" />
+                  <span className="text-[11px] font-semibold text-emerald-800 uppercase tracking-wider flex items-center gap-1">
+                    <ArrowRight className="w-3.5 h-3.5 text-emerald-600" />
                     Jadwal Yang Diajukan
                   </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-600 text-white font-bold">Usulan</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-600 text-white font-semibold">Usulan</span>
                 </div>
 
                 <div className="space-y-2">
                   <div>
-                    <label className="text-[10px] font-bold text-emerald-900 block mb-0.5">Hari Baru</label>
+                    <label className="text-[10px] font-semibold text-emerald-900 block mb-0.5">Hari Baru</label>
                     <select
                       value={hariBaru}
                       onChange={(e) => setHariBaru(e.target.value)}
-                      className="w-full px-2.5 py-1.5 bg-white border border-emerald-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/40"
+                      className="w-full px-2.5 py-1.5 bg-white border border-emerald-300 rounded-md text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
                     >
                       {HARI_LIST.map((h) => (
                         <option key={h} value={h}>Hari {h}</option>
@@ -253,19 +255,19 @@ export const AjukanPerubahanJadwalModal: React.FC<AjukanPerubahanJadwalModalProp
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold text-emerald-900 block mb-0.5">Jam Latihan</label>
+                    <label className="text-[10px] font-semibold text-emerald-900 block mb-0.5">Jam Latihan</label>
                     <div className="grid grid-cols-2 gap-1.5">
                       <input
                         type="time"
                         value={jamMulaiBaru}
                         onChange={(e) => setJamMulaiBaru(e.target.value)}
-                        className="px-2 py-1 bg-white border border-emerald-300 rounded-xl text-xs text-center font-mono focus:outline-none focus:ring-2 focus:ring-[#00B884]/40"
+                        className="px-2 py-1 bg-white border border-emerald-300 rounded-md text-xs text-center font-mono focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
                       />
                       <input
                         type="time"
                         value={jamSelesaiBaru}
                         onChange={(e) => setJamSelesaiBaru(e.target.value)}
-                        className="px-2 py-1 bg-white border border-emerald-300 rounded-xl text-xs text-center font-mono focus:outline-none focus:ring-2 focus:ring-[#00B884]/40"
+                        className="px-2 py-1 bg-white border border-emerald-300 rounded-md text-xs text-center font-mono focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
                       />
                     </div>
                   </div>
@@ -276,7 +278,7 @@ export const AjukanPerubahanJadwalModal: React.FC<AjukanPerubahanJadwalModalProp
             {/* 3. Lokasi & Jenis Perubahan */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="font-bold text-slate-700 block">
+                <label className="font-semibold text-slate-700 block">
                   Lokasi Fasilitas Baru (Opsional):
                 </label>
                 <input
@@ -284,19 +286,19 @@ export const AjukanPerubahanJadwalModal: React.FC<AjukanPerubahanJadwalModalProp
                   value={lokasiBaru}
                   onChange={(e) => setLokasiBaru(e.target.value)}
                   placeholder={activeEskul.lokasi}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/30"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold text-slate-700 block">
+                <label className="font-semibold text-slate-700 block">
                   Sifat Perubahan Jadwal:
                 </label>
                 <div className="grid grid-cols-2 gap-1.5">
                   <button
                     type="button"
                     onClick={() => setJenisPerubahan('PERMANEN')}
-                    className={`py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    className={`py-2 px-2 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
                       jenisPerubahan === 'PERMANEN'
                         ? 'bg-[#00B884] text-white shadow-xs'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -307,9 +309,9 @@ export const AjukanPerubahanJadwalModal: React.FC<AjukanPerubahanJadwalModalProp
                   <button
                     type="button"
                     onClick={() => setJenisPerubahan('SEMENTARA')}
-                    className={`py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    className={`py-2 px-2 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
                       jenisPerubahan === 'SEMENTARA'
-                        ? 'bg-amber-500 text-white shadow-xs'
+                        ? 'bg-amber-600 text-white shadow-xs'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
@@ -322,22 +324,22 @@ export const AjukanPerubahanJadwalModal: React.FC<AjukanPerubahanJadwalModalProp
             {/* 4. Tanggal Efektif (jika sementara atau terjadwal) */}
             {jenisPerubahan === 'SEMENTARA' && (
               <div className="space-y-1">
-                <label className="font-bold text-slate-700 block">
+                <label className="font-semibold text-slate-700 block">
                   Mulai Berlaku Pada Tanggal:
                 </label>
                 <input
                   type="date"
                   value={tanggalEfektif}
                   onChange={(e) => setTanggalEfektif(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/30"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
                 />
               </div>
             )}
 
             {/* Potential conflict hint */}
             {potentialConflicts.length > 0 && (
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-[11px] text-amber-800 space-y-1">
-                <div className="font-bold flex items-center gap-1.5">
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-md text-[11px] text-amber-800 space-y-1">
+                <div className="font-semibold flex items-center gap-1.5">
                   <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                   <span>Peringatan Kemungkinan Penggunaan Fasilitas Bersamaan:</span>
                 </div>
@@ -349,7 +351,7 @@ export const AjukanPerubahanJadwalModal: React.FC<AjukanPerubahanJadwalModalProp
 
             {/* 5. Alasan Pengajuan (WAJIB) */}
             <div className="space-y-1">
-              <label className="font-bold text-slate-800 flex items-center justify-between">
+              <label className="font-semibold text-slate-800 flex items-center justify-between">
                 <span>Alasan Pengajuan Perubahan Jadwal <span className="text-rose-500">*</span></span>
                 <span className="text-[10px] text-slate-400 font-normal">Wajib diisi untuk Koordinator</span>
               </label>
@@ -362,7 +364,7 @@ export const AjukanPerubahanJadwalModal: React.FC<AjukanPerubahanJadwalModalProp
                   if (errorMsg) setErrorMsg('');
                 }}
                 placeholder="Contoh: Mengalihkan jadwal latihan dari Jumat sore ke Sabtu pagi agar durasi latihan fisik lebih maksimal dan tidak bentrok dengan pendalaman materi kelas 12."
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/30 focus:border-[#00B884] leading-relaxed"
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884] leading-relaxed resize-none"
               />
               <div className="flex items-center justify-between text-[10px] text-slate-400">
                 <span>Koordinator akan menerima pemberitahuan permohonan ini untuk divalidasi.</span>
@@ -375,7 +377,7 @@ export const AjukanPerubahanJadwalModal: React.FC<AjukanPerubahanJadwalModalProp
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-semibold transition-colors cursor-pointer"
+                className="px-4 py-2 border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-medium rounded-md transition-colors cursor-pointer"
               >
                 Batal
               </button>
@@ -383,7 +385,7 @@ export const AjukanPerubahanJadwalModal: React.FC<AjukanPerubahanJadwalModalProp
               <button
                 type="submit"
                 disabled={isSubmitting || !alasan.trim()}
-                className="flex items-center gap-2 px-6 py-2.5 bg-[#00B884] hover:bg-[#009e70] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer"
+                className="flex items-center gap-2 px-6 py-2 bg-[#00B884] hover:bg-emerald-600 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-xs rounded-md shadow-xs transition-colors cursor-pointer"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>{isSubmitting ? 'Mengirimkan Permohonan...' : 'Kirim Permohonan ke Koordinator'}</span>

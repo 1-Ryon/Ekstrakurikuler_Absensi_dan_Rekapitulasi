@@ -12,6 +12,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { StudentProfile, Eskul, SesiPertemuan, PresensiRecord, PenilaianRecord } from '../../types';
+import { Card, Button, Badge } from '../ui';
 import { QrScannerModal } from './QrScannerModal';
 import { KartuHasilNilaiModal } from './KartuHasilNilaiModal';
 import { StudentCardModal } from '../modals/StudentCardModal';
@@ -130,71 +131,80 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
   return (
     <div className="space-y-6 pb-8">
       {/* 1. WELCOME BANNER / CARD PORTAL PRESENSI */}
-      <div className="bg-gradient-to-r from-[#00B884] to-emerald-700 text-white rounded-3xl p-6 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
-        <div className="relative z-10">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/20 backdrop-blur-xs rounded-full text-xs font-semibold mb-3">
-            <span>Portal Presensi Digital Siswa</span>
+      <Card className="p-6 border-slate-200/90 shadow-2xs">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-emerald-700 bg-emerald-50 border-emerald-200 text-xs">
+                Portal Presensi Siswa
+              </Badge>
+              <Badge variant="secondary" className="text-xs">
+                Kelas {currentStudent.kelas}
+              </Badge>
+            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+              Halo, {currentStudent.namaLengkap}!
+            </h1>
+            <p className="text-slate-500 text-xs sm:text-sm">
+              NISN: <span className="font-mono text-slate-700 font-semibold">{currentStudent.nomorInduk || currentStudent.nis}</span> • Kehadiran Semester Ini: <span className="font-semibold text-emerald-600">{currentStudent.kehadiranRataRata}%</span>
+            </p>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            Halo, {currentStudent.namaLengkap}!
-          </h1>
-          <p className="text-white/80 text-sm mt-1 max-w-lg">
-            {currentStudent.kelas} • NISN: {currentStudent.nomorInduk || currentStudent.nis} • Kehadiran Semester Ini: {currentStudent.kehadiranRataRata}%
-          </p>
+
+          {/* Action Buttons: Pindai Kamera, Kartu QR Saya, & Nilai Rapor (KHN) */}
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 w-full md:w-auto">
+            {/* Pindai QR Kamera Aktif */}
+            <Button
+              onClick={() => handleOpenScannerForSession()}
+              className="bg-[#00B884] hover:bg-emerald-600 text-white flex-1 sm:flex-none flex items-center justify-center gap-2 text-xs font-semibold rounded-md h-10 px-4"
+              title="Buka kamera perangkat untuk memindai QR Code guru pembina"
+            >
+              <Camera className="w-4 h-4" />
+              <span>Pindai QR Presensi</span>
+            </Button>
+
+            {/* Kartu QR Saya */}
+            <Button
+              variant="outline"
+              onClick={handleOpenCard}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-xs font-semibold rounded-md h-10 px-4 border-slate-200 text-slate-700 hover:bg-slate-50"
+              title="Buka QR Code kartu siswa di layar HP untuk dipindai oleh Guru"
+            >
+              <QrCode className="w-4 h-4 text-emerald-600" />
+              <span>Kartu QR Saya</span>
+            </Button>
+
+            {/* Kartu Nilai (KHN) */}
+            <Button
+              variant="outline"
+              onClick={handleOpenKhn}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-xs font-semibold rounded-md h-10 px-4 border-slate-200 text-slate-700 hover:bg-slate-50"
+            >
+              <Award className="w-4 h-4 text-amber-600" />
+              <span>Nilai Rapor (KHN)</span>
+            </Button>
+          </div>
         </div>
+      </Card>
 
-        {/* Action Buttons: Pindai Kamera, Kartu QR Saya, & Nilai Rapor (KHN) */}
-        <div className="relative z-10 flex flex-col sm:flex-row items-center gap-2.5 w-full md:w-auto">
-          {/* Pindai QR Kamera Aktif */}
-          <button
-            onClick={() => handleOpenScannerForSession()}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 bg-white text-[#00B884] hover:bg-slate-50 active:scale-[0.98] font-bold text-xs rounded-2xl shadow-lg transition-all cursor-pointer"
-            title="Buka kamera perangkat untuk memindai QR Code guru pembina"
-          >
-            <Camera className="w-4 h-4 text-[#00B884]" />
-            <span>Pindai QR Presensi</span>
-          </button>
-
-          {/* Kartu QR Saya */}
-          <button
-            onClick={handleOpenCard}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3.5 bg-emerald-800/80 hover:bg-emerald-900 text-white font-bold text-xs rounded-2xl border border-white/20 transition-all cursor-pointer"
-            title="Buka QR Code kartu siswa di layar HP untuk dipindai oleh Guru"
-          >
-            <QrCode className="w-4 h-4" />
-            <span>Kartu QR Saya</span>
-          </button>
-
-          {/* Kartu Nilai (KHN) */}
-          <button
-            onClick={handleOpenKhn}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3.5 bg-emerald-800/60 hover:bg-emerald-800/80 text-white text-xs font-semibold rounded-2xl border border-white/20 transition-all cursor-pointer"
-          >
-            <Award className="w-4 h-4" />
-            <span>Nilai Rapor (KHN)</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 2. EKSTRAKURIKULER YANG ANDA IKUTI (Format List Jelas, Informatif & Rapi) */}
+      {/* 2. EKSTRAKURIKULER YANG ANDA IKUTI */}
       <div className="space-y-3.5">
         <div className="flex items-center justify-between pb-1">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-[#00B884] flex items-center justify-center">
-              <Award className="w-4 h-4 text-[#00B884]" />
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-[#00B884] flex items-center justify-center">
+              <Award className="w-4 h-4 text-emerald-600" />
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-slate-800">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900">
                 Ekstrakurikuler yang Anda Ikuti
               </h2>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 Daftar cabang eskul aktif, guru pembina, jadwal rutin, dan persentase kehadiran
               </p>
             </div>
           </div>
-          <span className="text-xs text-[#00B884] font-bold bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 shrink-0">
+          <Badge variant="outline" className="text-xs text-emerald-700 bg-emerald-50 border-emerald-200 font-semibold shrink-0">
             {enrolledEskuls.length} Cabang Aktif
-          </span>
+          </Badge>
         </div>
 
         {enrolledEskuls.length > 0 ? (
@@ -212,25 +222,25 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
               const catBadgeStyle = getCategoryBadge(eskul.kategori);
 
               return (
-                <div
+                <Card
                   key={eskul.id}
                   onClick={() => onNavigateToHistory && onNavigateToHistory(eskul.id)}
-                  className={`bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs hover:border-emerald-400 hover:shadow-xs transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+                  className={`p-5 hover:border-emerald-300 hover:shadow-xs transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
                     onNavigateToHistory ? 'cursor-pointer group' : ''
                   }`}
                 >
                   {/* Sisi Kiri: Informasi Eskul, Pembina, Jadwal & Lokasi */}
                   <div className="flex items-start gap-4 min-w-0 flex-1">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#00B884] flex items-center justify-center shrink-0 border border-emerald-100 font-bold shadow-2xs group-hover:scale-105 group-hover:bg-[#00B884] group-hover:text-white transition-all">
-                      <Award className="w-6 h-6 transition-colors" />
+                    <div className="w-11 h-11 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100 font-bold group-hover:bg-[#00B884] group-hover:text-white transition-all">
+                      <Award className="w-5 h-5 transition-colors" />
                     </div>
 
                     <div className="min-w-0 flex-1 space-y-2">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="text-base sm:text-lg font-extrabold text-slate-800 tracking-tight group-hover:text-emerald-700 transition-colors">
+                        <h3 className="text-base font-bold text-slate-900 tracking-tight group-hover:text-emerald-700 transition-colors">
                           {eskul.namaEskul}
                         </h3>
-                        <span className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border ${catBadgeStyle}`}>
+                        <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-md border ${catBadgeStyle}`}>
                           {eskul.kategori}
                         </span>
                       </div>
@@ -238,8 +248,8 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
                       {/* Dibina oleh siapa */}
                       <div className="flex items-center gap-2 text-xs">
                         <span className="text-slate-400 font-medium">Dibina oleh:</span>
-                        <span className="font-bold text-slate-700 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200/60 inline-flex items-center gap-1.5">
-                          <UserCheck className="w-3.5 h-3.5 text-[#00B884]" />
+                        <span className="font-semibold text-slate-700 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200 inline-flex items-center gap-1.5">
+                          <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
                           <span>{eskul.pembinaNama || 'Guru Pembina'}</span>
                         </span>
                       </div>
@@ -262,7 +272,7 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
                     </div>
                   </div>
 
-                  {/* Sisi Kanan: Persenan Kehadiran (HANYA text 'Kehadiran' dan persenannya, TANPA tulisan 'pribadi') */}
+                  {/* Sisi Kanan: Persenan Kehadiran */}
                   <div className="flex md:flex-col items-center md:items-end justify-between md:justify-center gap-2 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100 shrink-0 md:min-w-[150px]">
                     <div className="text-left md:text-right">
                       <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
@@ -281,22 +291,22 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
                       />
                     </div>
                     {onNavigateToHistory && (
-                      <span className="text-[11px] font-bold text-[#00B884] group-hover:underline flex items-center gap-0.5 mt-1">
+                      <span className="text-[11px] font-semibold text-emerald-600 group-hover:underline flex items-center gap-0.5 mt-1">
                         <span>Lihat Detail & Materi</span>
                         <ChevronRight className="w-3.5 h-3.5" />
                       </span>
                     )}
                   </div>
-                </div>
+                </Card>
               );
             })}
           </div>
         ) : (
-          <div className="p-8 text-center text-slate-400 bg-white rounded-2xl border border-slate-200/80">
+          <Card className="p-8 text-center text-slate-400 border-slate-200">
             <Award className="w-10 h-10 mx-auto mb-2 text-slate-300" />
             <p className="text-sm font-bold text-slate-700">Belum terdaftar di ekstrakurikuler</p>
             <p className="text-xs text-slate-400 mt-1">Anda belum terdaftar dalam cabang kegiatan ekstrakurikuler apapun.</p>
-          </div>
+          </Card>
         )}
       </div>
 

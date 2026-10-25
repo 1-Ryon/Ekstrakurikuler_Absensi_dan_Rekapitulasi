@@ -1,6 +1,14 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
+
+// Pre-computed bcrypt hashes for instant seed execution
+const HASHED_ADMIN = bcrypt.hashSync('admin123', 10);
+const HASHED_PEMBINA = bcrypt.hashSync('pembina123', 10);
+const HASHED_WALI = bcrypt.hashSync('walikelas123', 10);
+const HASHED_SISWA = bcrypt.hashSync('siswa123', 10);
+const HASHED_FARHAN = bcrypt.hashSync('al_amanah_001', 10);
 
 // 10 Siswa Spesifik yang Diberikan Pengguna
 const SPECIFIC_STUDENTS = [
@@ -54,7 +62,8 @@ function chunkArray(array, size) {
 }
 
 async function main() {
-  console.log('🌱 [SEED 800 SISWA, 30 GURU, 18 PEMBINA] Memulai inisialisasi basis data...');
+  const includeDemoEskul = !process.argv.includes('--clean-eskul');
+  console.log(`🌱 [SEED DATABASE] Memulai inisialisasi basis data (Mode: ${includeDemoEskul ? 'Dengan Demo Eskul' : 'Clean State / Eskul Kosong'})...`);
 
   // 1. Bersihkan seluruh database secara terurut
   await prisma.presensi.deleteMany({});
@@ -78,7 +87,7 @@ async function main() {
       {
         id: 'adm-01',
         username: 'admin',
-        passwordHash: 'admin123',
+        passwordHash: HASHED_ADMIN,
         namaLengkap: 'Administrator Sistem',
         nomorInduk: 'ADM-ALAMANAH-01',
         email: 'admin@smk-alamanah.sch.id',
@@ -90,7 +99,7 @@ async function main() {
       {
         id: 'adm-02',
         username: 'admin.it',
-        passwordHash: 'admin123',
+        passwordHash: HASHED_ADMIN,
         namaLengkap: 'Ryon Syaputra, S.Kom.',
         nomorInduk: '19950611 202012 1 008',
         email: 'ryon@smk-alamanah.sch.id',
@@ -110,7 +119,7 @@ async function main() {
     {
       id: 'guru-koor-01',
       username: 'koordinator',
-      passwordHash: 'admin123',
+      passwordHash: HASHED_ADMIN,
       nip: '19890412 201402 2 003',
       namaLengkap: 'Viska Adawiyah Zulkarnaen, S.Pd.',
       jenisKelamin: 'P',
@@ -126,7 +135,7 @@ async function main() {
     {
       id: 'guru-koor-02',
       username: 'mulyadi',
-      passwordHash: 'admin123',
+      passwordHash: HASHED_ADMIN,
       nip: '19750814 200212 1 002',
       namaLengkap: 'Drs. H. Mulyadi, M.Pd.',
       jenisKelamin: 'L',
@@ -144,7 +153,7 @@ async function main() {
     {
       id: 'guru-pem-01',
       username: 'ahmad.futsal',
-      passwordHash: 'pembina123',
+      passwordHash: HASHED_PEMBINA,
       nip: '19910515 201802 1 004',
       namaLengkap: 'Ahmad Syafii, S.Pd.',
       jenisKelamin: 'L',
@@ -160,7 +169,7 @@ async function main() {
     {
       id: 'guru-pem-02',
       username: 'abdul.jabbar',
-      passwordHash: 'pembina123',
+      passwordHash: HASHED_PEMBINA,
       nip: '19850210 201101 1 007',
       namaLengkap: 'Abdul Jabbar, S.Kom., M.Kom.',
       jenisKelamin: 'L',
@@ -176,7 +185,7 @@ async function main() {
     {
       id: 'guru-pem-03',
       username: 'rahman.lc',
-      passwordHash: 'pembina123',
+      passwordHash: HASHED_PEMBINA,
       nip: '19881105 201503 1 002',
       namaLengkap: 'Rahman, Lc.',
       jenisKelamin: 'L',
@@ -192,7 +201,7 @@ async function main() {
     {
       id: 'guru-pem-04',
       username: 'miftah.farid',
-      passwordHash: 'pembina123',
+      passwordHash: HASHED_PEMBINA,
       nip: '19900824 201704 1 005',
       namaLengkap: 'Miftah Farid, S.Pd.I.',
       jenisKelamin: 'L',
@@ -208,7 +217,7 @@ async function main() {
     {
       id: 'guru-pem-05',
       username: 'budi.paskibra',
-      passwordHash: 'pembina123',
+      passwordHash: HASHED_PEMBINA,
       nip: '19840112 200902 1 001',
       namaLengkap: 'Budi Santoso, S.Pd.',
       jenisKelamin: 'L',
@@ -224,7 +233,7 @@ async function main() {
     {
       id: 'guru-pem-06',
       username: 'nurjanah.pramuka',
-      passwordHash: 'pembina123',
+      passwordHash: HASHED_PEMBINA,
       nip: '19780614 200501 2 003',
       namaLengkap: 'Dra. Hj. Nurjanah, M.Pd.',
       jenisKelamin: 'P',
@@ -240,7 +249,7 @@ async function main() {
     {
       id: 'guru-pem-07',
       username: 'ridwan.rohis',
-      passwordHash: 'pembina123',
+      passwordHash: HASHED_PEMBINA,
       nip: '19860319 201201 1 006',
       namaLengkap: 'Ust. Muhammad Ridwan, S.Pd.I.',
       jenisKelamin: 'L',
@@ -256,7 +265,7 @@ async function main() {
     {
       id: 'guru-pem-08',
       username: 'deni.voli',
-      passwordHash: 'pembina123',
+      passwordHash: HASHED_PEMBINA,
       nip: '19920718 201903 1 003',
       namaLengkap: 'Deni Setiawan, S.Pd.',
       jenisKelamin: 'L',
@@ -272,7 +281,7 @@ async function main() {
     {
       id: 'guru-pem-09',
       username: 'taufik.badminton',
-      passwordHash: 'pembina123',
+      passwordHash: HASHED_PEMBINA,
       nip: '19930411 202002 1 004',
       namaLengkap: 'Taufik Hidayatullah, S.Or.',
       jenisKelamin: 'L',
@@ -288,7 +297,7 @@ async function main() {
     {
       id: 'guru-pem-10',
       username: 'walikelas',
-      passwordHash: 'walikelas123',
+      passwordHash: HASHED_WALI,
       nip: '19870321 201301 2 006',
       namaLengkap: 'Siti Nurhaliza, M.Pd.',
       jenisKelamin: 'P',
@@ -304,7 +313,7 @@ async function main() {
     {
       id: 'guru-pem-11',
       username: 'rahmat.foto',
-      passwordHash: 'pembina123',
+      passwordHash: HASHED_PEMBINA,
       nip: '19890915 201602 1 008',
       namaLengkap: 'Rahmat Hidayat, S.Sn.',
       jenisKelamin: 'L',
@@ -320,7 +329,7 @@ async function main() {
     {
       id: 'guru-pem-12',
       username: 'indah.english',
-      passwordHash: 'pembina123',
+      passwordHash: HASHED_PEMBINA,
       nip: '19901025 201703 2 009',
       namaLengkap: 'Indah Permatasari, M.Hum.',
       jenisKelamin: 'P',
@@ -336,7 +345,7 @@ async function main() {
     {
       id: 'guru-pem-13',
       username: 'yuki.japan',
-      passwordHash: 'pembina123',
+      passwordHash: HASHED_PEMBINA,
       nip: '19940214 202102 2 005',
       namaLengkap: 'Yuki Kusuma, S.S.',
       jenisKelamin: 'P',
@@ -352,7 +361,7 @@ async function main() {
     {
       id: 'guru-pem-14',
       username: 'faisal.desain',
-      passwordHash: 'pembina123',
+      passwordHash: HASHED_PEMBINA,
       nip: '19921108 201901 1 007',
       namaLengkap: 'Faisal Akbar, S.Kom.',
       jenisKelamin: 'L',
@@ -368,7 +377,7 @@ async function main() {
     {
       id: 'guru-pem-15',
       username: 'eko.marching',
-      passwordHash: 'pembina123',
+      passwordHash: HASHED_PEMBINA,
       nip: '19870530 201403 1 006',
       namaLengkap: 'Eko Prasetyo, S.Pd.',
       jenisKelamin: 'L',
@@ -384,7 +393,7 @@ async function main() {
     {
       id: 'guru-pem-16',
       username: 'rian.basket',
-      passwordHash: 'pembina123',
+      passwordHash: HASHED_PEMBINA,
       nip: '19950820 202203 1 002',
       namaLengkap: 'Rian Pratama, S.Or.',
       jenisKelamin: 'L',
@@ -400,7 +409,7 @@ async function main() {
     {
       id: 'guru-pem-17',
       username: 'maya.teater',
-      passwordHash: 'pembina123',
+      passwordHash: HASHED_PEMBINA,
       nip: '19910609 201802 2 004',
       namaLengkap: 'Maya Anggraini, S.Sn.',
       jenisKelamin: 'P',
@@ -418,7 +427,7 @@ async function main() {
     {
       id: 'guru-wal-01',
       username: 'hendra.wali',
-      passwordHash: 'walikelas123',
+      passwordHash: HASHED_WALI,
       nip: '19860415 201001 1 005',
       namaLengkap: 'Hendra Wijaya, S.T.',
       jenisKelamin: 'L',
@@ -434,7 +443,7 @@ async function main() {
     {
       id: 'guru-wal-02',
       username: 'dewi.wali',
-      passwordHash: 'walikelas123',
+      passwordHash: HASHED_WALI,
       nip: '19890918 201502 2 004',
       namaLengkap: 'Dewi Lestari, S.E.',
       jenisKelamin: 'P',
@@ -450,7 +459,7 @@ async function main() {
     {
       id: 'guru-wal-03',
       username: 'agus.wali',
-      passwordHash: 'walikelas123',
+      passwordHash: HASHED_WALI,
       nip: '19830512 200801 1 003',
       namaLengkap: 'Agus Supriyanto, S.Pd.',
       jenisKelamin: 'L',
@@ -466,7 +475,7 @@ async function main() {
     {
       id: 'guru-wal-04',
       username: 'ratna.wali',
-      passwordHash: 'walikelas123',
+      passwordHash: HASHED_WALI,
       nip: '19900220 201601 2 005',
       namaLengkap: 'Ratna Sari, S.Kom.',
       jenisKelamin: 'P',
@@ -482,7 +491,7 @@ async function main() {
     {
       id: 'guru-wal-05',
       username: 'anita.wali',
-      passwordHash: 'walikelas123',
+      passwordHash: HASHED_WALI,
       nip: '19871114 201302 2 007',
       namaLengkap: 'Anita Wijayanti, M.Pd.',
       jenisKelamin: 'P',
@@ -498,7 +507,7 @@ async function main() {
     {
       id: 'guru-wal-06',
       username: 'bambang.wali',
-      passwordHash: 'walikelas123',
+      passwordHash: HASHED_WALI,
       nip: '19820419 200701 1 002',
       namaLengkap: 'Bambang Hermanto, S.Pd.',
       jenisKelamin: 'L',
@@ -514,7 +523,7 @@ async function main() {
     {
       id: 'guru-wal-07',
       username: 'dian.wali',
-      passwordHash: 'walikelas123',
+      passwordHash: HASHED_WALI,
       nip: '19910803 201801 2 006',
       namaLengkap: 'Dian Pratiwi, S.E.',
       jenisKelamin: 'P',
@@ -530,7 +539,7 @@ async function main() {
     {
       id: 'guru-wal-08',
       username: 'tri.wali',
-      passwordHash: 'walikelas123',
+      passwordHash: HASHED_WALI,
       nip: '19851225 201102 1 004',
       namaLengkap: 'Tri Wibowo, S.T.',
       jenisKelamin: 'L',
@@ -546,7 +555,7 @@ async function main() {
     {
       id: 'guru-wal-09',
       username: 'sari.wali',
-      passwordHash: 'walikelas123',
+      passwordHash: HASHED_WALI,
       nip: '19880716 201401 2 003',
       namaLengkap: 'Sari Wulandari, S.Pd.',
       jenisKelamin: 'P',
@@ -562,7 +571,7 @@ async function main() {
     {
       id: 'guru-wal-10',
       username: 'joko.wali',
-      passwordHash: 'walikelas123',
+      passwordHash: HASHED_WALI,
       nip: '19840309 200901 1 005',
       namaLengkap: 'Joko Susilo, M.Kom.',
       jenisKelamin: 'L',
@@ -578,7 +587,7 @@ async function main() {
     {
       id: 'guru-wal-11',
       username: 'wahyu.hidayat',
-      passwordHash: 'walikelas123',
+      passwordHash: HASHED_WALI,
       nip: '19860928 201202 1 004',
       namaLengkap: 'Wahyu Hidayat, S.Pd.',
       jenisKelamin: 'L',
@@ -892,11 +901,14 @@ async function main() {
     },
   ];
 
-  for (const e of eskulMasterList) {
-    await prisma.eskul.create({ data: e });
+  if (includeDemoEskul) {
+    for (const e of eskulMasterList) {
+      await prisma.eskul.create({ data: e });
+    }
+    console.log(`✅ 18 Cabang Ekstrakurikuler berhasil dibuat dan dipetakan dengan 18 Guru Pembina.`);
+  } else {
+    console.log(`✨ Cabang Eskul dibiarkan kosong (0 eskul) sesuai permintaan pengguna.`);
   }
-
-  console.log(`✅ 18 Cabang Ekstrakurikuler berhasil dibuat dan dipetakan dengan 18 Guru Pembina.`);
 
   // 6. Generate 800 Data Siswa (10 Siswa Spesifik + 790 Siswa Terdistribusi)
   console.log('⏳ Meng-generate 800 data siswa SMK Al Amanah...');
@@ -915,7 +927,7 @@ async function main() {
       id: siswaId,
       nis: item.nim, // Memasukkan NIM siswa sebagai NIS & login ID
       nisn: `0064${item.nim.slice(-6)}`,
-      passwordHash: 'siswa123',
+      passwordHash: HASHED_SISWA,
       namaLengkap: item.nama,
       jenisKelamin: item.gender,
       kelasId,
@@ -929,16 +941,18 @@ async function main() {
       statusAktif: true,
     });
 
-    // Daftarkan keanggotaan eskul untuk 10 siswa spesifik
-    for (const eskulId of item.eskuls) {
-      anggotaList.push({
-        id: `ang-${siswaId}-${eskulId}`,
-        eskulId,
-        siswaId,
-        tahunAjaran: '2026/2027',
-        jabatan: i === 0 ? 'KETUA' : i === 1 ? 'WAKIL' : 'ANGGOTA',
-        status: 'AKTIF',
-      });
+    if (includeDemoEskul) {
+      // Daftarkan keanggotaan eskul untuk 10 siswa spesifik
+      for (const eskulId of item.eskuls) {
+        anggotaList.push({
+          id: `ang-${siswaId}-${eskulId}`,
+          eskulId,
+          siswaId,
+          tahunAjaran: '2026/2027',
+          jabatan: i === 0 ? 'KETUA' : i === 1 ? 'WAKIL' : 'ANGGOTA',
+          status: 'AKTIF',
+        });
+      }
     }
   }
 
@@ -972,7 +986,7 @@ async function main() {
       id: siswaId,
       nis,
       nisn,
-      passwordHash: isFarhan ? 'al_amanah_001' : 'siswa123',
+      passwordHash: isFarhan ? HASHED_FARHAN : HASHED_SISWA,
       namaLengkap,
       jenisKelamin: isFarhan ? 'L' : gender,
       kelasId,
@@ -986,28 +1000,30 @@ async function main() {
       statusAktif: true,
     });
 
-    // Setiap siswa mengikuti 1 atau 2 eskul
-    const primaryEskulId = isFarhan ? 'eskul-01' : eskulIds[i % eskulIds.length];
-    anggotaList.push({
-      id: `ang-${siswaId}-${primaryEskulId}`,
-      eskulId: primaryEskulId,
-      siswaId,
-      tahunAjaran: '2026/2027',
-      jabatan: i % 45 === 0 ? 'SEKRETARIS' : 'ANGGOTA',
-      status: 'AKTIF',
-    });
+    if (includeDemoEskul) {
+      // Setiap siswa mengikuti 1 atau 2 eskul
+      const primaryEskulId = isFarhan ? 'eskul-01' : eskulIds[i % eskulIds.length];
+      anggotaList.push({
+        id: `ang-${siswaId}-${primaryEskulId}`,
+        eskulId: primaryEskulId,
+        siswaId,
+        tahunAjaran: '2026/2027',
+        jabatan: i % 45 === 0 ? 'SEKRETARIS' : 'ANGGOTA',
+        status: 'AKTIF',
+      });
 
-    if (i % 2 === 0) {
-      const secondaryEskulId = eskulIds[(i + 5) % eskulIds.length];
-      if (secondaryEskulId !== primaryEskulId) {
-        anggotaList.push({
-          id: `ang-${siswaId}-${secondaryEskulId}`,
-          eskulId: secondaryEskulId,
-          siswaId,
-          tahunAjaran: '2026/2027',
-          jabatan: 'ANGGOTA',
-          status: 'AKTIF',
-        });
+      if (i % 2 === 0) {
+        const secondaryEskulId = eskulIds[(i + 5) % eskulIds.length];
+        if (secondaryEskulId !== primaryEskulId) {
+          anggotaList.push({
+            id: `ang-${siswaId}-${secondaryEskulId}`,
+            eskulId: secondaryEskulId,
+            siswaId,
+            tahunAjaran: '2026/2027',
+            jabatan: 'ANGGOTA',
+            status: 'AKTIF',
+          });
+        }
       }
     }
   }
@@ -1020,15 +1036,17 @@ async function main() {
 
   console.log(`✅ ${siswaList.length} Siswa berhasil dimasukkan ke basis data (Termasuk 10 siswa spesifik!).`);
 
-  // Insert Anggota Eskul dalam batch 50
-  const anggotaBatches = chunkArray(anggotaList, 50);
-  for (const batch of anggotaBatches) {
-    await prisma.anggotaEskul.createMany({ data: batch });
+  if (includeDemoEskul) {
+    // Insert Anggota Eskul dalam batch 50
+    const anggotaBatches = chunkArray(anggotaList, 50);
+    for (const batch of anggotaBatches) {
+      await prisma.anggotaEskul.createMany({ data: batch });
+    }
+    console.log(`✅ ${anggotaList.length} Keanggotaan Eskul berhasil didaftarkan ke basis data.`);
   }
 
-  console.log(`✅ ${anggotaList.length} Keanggotaan Eskul berhasil didaftarkan ke basis data.`);
-
-  // 7. Sesi Pertemuan (18 Sesi Hari Ini untuk seluruh cabang eskul)
+  if (includeDemoEskul) {
+    // 7. Sesi Pertemuan (18 Sesi Hari Ini untuk seluruh cabang eskul)
   const todayStr = new Date().toISOString().slice(0, 10);
   const sesiList = [];
 
@@ -1324,16 +1342,82 @@ async function main() {
     capaianKompetensi: 'Kehadiran konsisten dan kemampuan teknis lapangan sangat baik.',
   });
 
-  await prisma.penilaian.createMany({ data: penilaianList });
-  console.log(`✅ ${penilaianList.length} Catatan Penilaian Rapor berhasil diinisialisasi.`);
+    await prisma.penilaian.createMany({ data: penilaianList });
+    console.log(`✅ ${penilaianList.length} Catatan Penilaian Rapor berhasil diinisialisasi.`);
 
-  console.log('\n🎉 [SEED SELESAI] Database SMK Al Amanah berhasil disimulasikan secara sungguhan!');
-  console.log('   - Total Siswa: 800 (Termasuk 10 siswa spesifik dengan NIM asli)');
-  console.log('   - Total Guru: 30 (Termasuk 18 Guru Pembina Eskul)');
-  console.log('   - Total Cabang Eskul: 18');
-  console.log('   - Total Rombel Kelas: 27');
-  console.log('   - Total Sesi Hari Ini: 18 (Dengan opsi Libur & Sesi Terkunci)');
-  console.log('   - Pendaftaran Siswa & Pengajuan Jadwal terisi untuk pengujian validasi.');
+    // 12. SEED PRESTASI & KEJUARAAN LOMBA SISWA
+    const samplePrestasi = [
+      {
+        id: 'pres-01',
+        eskulId: 'eskul-01', // Futsal Prestasi
+        siswaId: 'sis-001', // Muhammad Al Fatih
+        namaLomba: 'Kejuaraan Futsal Pelajar Walikota Tangsel Cup 2026',
+        penyelenggara: 'Dispora Kota Tangerang Selatan',
+        tingkat: 'KOTA',
+        peringkat: 'JUARA_1',
+        tanggal: new Date('2026-03-15'),
+        tahunAjaran: '2026/2027',
+        semester: 1,
+        poinTambahan: 10.0,
+        keterangan: 'Top Scorer turnamen dengan torehan 8 gol dan kapten tim.',
+        diverifikasi: true,
+      },
+      {
+        id: 'pres-02',
+        eskulId: 'eskul-02', // Computer & Web Club
+        siswaId: 'sis-003', // Rizky Ramadhan
+        namaLomba: 'Lomba Desain UI/UX & Web Development Pelajar Se-Banten',
+        penyelenggara: 'Dinas Pendidikan & Kebudayaan Provinsi Banten',
+        tingkat: 'PROVINSI',
+        peringkat: 'JUARA_2',
+        tanggal: new Date('2026-02-20'),
+        tahunAjaran: '2026/2027',
+        semester: 1,
+        poinTambahan: 12.0,
+        keterangan: 'Karya platform portal edukasi interaktif SMK.',
+        diverifikasi: true,
+      },
+      {
+        id: 'pres-03',
+        eskulId: 'eskul-05', // Paskibra Satya Amanah
+        siswaId: 'sis-007', // Siswa Paskibra
+        namaLomba: 'Lomba Formasi Pengibaran Bendera Kreasi Tingkat Provinsi',
+        penyelenggara: 'PPI Banten & Dispora',
+        tingkat: 'PROVINSI',
+        peringkat: 'JUARA_1',
+        tanggal: new Date('2026-01-10'),
+        tahunAjaran: '2026/2027',
+        semester: 1,
+        poinTambahan: 15.0,
+        keterangan: 'Danton terbaik dan formasi variasi paling presisi.',
+        diverifikasi: true,
+      },
+      {
+        id: 'pres-04',
+        eskulId: 'eskul-13', // English Debate Club
+        siswaId: 'sis-002', // Nur Annisa
+        namaLomba: 'Tangsel Interschool English Debate Championship',
+        penyelenggara: 'MGMP Bahasa Inggris Kota Tangerang Selatan',
+        tingkat: 'KOTA',
+        peringkat: 'JUARA_3',
+        tanggal: new Date('2026-04-05'),
+        tahunAjaran: '2026/2027',
+        semester: 1,
+        poinTambahan: 6.0,
+        keterangan: 'Best Speaker pada babak perempat final debat bahasa Inggris.',
+        diverifikasi: true,
+      },
+    ];
+
+    await prisma.prestasiLomba.createMany({ data: samplePrestasi });
+    console.log(`✅ ${samplePrestasi.length} Catatan Prestasi Lomba berhasil diinisialisasi.`);
+  }
+
+  console.log('\n🎉 [SEED SELESAI] Database SMK Al Amanah berhasil disiapkan!');
+  console.log('   ✓ Total Siswa: 800 (Termasuk 10 siswa spesifik dengan NIM asli)');
+  console.log('   ✓ Total Guru: 30 (Termasuk 19 Guru Pembina & 2 Koordinator)');
+  console.log('   ✓ Total Rombel Kelas: 27');
+  console.log(`   ✓ Total Cabang Eskul: ${includeDemoEskul ? '18 (Mode Demo)' : '0 (Bersih / Siap diisi eskul baru)'}`);
 }
 
 main()

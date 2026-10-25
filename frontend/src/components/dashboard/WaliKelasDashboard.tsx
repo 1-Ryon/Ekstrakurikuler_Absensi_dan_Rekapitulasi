@@ -105,18 +105,18 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
   return (
     <div className="space-y-6 pb-8">
       {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-blue-700 via-indigo-600 to-emerald-700 text-white rounded-3xl p-6 sm:p-7 shadow-sm relative overflow-hidden">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-semibold">
-              <GraduationCap className="w-3.5 h-3.5" />
+      <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-xs relative">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 bg-blue-50 border border-blue-200 text-blue-800 rounded-md text-xs font-semibold">
+              <GraduationCap className="size-3.5" />
               <span>Portal Wali Kelas SMK Al Amanah</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
               Dasbor Wali Kelas — {targetClass}
             </h1>
-            <p className="text-blue-100 text-xs sm:text-sm max-w-xl leading-relaxed">
-              Wali Kelas: <strong className="text-white">{currentWali.namaLengkap}</strong> • NIP: {currentWali.nomorInduk || '-'}
+            <p className="text-slate-500 text-xs sm:text-sm max-w-xl leading-relaxed">
+              Wali Kelas: <strong className="text-slate-800">{currentWali.namaLengkap}</strong> • NIP: {currentWali.nomorInduk || '-'}
             </p>
           </div>
 
@@ -124,36 +124,33 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
           <div className="flex flex-wrap items-center gap-2.5">
             <button
               onClick={() => onNavigate('laporan')}
-              className="flex items-center gap-2 px-4 py-3 bg-white text-blue-700 hover:bg-blue-50 active:scale-[0.98] font-bold text-xs rounded-2xl shadow-md transition-all cursor-pointer"
+              className="flex items-center gap-2 px-3.5 py-2 bg-[#00B884] hover:bg-[#009e70] active:scale-[0.98] text-white font-semibold text-xs rounded-md shadow-xs transition-all cursor-pointer"
             >
-              <Printer className="w-4 h-4" />
+              <Printer className="size-4" />
               <span>Cetak Rekap Rapor Eskul Kelas</span>
             </button>
             <button
               onClick={() => onNavigate('siswa')}
-              className="flex items-center gap-2 px-4 py-3 bg-blue-900/60 hover:bg-blue-900 text-white font-semibold text-xs rounded-2xl border border-white/20 transition-all cursor-pointer"
+              className="flex items-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-md border border-slate-200 transition-all cursor-pointer"
             >
-              <Users className="w-4 h-4" />
+              <Users className="size-4" />
               <span>Kelola Siswa Kelas</span>
             </button>
           </div>
         </div>
-
-        {/* Decorative background glow */}
-        <div className="absolute right-0 -bottom-10 w-72 h-72 bg-white/10 rounded-full blur-3xl pointer-events-none" />
       </div>
 
       {/* KPI Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-2">
+        <div className="bg-white p-4 sm:p-5 rounded-lg border border-slate-200 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-medium mb-2">
             <span>Siswa di Kelas</span>
-            <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-              <Users className="w-4 h-4" />
+            <div className="size-8 rounded-md bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center">
+              <Users className="size-4" />
             </div>
           </div>
           <div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-slate-800">
+            <div className="text-2xl sm:text-3xl font-bold text-slate-900">
               {classStudents.length} Siswa
             </div>
             <span className="text-[11px] text-slate-400 mt-1 block">
@@ -162,49 +159,49 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
           </div>
         </div>
 
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-2">
+        <div className="bg-white p-4 sm:p-5 rounded-lg border border-slate-200 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-medium mb-2">
             <span>Sudah Ber-Eskul</span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-[#00B884] flex items-center justify-center">
-              <CheckCircle2 className="w-4 h-4" />
+            <div className="size-8 rounded-md bg-emerald-50 border border-emerald-200 text-[#00B884] flex items-center justify-center">
+              <CheckCircle2 className="size-4" />
             </div>
           </div>
           <div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-[#00B884]">
+            <div className="text-2xl sm:text-3xl font-bold text-[#00B884]">
               {studentsWithEskul.length} Siswa
             </div>
-            <span className="text-[11px] text-emerald-600 font-semibold mt-1 block">
+            <span className="text-[11px] text-emerald-700 font-medium mt-1 block">
               {participationRate}% Partisipasi aktif
             </span>
           </div>
         </div>
 
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-2">
+        <div className="bg-white p-4 sm:p-5 rounded-lg border border-slate-200 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-medium mb-2">
             <span>Belum Punya Eskul</span>
-            <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-              <AlertTriangle className="w-4 h-4" />
+            <div className="size-8 rounded-md bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center">
+              <AlertTriangle className="size-4" />
             </div>
           </div>
           <div>
-            <div className={`text-2xl sm:text-3xl font-extrabold ${studentsWithoutEskul.length > 0 ? 'text-amber-600' : 'text-slate-800'}`}>
+            <div className={`text-2xl sm:text-3xl font-bold ${studentsWithoutEskul.length > 0 ? 'text-amber-600' : 'text-slate-900'}`}>
               {studentsWithoutEskul.length} Siswa
             </div>
-            <span className="text-[11px] text-amber-600 font-semibold mt-1 block">
+            <span className="text-[11px] text-amber-700 font-medium mt-1 block">
               {studentsWithoutEskul.length > 0 ? 'Perlu bimbingan wali kelas' : 'Semua siswa terdaftar'}
             </span>
           </div>
         </div>
 
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-2">
+        <div className="bg-white p-4 sm:p-5 rounded-lg border border-slate-200 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-medium mb-2">
             <span>Rata-rata Presensi</span>
-            <div className="w-8 h-8 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center">
-              <TrendingUp className="w-4 h-4" />
+            <div className="size-8 rounded-md bg-violet-50 border border-violet-200 text-violet-600 flex items-center justify-center">
+              <TrendingUp className="size-4" />
             </div>
           </div>
           <div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-slate-800">
+            <div className="text-2xl sm:text-3xl font-bold text-slate-900">
               {avgAttendance}%
             </div>
             <span className="text-[11px] text-slate-400 mt-1 block">
@@ -216,10 +213,10 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
 
       {/* Alert Banner: Siswa yang belum memilih eskul */}
       {studentsWithoutEskul.length > 0 && (
-        <div className="p-4 sm:p-5 rounded-2xl bg-amber-50 border border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="p-4 sm:p-5 rounded-lg bg-amber-50/80 border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 mt-0.5">
-              <AlertTriangle className="w-5 h-5 text-amber-600" />
+            <div className="size-9 rounded-md bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 mt-0.5">
+              <AlertTriangle className="size-5 text-amber-600" />
             </div>
             <div>
               <h3 className="text-sm font-bold text-amber-900">
@@ -232,7 +229,7 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
                 {studentsWithoutEskul.map((s) => (
                   <span
                     key={s.id}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-amber-300 text-amber-900 text-xs font-semibold"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white border border-amber-200 text-amber-900 text-xs font-semibold"
                   >
                     <span>{s.namaLengkap}</span>
                     <button
@@ -253,10 +250,10 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Left Column (2 Cols): Daftar Siswa Kelas Saya */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="bg-white rounded-2xl border border-slate-100 p-5 sm:p-6 shadow-xs space-y-4">
+          <div className="bg-white rounded-lg border border-slate-200 p-5 sm:p-6 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm sm:text-base font-bold text-slate-800">
+                <h3 className="text-sm sm:text-base font-bold text-slate-900">
                   Daftar Siswa Kelas {targetClass} & Nilai Eskul
                 </h3>
                 <p className="text-xs text-slate-400">
@@ -266,13 +263,13 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
 
               {/* Search input */}
               <div className="relative w-full sm:w-56">
-                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Search className="size-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   placeholder="Cari nama atau NIS..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500"
+                  className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:border-[#00B884]"
                 />
               </div>
             </div>
@@ -300,10 +297,10 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
                         <td className="py-3 flex items-center gap-2.5">
                           <UserAvatar
                             name={student.namaLengkap}
-                            className="w-8 h-8 shrink-0 text-xs"
+                            className="size-8 shrink-0 text-xs"
                           />
                           <div>
-                            <span className="font-bold text-slate-800 block truncate max-w-[140px] sm:max-w-[200px]">
+                            <span className="font-semibold text-slate-800 block truncate max-w-[140px] sm:max-w-[200px]">
                               {student.namaLengkap}
                             </span>
                             <span className="text-[10px] text-slate-400">NIS: {student.nis || student.nomorInduk}</span>
@@ -325,7 +322,7 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
                           ) : (
                             <button
                               onClick={() => handleOpenAssignModal(student)}
-                              className="text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer"
+                              className="text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-md text-[10px] font-semibold cursor-pointer"
                             >
                               + Belum Ada Eskul
                             </button>
@@ -342,7 +339,7 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
                               {grades.map((g) => (
                                 <span
                                   key={g.id}
-                                  className="inline-block px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-bold text-xs ml-1"
+                                  className="inline-block px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-semibold text-xs ml-1 border border-blue-200"
                                 >
                                   {g.predikat} ({g.nilaiAkhir})
                                 </span>
@@ -366,7 +363,7 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
                 className="text-blue-600 hover:underline font-semibold flex items-center gap-1 cursor-pointer"
               >
                 <span>Buka Lembar Rekap Nilai Semester</span>
-                <ChevronRight className="w-3.5 h-3.5" />
+                <ChevronRight className="size-3.5" />
               </button>
             </div>
           </div>
@@ -374,11 +371,11 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
 
         {/* Right Column (1 Col): Sebaran Eskul di Kelas */}
         <div className="space-y-4">
-          <div className="bg-white rounded-2xl border border-slate-100 p-5 sm:p-6 shadow-xs space-y-4">
+          <div className="bg-white rounded-lg border border-slate-200 p-5 sm:p-6 shadow-xs space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <Award className="w-4 h-4 text-[#00B884]" />
-                <h3 className="text-sm font-bold text-slate-800">
+                <Award className="size-4 text-[#00B884]" />
+                <h3 className="text-sm font-bold text-slate-900">
                   Sebaran Eskul di Kelas {targetClass}
                 </h3>
               </div>
@@ -388,9 +385,9 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
               {eskulDistribution.map((item) => {
                 const percent = Math.round((item.studentCountInClass / classStudents.length) * 100);
                 return (
-                  <div key={item.id} className="p-3 bg-slate-50 rounded-xl space-y-1.5">
+                  <div key={item.id} className="p-3 bg-slate-50 rounded-md border border-slate-100 space-y-1.5">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-slate-800 truncate">{item.namaEskul}</span>
+                      <span className="font-semibold text-slate-800 truncate">{item.namaEskul}</span>
                       <span className="text-xs font-semibold text-[#00B884]">{item.studentCountInClass} Siswa ({percent}%)</span>
                     </div>
                     {/* Bar */}
@@ -407,17 +404,17 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
 
             <button
               onClick={() => onNavigate('laporan')}
-              className="w-full py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-xs border border-blue-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full py-2.5 rounded-md bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-xs border border-blue-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <span>Export Rapor Kelas (.xlsx / PDF)</span>
-              <ChevronRight className="w-3.5 h-3.5" />
+              <ChevronRight className="size-3.5" />
             </button>
           </div>
 
           {/* Quick Info Box */}
-          <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100 text-xs text-blue-900 space-y-1.5">
+          <div className="p-4 rounded-lg bg-blue-50/70 border border-blue-200 text-xs text-blue-900 space-y-1.5">
             <span className="font-bold flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-blue-600" />
+              <CheckCircle2 className="size-4 text-blue-600" />
               Tugas Pokok Wali Kelas
             </span>
             <p className="text-blue-800/90 text-[11px] leading-relaxed">
@@ -430,10 +427,10 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
       {/* Modal Quick Assign Eskul */}
       {assigningStudent && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5">
+          <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4">
             <div>
               <span className="text-xs font-bold text-[#00B884]">Bimbingan Wali Kelas</span>
-              <h3 className="text-lg font-extrabold text-slate-800">
+              <h3 className="text-lg font-bold text-slate-900">
                 Pilihkan Eskul untuk {assigningStudent.namaLengkap}
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -454,9 +451,9 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
                           : [...prev, eskul.id]
                       );
                     }}
-                    className={`p-3 rounded-xl border text-xs cursor-pointer flex items-center justify-between transition-all ${
+                    className={`p-3 rounded-md border text-xs cursor-pointer flex items-center justify-between transition-all ${
                       isSelected
-                        ? 'border-[#00B884] bg-emerald-50/60 font-bold text-emerald-900'
+                        ? 'border-[#00B884] bg-emerald-50/60 font-semibold text-emerald-900'
                         : 'border-slate-200 hover:border-slate-300 text-slate-700'
                     }`}
                   >
@@ -467,9 +464,9 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
                       </span>
                     </div>
                     <div
-                      className={`w-4 h-4 rounded-md border flex items-center justify-center ${
+                      className={`size-4 rounded-md border flex items-center justify-center ${
                         isSelected
-                          ? 'bg-[#00B884] border-[#00B884] text-white'
+                          ? 'bg-[#00B884] border-[#00B884] text-white font-bold'
                           : 'border-slate-300'
                       }`}
                     >
@@ -480,16 +477,16 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
               })}
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
               <button
                 onClick={() => setAssigningStudent(null)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                className="px-4 py-2 rounded-md text-xs font-semibold text-slate-600 hover:bg-slate-100 border border-slate-200 cursor-pointer"
               >
                 Batal
               </button>
               <button
                 onClick={handleSaveAssignment}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold bg-[#00B884] hover:bg-emerald-600 text-white shadow-md cursor-pointer"
+                className="px-4 py-2 rounded-md text-xs font-semibold bg-[#00B884] hover:bg-[#009e70] text-white shadow-xs cursor-pointer"
               >
                 Simpan Penugasan
               </button>

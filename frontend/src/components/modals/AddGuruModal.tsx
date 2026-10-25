@@ -62,11 +62,17 @@ export const AddGuruModal: React.FC<AddGuruModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-lg max-w-lg w-full p-6 shadow-xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150"
+      >
         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
           <div>
-            <h3 className="text-lg font-extrabold text-slate-800">
+            <h3 className="text-lg font-bold text-slate-800">
               Tambah Guru & Wali Kelas Baru
             </h3>
             <p className="text-xs text-slate-500">
@@ -74,8 +80,9 @@ export const AddGuruModal: React.FC<AddGuruModalProps> = ({
             </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700"
+            className="size-8 rounded-md border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -83,7 +90,7 @@ export const AddGuruModal: React.FC<AddGuruModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
           <div>
-            <label className="font-bold text-slate-700 block mb-1">
+            <label className="font-semibold text-slate-700 block mb-1">
               Nama Lengkap Guru *
             </label>
             <input
@@ -92,13 +99,13 @@ export const AddGuruModal: React.FC<AddGuruModalProps> = ({
               value={namaLengkap}
               onChange={(e) => setNamaLengkap(e.target.value)}
               placeholder="Contoh: Siti Nurhaliza, M.Pd."
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="font-bold text-slate-700 block mb-1">
+              <label className="font-semibold text-slate-700 block mb-1">
                 NIP / NUPTK
               </label>
               <input
@@ -106,17 +113,17 @@ export const AddGuruModal: React.FC<AddGuruModalProps> = ({
                 value={nip}
                 onChange={(e) => setNip(e.target.value)}
                 placeholder="19870321 201301 2 006"
-                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
               />
             </div>
             <div>
-              <label className="font-bold text-slate-700 block mb-1">
+              <label className="font-semibold text-slate-700 block mb-1">
                 Jenis Kelamin
               </label>
               <select
                 value={jenisKelamin}
                 onChange={(e) => setJenisKelamin(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
               >
                 <option value="L">Laki-laki</option>
                 <option value="P">Perempuan</option>
@@ -126,7 +133,7 @@ export const AddGuruModal: React.FC<AddGuruModalProps> = ({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="font-bold text-slate-700 block mb-1">
+              <label className="font-semibold text-slate-700 block mb-1">
                 No. WhatsApp / HP
               </label>
               <input
@@ -134,11 +141,11 @@ export const AddGuruModal: React.FC<AddGuruModalProps> = ({
                 value={noHp}
                 onChange={(e) => setNoHp(e.target.value)}
                 placeholder="081234567890"
-                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
               />
             </div>
             <div>
-              <label className="font-bold text-slate-700 block mb-1">
+              <label className="font-semibold text-slate-700 block mb-1">
                 Email
               </label>
               <input
@@ -146,13 +153,13 @@ export const AddGuruModal: React.FC<AddGuruModalProps> = ({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="guru@smk-alamanah.sch.id"
-                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
               />
             </div>
           </div>
 
           <div>
-            <label className="font-bold text-slate-700 block mb-1">
+            <label className="font-semibold text-slate-700 block mb-1">
               Spesialisasi / Mata Pelajaran
             </label>
             <input
@@ -160,18 +167,18 @@ export const AddGuruModal: React.FC<AddGuruModalProps> = ({
               value={spesialisasi}
               onChange={(e) => setSpesialisasi(e.target.value)}
               placeholder="Contoh: Guru Matematika & Wali Kelas"
-              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
             />
           </div>
 
           <div>
-            <label className="font-bold text-slate-700 block mb-1">
+            <label className="font-semibold text-slate-700 block mb-1">
               Tugaskan Sebagai Wali Kelas (Opsional)
             </label>
             <select
               value={assignedKelasId}
               onChange={(e) => setAssignedKelasId(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
             >
               <option value="">-- Belum Ditugaskan / Guru Pengajar Saja --</option>
               {kelasList.map((k) => (
@@ -183,8 +190,8 @@ export const AddGuruModal: React.FC<AddGuruModalProps> = ({
           </div>
 
           {/* Info Auto-Credential */}
-          <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-100 flex items-start gap-2.5">
-            <School className="w-4 h-4 text-[#00B884] shrink-0 mt-0.5" />
+          <div className="p-3 bg-emerald-50/60 rounded-md border border-emerald-100 flex items-start gap-2.5">
+            <School className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
             <div className="text-[11px] text-slate-600">
               <span className="font-bold text-emerald-800">Akun Login Otomatis Dibuat:</span>
               <div className="mt-0.5 font-mono text-[10px] text-slate-700">
@@ -197,13 +204,13 @@ export const AddGuruModal: React.FC<AddGuruModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-all"
+              className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
             >
               Batal
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-[#00B884] hover:bg-[#009E71] text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+              className="px-5 py-2 bg-[#00B884] hover:bg-emerald-600 text-white rounded-md text-xs font-semibold transition-colors shadow-xs cursor-pointer"
             >
               Simpan Data Guru
             </button>

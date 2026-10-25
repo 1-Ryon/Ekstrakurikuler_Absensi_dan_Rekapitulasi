@@ -143,38 +143,40 @@ export const BukaAbsensiModal: React.FC<BukaAbsensiModalProps> = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+      <div
+        onClick={onClose}
+        className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+      >
         <motion.div
+          onClick={(e) => e.stopPropagation()}
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
-          className="bg-white rounded-3xl max-w-xl w-full shadow-2xl border border-slate-100 overflow-hidden my-auto"
+          className="bg-white rounded-lg max-w-xl w-full shadow-xl border border-slate-200 overflow-hidden my-auto"
         >
           {/* Header */}
-          <div className="p-6 bg-gradient-to-r from-emerald-600 via-[#00B884] to-teal-700 text-white relative">
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-1">
-                <div className="inline-flex items-center gap-2 px-2.5 py-0.5 bg-white/20 backdrop-blur-md rounded-full text-[11px] font-semibold">
-                  <Play className="w-3 h-3 fill-current" />
-                  <span>Buka Sesi Presensi &amp; QR Dinamis</span>
-                </div>
-                <h2 className="text-xl sm:text-2xl font-black tracking-tight">
-                  Form Pembukaan Absensi
-                </h2>
-                <p className="text-emerald-50 text-xs leading-relaxed">
-                  Cabang: <strong>{eskul.namaEskul}</strong> ({eskul.kategori})
-                </p>
+          <div className="p-5 sm:p-6 border-b border-slate-100 flex items-start justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-md text-[11px] font-semibold">
+                <Play className="w-3 h-3 fill-current" />
+                <span>Buka Sesi Presensi &amp; QR Dinamis</span>
               </div>
-
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <h2 className="text-xl font-bold tracking-tight text-slate-900">
+                Form Pembukaan Absensi
+              </h2>
+              <p className="text-slate-500 text-xs leading-relaxed">
+                Cabang: <strong className="text-slate-800">{eskul.namaEskul}</strong> ({eskul.kategori})
+              </p>
             </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="size-8 rounded-md border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-500 hover:text-slate-700 transition-colors cursor-pointer shrink-0"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
 
           {/* Form Content */}
@@ -183,7 +185,7 @@ export const BukaAbsensiModal: React.FC<BukaAbsensiModalProps> = ({
               <motion.div
                 initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 font-medium"
+                className="p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 font-medium"
               >
                 <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
                 <span>{errorMsg}</span>
@@ -193,7 +195,7 @@ export const BukaAbsensiModal: React.FC<BukaAbsensiModalProps> = ({
             {/* Quick Suggestions Chips */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500">
-                <span className="flex items-center gap-1 text-[#00B884]">
+                <span className="flex items-center gap-1 text-emerald-600">
                   <Sparkles className="w-3.5 h-3.5" />
                   Pilihan Rekomendasi Topik Cepat:
                 </span>
@@ -205,7 +207,7 @@ export const BukaAbsensiModal: React.FC<BukaAbsensiModalProps> = ({
                     key={idx}
                     type="button"
                     onClick={() => handleApplySuggestion(top)}
-                    className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 text-emerald-800 text-[11px] font-medium rounded-xl transition-colors cursor-pointer text-left"
+                    className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100/80 border border-emerald-200 text-emerald-800 text-[11px] font-medium rounded-md transition-colors cursor-pointer text-left"
                   >
                     ✨ {top.judul}
                   </button>
@@ -215,7 +217,7 @@ export const BukaAbsensiModal: React.FC<BukaAbsensiModalProps> = ({
 
             {/* 1. Judul Pertemuan (WAJIB) */}
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
+              <label className="text-xs font-semibold text-slate-800 flex items-center justify-between">
                 <span>Judul Pertemuan / Topik Hari Ini <span className="text-rose-500">*</span></span>
                 <span className="text-[10px] text-slate-400 font-normal">Wajib diisi</span>
               </label>
@@ -228,7 +230,7 @@ export const BukaAbsensiModal: React.FC<BukaAbsensiModalProps> = ({
                   if (errorMsg) setErrorMsg('');
                 }}
                 placeholder="Contoh: Latihan Fisik & Taktik Formasi 3-1"
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-[#00B884]/30 focus:border-[#00B884]"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
               />
               <p className="text-[10px] text-slate-400">
                 Judul topik akan terpampang jelas di layar proyektor QR dan aplikasi siswa.
@@ -237,7 +239,7 @@ export const BukaAbsensiModal: React.FC<BukaAbsensiModalProps> = ({
 
             {/* 2. Deskripsi Bahasan & Latihan (WAJIB) */}
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
+              <label className="text-xs font-semibold text-slate-800 flex items-center justify-between">
                 <span>Rincian Bahasan &amp; Materi Latihan <span className="text-rose-500">*</span></span>
                 <span className="text-[10px] text-slate-400 font-normal">Hari ini membahas apa &amp; latihan apa</span>
               </label>
@@ -250,7 +252,7 @@ export const BukaAbsensiModal: React.FC<BukaAbsensiModalProps> = ({
                   if (errorMsg) setErrorMsg('');
                 }}
                 placeholder="Contoh: Hari ini membahas teori transisi menyerang ke bertahan, kemudian latihan drill passing kombinasi 1-2 sentuhan, dan ditutup mini match 2x15 menit."
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/30 focus:border-[#00B884] leading-relaxed"
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884] leading-relaxed resize-none"
               />
               <div className="flex items-center justify-between text-[10px] text-slate-400">
                 <span>Catatan ini otomatis tercatat dalam jurnal presensi dan laporan eskul.</span>
@@ -261,7 +263,7 @@ export const BukaAbsensiModal: React.FC<BukaAbsensiModalProps> = ({
             {/* 3. Detail Waktu & Lokasi */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-emerald-600" />
                   <span>Jam Pelaksanaan</span>
                 </label>
@@ -270,19 +272,19 @@ export const BukaAbsensiModal: React.FC<BukaAbsensiModalProps> = ({
                     type="time"
                     value={jamMulai}
                     onChange={(e) => setJamMulai(e.target.value)}
-                    className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 text-center font-mono focus:outline-none focus:ring-2 focus:ring-[#00B884]/30"
+                    className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-800 text-center font-mono focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
                   />
                   <input
                     type="time"
                     value={jamSelesai}
                     onChange={(e) => setJamSelesai(e.target.value)}
-                    className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 text-center font-mono focus:outline-none focus:ring-2 focus:ring-[#00B884]/30"
+                    className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-800 text-center font-mono focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5 text-blue-600" />
                   <span>Lokasi Fasilitas</span>
                 </label>
@@ -291,7 +293,7 @@ export const BukaAbsensiModal: React.FC<BukaAbsensiModalProps> = ({
                   value={lokasi}
                   onChange={(e) => setLokasi(e.target.value)}
                   placeholder="Lokasi kegiatan..."
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/30"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
                 />
               </div>
             </div>
@@ -301,7 +303,7 @@ export const BukaAbsensiModal: React.FC<BukaAbsensiModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-semibold transition-colors cursor-pointer"
+                className="px-4 py-2 border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-medium rounded-md transition-colors cursor-pointer"
               >
                 Batal
               </button>
@@ -309,7 +311,7 @@ export const BukaAbsensiModal: React.FC<BukaAbsensiModalProps> = ({
               <button
                 type="submit"
                 disabled={isSubmitting || !judul.trim() || !deskripsi.trim()}
-                className="flex items-center gap-2 px-6 py-2.5 bg-[#00B884] hover:bg-[#009e70] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer"
+                className="flex items-center gap-2 px-6 py-2 bg-[#00B884] hover:bg-emerald-600 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-xs rounded-md shadow-xs transition-colors cursor-pointer"
               >
                 <Play className="w-3.5 h-3.5 fill-white" />
                 <span>{isSubmitting ? 'Membuka Presensi...' : 'Buka Presensi Sekarang'}</span>

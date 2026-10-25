@@ -72,11 +72,17 @@ export const EditGuruModal: React.FC<EditGuruModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-lg max-w-lg w-full p-6 shadow-xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150"
+      >
         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
           <div>
-            <h3 className="text-lg font-extrabold text-slate-800">
+            <h3 className="text-lg font-bold text-slate-800">
               Ubah Data Guru / Wali Kelas
             </h3>
             <p className="text-xs text-slate-500">
@@ -84,8 +90,9 @@ export const EditGuruModal: React.FC<EditGuruModalProps> = ({
             </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700"
+            className="size-8 rounded-md border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -93,7 +100,7 @@ export const EditGuruModal: React.FC<EditGuruModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
           <div>
-            <label className="font-bold text-slate-700 block mb-1">
+            <label className="font-semibold text-slate-700 block mb-1">
               Nama Lengkap Guru *
             </label>
             <input
@@ -101,30 +108,30 @@ export const EditGuruModal: React.FC<EditGuruModalProps> = ({
               required
               value={namaLengkap}
               onChange={(e) => setNamaLengkap(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="font-bold text-slate-700 block mb-1">
+              <label className="font-semibold text-slate-700 block mb-1">
                 NIP / NUPTK
               </label>
               <input
                 type="text"
                 value={nip}
                 onChange={(e) => setNip(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
               />
             </div>
             <div>
-              <label className="font-bold text-slate-700 block mb-1">
+              <label className="font-semibold text-slate-700 block mb-1">
                 Status Keaktifan Akun
               </label>
               <select
                 value={statusAktif ? 'AKTIF' : 'NON_AKTIF'}
                 onChange={(e) => setStatusAktif(e.target.value === 'AKTIF')}
-                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
               >
                 <option value="AKTIF">Aktif</option>
                 <option value="NON_AKTIF">Non-Aktif</option>
@@ -134,49 +141,49 @@ export const EditGuruModal: React.FC<EditGuruModalProps> = ({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="font-bold text-slate-700 block mb-1">
+              <label className="font-semibold text-slate-700 block mb-1">
                 No. WhatsApp / HP
               </label>
               <input
                 type="text"
                 value={noHp}
                 onChange={(e) => setNoHp(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
               />
             </div>
             <div>
-              <label className="font-bold text-slate-700 block mb-1">
+              <label className="font-semibold text-slate-700 block mb-1">
                 Email
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
               />
             </div>
           </div>
 
           <div>
-            <label className="font-bold text-slate-700 block mb-1">
+            <label className="font-semibold text-slate-700 block mb-1">
               Spesialisasi / Bidang
             </label>
             <input
               type="text"
               value={spesialisasi}
               onChange={(e) => setSpesialisasi(e.target.value)}
-              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
             />
           </div>
 
           <div>
-            <label className="font-bold text-slate-700 block mb-1">
+            <label className="font-semibold text-slate-700 block mb-1">
               Tugas Wali Kelas
             </label>
             <select
               value={assignedKelasId}
               onChange={(e) => setAssignedKelasId(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
             >
               <option value="">-- Tidak Ada / Kosongkan --</option>
               {kelasList.map((k) => (
@@ -188,7 +195,7 @@ export const EditGuruModal: React.FC<EditGuruModalProps> = ({
           </div>
 
           <div>
-            <label className="font-bold text-slate-700 block mb-1">
+            <label className="font-semibold text-slate-700 block mb-1">
               Ganti Kata Sandi Akun (Opsional)
             </label>
             <input
@@ -196,7 +203,7 @@ export const EditGuruModal: React.FC<EditGuruModalProps> = ({
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Kosongkan jika tidak ingin mengubah kata sandi"
-              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+              className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
             />
           </div>
 
@@ -204,13 +211,13 @@ export const EditGuruModal: React.FC<EditGuruModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-all"
+              className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
             >
               Batal
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-[#00B884] hover:bg-[#009E71] text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+              className="px-5 py-2 bg-[#00B884] hover:bg-emerald-600 text-white rounded-md text-xs font-semibold transition-colors shadow-xs cursor-pointer"
             >
               Simpan Perubahan
             </button>
