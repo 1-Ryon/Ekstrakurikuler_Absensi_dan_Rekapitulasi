@@ -119,4 +119,24 @@ router.delete('/:id', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => 
   }
 });
 
+// GET /api/eskul/:id/members
+router.get('/:id/members', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const members = await prisma.anggotaEskul.findMany({
+      where: { eskulId: id, status: 'AKTIF' },
+      include: {
+        siswa: {
+          include: { kelas: true },
+        },
+      },
+      orderBy: { siswa: { namaLengkap: 'asc' } },
+    });
+
+    res.json({ success: true, data: members });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 export default router;

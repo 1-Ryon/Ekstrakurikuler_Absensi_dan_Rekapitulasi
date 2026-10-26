@@ -1000,30 +1000,32 @@ async function main() {
       statusAktif: true,
     });
 
-    if (includeDemoEskul) {
-      // Setiap siswa mengikuti 1 atau 2 eskul
-      const primaryEskulId = isFarhan ? 'eskul-01' : eskulIds[i % eskulIds.length];
-      anggotaList.push({
-        id: `ang-${siswaId}-${primaryEskulId}`,
-        eskulId: primaryEskulId,
-        siswaId,
-        tahunAjaran: '2026/2027',
-        jabatan: i % 45 === 0 ? 'SEKRETARIS' : 'ANGGOTA',
-        status: 'AKTIF',
-      });
+    // Target kapasitas realistis (50-60% kuota) agar tidak overload / PENUH 88/35
+    const targetCapacityMap = {
+      'eskul-01': 28, 'eskul-02': 28, 'eskul-03': 18, 'eskul-04': 20,
+      'eskul-05': 26, 'eskul-06': 32, 'eskul-07': 30, 'eskul-08': 22,
+      'eskul-09': 20, 'eskul-10': 18, 'eskul-11': 16, 'eskul-12': 20,
+      'eskul-13': 16, 'eskul-14': 18, 'eskul-15': 22, 'eskul-16': 26,
+      'eskul-17': 22, 'eskul-18': 16,
+    };
 
-      if (i % 2 === 0) {
-        const secondaryEskulId = eskulIds[(i + 5) % eskulIds.length];
-        if (secondaryEskulId !== primaryEskulId) {
-          anggotaList.push({
-            id: `ang-${siswaId}-${secondaryEskulId}`,
-            eskulId: secondaryEskulId,
-            siswaId,
-            tahunAjaran: '2026/2027',
-            jabatan: 'ANGGOTA',
-            status: 'AKTIF',
-          });
-        }
+    // Siswa sis-020 hingga sis-040 dan sis-011 dikosongkan keanggotaannya untuk pengujian pendaftaran
+    const isReservedForTesting = i >= 20 && i <= 40;
+
+    if (includeDemoEskul && !isReservedForTesting) {
+      const primaryEskulId = isFarhan ? 'eskul-01' : eskulIds[i % eskulIds.length];
+      const primaryTarget = targetCapacityMap[primaryEskulId] || 22;
+      const countForPrimary = anggotaList.filter(a => a.eskulId === primaryEskulId).length;
+
+      if (countForPrimary < primaryTarget) {
+        anggotaList.push({
+          id: `ang-${siswaId}-${primaryEskulId}`,
+          eskulId: primaryEskulId,
+          siswaId,
+          tahunAjaran: '2026/2027',
+          jabatan: i % 45 === 0 ? 'SEKRETARIS' : 'ANGGOTA',
+          status: 'AKTIF',
+        });
       }
     }
   }
@@ -1137,11 +1139,11 @@ async function main() {
 
   // 9. Pendaftaran Eskul (Untuk menguji Menu Validasi Pendaftaran Siswa & Kuota Pembina)
   const pendaftaranSample = [
-    // Calon siswa Menunggu Validasi Koordinator (Batch yang sudah diajukan pembina)
+    // 1. Eskul-01: Futsal Prestasi (Pembina: Ahmad Syafii)
     {
       id: 'reg-01',
       eskulId: 'eskul-01',
-      siswaId: 'sis-001',
+      siswaId: 'sis-021',
       tahunAjaran: '2026/2027',
       status: 'MENUNGGU_VALIDASI_KOORDINATOR',
       alasanDaftar: 'Ingin berprestasi di tim futsal sekolah dan membanggakan SMK Al Amanah.',
@@ -1151,86 +1153,202 @@ async function main() {
     {
       id: 'reg-02',
       eskulId: 'eskul-01',
-      siswaId: 'sis-002',
+      siswaId: 'sis-022',
       tahunAjaran: '2026/2027',
-      status: 'MENUNGGU_VALIDASI_KOORDINATOR',
+      status: 'DITERIMA_PEMBINA',
       alasanDaftar: 'Memiliki pengalaman turnamen futsal tingkat SMP.',
       catatanPembina: 'Memiliki visi bermain yang bagus dan direkomendasikan masuk roster.',
-      diajukanPada: new Date(Date.now() - 3600000 * 2),
     },
     {
       id: 'reg-03',
-      eskulId: 'eskul-02',
-      siswaId: 'sis-003',
+      eskulId: 'eskul-01',
+      siswaId: 'sis-023',
+      tahunAjaran: '2026/2027',
+      status: 'MENUNGGU_SELEKSI',
+      alasanDaftar: 'Ingin menyalurkan hobi sepak bola dan futsal bersama teman-teman.',
+    },
+    {
+      id: 'reg-04',
+      eskulId: 'eskul-01',
+      siswaId: 'sis-001',
+      tahunAjaran: '2026/2027',
+      status: 'RESMI_TERDAFTAR',
+      alasanDaftar: 'Mengembangkan bakat kepemimpinan dan teknik futsal.',
+      catatanKoordinator: 'Disetujui dan disahkan oleh Koordinator Ekstrakurikuler.',
+      divalidasiPada: new Date(Date.now() - 3600000 * 24),
+    },
+
+    // 2. Eskul-10: Badminton Club (Pembina: Taufik Hidayat) - Permintaan Khusus Pengguna
+    {
+      id: 'reg-05',
+      eskulId: 'eskul-10',
+      siswaId: 'sis-024',
       tahunAjaran: '2026/2027',
       status: 'MENUNGGU_VALIDASI_KOORDINATOR',
-      alasanDaftar: 'Tertarik membuat aplikasi web modern dan machine learning.',
+      alasanDaftar: 'Pernah menjuarai O2SN Bulutangkis tingkat SMP dan ingin memperkuat tim sekolah.',
+      catatanPembina: 'Footwork dan smash tajam, lolos seleksi utama pembina eskul.',
+      diajukanPada: new Date(Date.now() - 3600000 * 3),
+    },
+    {
+      id: 'reg-06',
+      eskulId: 'eskul-10',
+      siswaId: 'sis-025',
+      tahunAjaran: '2026/2027',
+      status: 'DITERIMA_PEMBINA',
+      alasanDaftar: 'Berminat mendalami strategi bermain ganda putra bulutangkis.',
+      catatanPembina: 'Refleks sangat baik di depan net, siap diajukan ke Koordinator.',
+    },
+    {
+      id: 'reg-07',
+      eskulId: 'eskul-10',
+      siswaId: 'sis-026',
+      tahunAjaran: '2026/2027',
+      status: 'MENUNGGU_SELEKSI',
+      alasanDaftar: 'Hobi bermain bulutangkis setiap akhir pekan dan ingin latihan rutin terstruktur.',
+    },
+    {
+      id: 'reg-08',
+      eskulId: 'eskul-10',
+      siswaId: 'sis-002',
+      tahunAjaran: '2026/2027',
+      status: 'RESMI_TERDAFTAR',
+      alasanDaftar: 'Pemain inti bulutangkis tunggal putra SMK Al Amanah.',
+      catatanKoordinator: 'Disetujui dan disahkan oleh Koordinator Ekstrakurikuler.',
+      divalidasiPada: new Date(Date.now() - 3600000 * 48),
+    },
+
+    // 3. Eskul-02: Computer & Web Club (Pembina: Abdul Malik)
+    {
+      id: 'reg-09',
+      eskulId: 'eskul-02',
+      siswaId: 'sis-027',
+      tahunAjaran: '2026/2027',
+      status: 'MENUNGGU_VALIDASI_KOORDINATOR',
+      alasanDaftar: 'Tertarik membuat aplikasi web modern React & Node.js.',
       catatanPembina: 'Mampu menguasai dasar coding HTML/CSS/JS dengan cepat.',
       diajukanPada: new Date(Date.now() - 3600000 * 4),
     },
     {
-      id: 'reg-04',
-      eskulId: 'eskul-05',
-      siswaId: 'sis-007',
-      tahunAjaran: '2026/2027',
-      status: 'MENUNGGU_VALIDASI_KOORDINATOR',
-      alasanDaftar: 'Ingin mengabdi menjadi petugas pengibar bendera di upacara kenegaraan.',
-      catatanPembina: 'Tinggi badan dan postur sempurna, disiplin tinggi.',
-      diajukanPada: new Date(Date.now() - 3600000 * 5),
-    },
-
-    // Calon siswa Diterima Pembina (Siap diajukan ke Koordinator)
-    {
-      id: 'reg-05',
-      eskulId: 'eskul-01',
-      siswaId: 'sis-004',
-      tahunAjaran: '2026/2027',
-      status: 'DITERIMA_PEMBINA',
-      alasanDaftar: 'Menyalurkan hobi olahraga sepak bola dan futsal.',
-      catatanPembina: 'Memenuhi syarat kemampuan dan lolos seleksi pembina.',
-    },
-    {
-      id: 'reg-06',
+      id: 'reg-10',
       eskulId: 'eskul-02',
-      siswaId: 'sis-009',
+      siswaId: 'sis-028',
       tahunAjaran: '2026/2027',
       status: 'DITERIMA_PEMBINA',
       alasanDaftar: 'Ingin mendalami UI/UX design dan frontend development.',
-      catatanPembina: 'Portofolio desain sangat menjanjikan.',
+      catatanPembina: 'Portofolio desain Figma sangat menjanjikan.',
+    },
+    {
+      id: 'reg-11',
+      eskulId: 'eskul-02',
+      siswaId: 'sis-003',
+      tahunAjaran: '2026/2027',
+      status: 'RESMI_TERDAFTAR',
+      alasanDaftar: 'Pengembang web berbakat, peserta lomba LKS Web Technologies.',
+      catatanKoordinator: 'Disetujui resmi oleh Koordinator.',
+      divalidasiPada: new Date(Date.now() - 3600000 * 20),
     },
 
-    // Calon siswa Menunggu Seleksi Pembina
+    // 4. Eskul-05: Paskibra Satya Amanah (Pembina: Budi Santoso)
     {
-      id: 'reg-07',
-      eskulId: 'eskul-01',
-      siswaId: 'sis-010',
+      id: 'reg-12',
+      eskulId: 'eskul-05',
+      siswaId: 'sis-029',
       tahunAjaran: '2026/2027',
-      status: 'MENUNGGU_SELEKSI',
-      alasanDaftar: 'Ingin bergabung di eskul futsal bersama teman-teman.',
+      status: 'MENUNGGU_VALIDASI_KOORDINATOR',
+      alasanDaftar: 'Ingin menjadi petugas pengibar bendera di upacara kenegaraan.',
+      catatanPembina: 'Tinggi badan dan postur sempurna, disiplin baris-berbaris tinggi.',
+      diajukanPada: new Date(Date.now() - 3600000 * 5),
     },
     {
-      id: 'reg-08',
-      eskulId: 'eskul-11',
-      siswaId: 'sis-005',
+      id: 'reg-13',
+      eskulId: 'eskul-05',
+      siswaId: 'sis-007',
       tahunAjaran: '2026/2027',
-      status: 'MENUNGGU_SELEKSI',
-      alasanDaftar: 'Sangat menyukai seni tari tradisional sejak kecil.',
+      status: 'RESMI_TERDAFTAR',
+      alasanDaftar: 'Anggota tim inti paskibra formasi 17.',
+      catatanKoordinator: 'Disahkan oleh Koordinator.',
+      divalidasiPada: new Date(Date.now() - 3600000 * 30),
+    },
+
+    // 5. Eskul-17: Basket Ball Club (Pembina: Rian Hidayat)
+    {
+      id: 'reg-14',
+      eskulId: 'eskul-17',
+      siswaId: 'sis-030',
+      tahunAjaran: '2026/2027',
+      status: 'MENUNGGU_VALIDASI_KOORDINATOR',
+      alasanDaftar: 'Menyalurkan bakat bermain basket posisi point guard.',
+      catatanPembina: 'Dribbling dan akurasi lemparan 3 angka sangat solid.',
+      diajukanPada: new Date(Date.now() - 3600000 * 1),
     },
     {
-      id: 'reg-09',
+      id: 'reg-15',
+      eskulId: 'eskul-17',
+      siswaId: 'sis-031',
+      tahunAjaran: '2026/2027',
+      status: 'MENUNGGU_SELEKSI',
+      alasanDaftar: 'Ingin belajar teknik dasar lay-up dan pertahanan tim basket.',
+    },
+    {
+      id: 'reg-16',
+      eskulId: 'eskul-17',
+      siswaId: 'sis-004',
+      tahunAjaran: '2026/2027',
+      status: 'RESMI_TERDAFTAR',
+      alasanDaftar: 'Anggota tim basket sekolah.',
+      catatanKoordinator: 'Disetujui oleh Koordinator.',
+      divalidasiPada: new Date(Date.now() - 3600000 * 15),
+    },
+
+    // 6. Eskul-08: Palang Merah Remaja (PMR) (Pembina: Viska Adawiyah)
+    {
+      id: 'reg-17',
+      eskulId: 'eskul-08',
+      siswaId: 'sis-032',
+      tahunAjaran: '2026/2027',
+      status: 'MENUNGGU_VALIDASI_KOORDINATOR',
+      alasanDaftar: 'Tertarik bidang medis, evakuasi tandu, dan pertolongan pertama PPGD.',
+      catatanPembina: 'Lulus tes fisik dan pengetahuan medis dasar PMR.',
+      diajukanPada: new Date(Date.now() - 3600000 * 6),
+    },
+    {
+      id: 'reg-18',
+      eskulId: 'eskul-08',
+      siswaId: 'sis-033',
+      tahunAjaran: '2026/2027',
+      status: 'DITERIMA_PEMBINA',
+      alasanDaftar: 'Ingin berpartisipasi aktif dalam kegiatan donor darah dan bakti sosial sekolah.',
+      catatanPembina: 'Memiliki komitmen kemanusiaan tinggi, siap diajukan ke Koordinator.',
+    },
+    {
+      id: 'reg-19',
       eskulId: 'eskul-08',
       siswaId: 'sis-006',
       tahunAjaran: '2026/2027',
-      status: 'MENUNGGU_SELEKSI',
-      alasanDaftar: 'Ingin belajar pertolongan pertama dan medis PMR.',
+      status: 'RESMI_TERDAFTAR',
+      alasanDaftar: 'Anggota resmi divisi pertolongan pertama PMR.',
+      catatanKoordinator: 'Disahkan oleh Koordinator.',
+      divalidasiPada: new Date(Date.now() - 3600000 * 25),
     },
+
+    // 7. Eskul-11: Seni Tari Tradisional (Pembina: Siti Rahmawati)
     {
-      id: 'reg-10',
-      eskulId: 'eskul-07',
-      siswaId: 'sis-008',
+      id: 'reg-20',
+      eskulId: 'eskul-11',
+      siswaId: 'sis-034',
       tahunAjaran: '2026/2027',
       status: 'MENUNGGU_SELEKSI',
-      alasanDaftar: 'Ingin memperdalam ilmu agama dan kajian dakwah sekolah.',
+      alasanDaftar: 'Ingin melestarikan tari tradisional daerah Banten dan Sunda.',
+    },
+    {
+      id: 'reg-21',
+      eskulId: 'eskul-11',
+      siswaId: 'sis-005',
+      tahunAjaran: '2026/2027',
+      status: 'RESMI_TERDAFTAR',
+      alasanDaftar: 'Penari inti tari saman dan jaipong SMK Al Amanah.',
+      catatanKoordinator: 'Disahkan oleh Koordinator.',
+      divalidasiPada: new Date(Date.now() - 3600000 * 40),
     },
   ];
 

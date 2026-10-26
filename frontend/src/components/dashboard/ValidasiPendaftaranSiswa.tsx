@@ -98,8 +98,8 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
     fetchRegistrations();
   }, []);
 
-  // Filter registrations
-  const filteredList = registrations.filter((item) => {
+  // Base list filtered by selected eskul and search query (before tab filter)
+  const baseFilteredList = registrations.filter((item) => {
     const matchEskul = selectedEskulId === 'ALL' || item.eskulId === selectedEskulId;
     const matchSearch = 
       item.namaSiswa.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -108,8 +108,16 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
       item.namaEskul.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.kelas.toLowerCase().includes(searchQuery.toLowerCase());
 
-    if (!matchEskul || !matchSearch) return false;
+    return matchEskul && matchSearch;
+  });
 
+  // Tab counters scoped to current selected eskul
+  const pendingCount = baseFilteredList.filter(r => r.status === 'MENUNGGU_VALIDASI_KOORDINATOR').length;
+  const approvedCount = baseFilteredList.filter(r => r.status === 'RESMI_TERDAFTAR').length;
+  const totalCount = baseFilteredList.length;
+
+  // Final list filtered by active tab
+  const filteredList = baseFilteredList.filter((item) => {
     if (activeTab === 'PENDING') {
       return item.status === 'MENUNGGU_VALIDASI_KOORDINATOR';
     }
@@ -119,9 +127,15 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
     return true;
   });
 
-  const pendingCount = registrations.filter(r => r.status === 'MENUNGGU_VALIDASI_KOORDINATOR').length;
-  const approvedCount = registrations.filter(r => r.status === 'RESMI_TERDAFTAR').length;
-  const totalCount = registrations.length;
+  // Global pending counts per eskul for card badge indicators
+  const pendingCountByEskul = registrations.reduce((acc, r) => {
+    if (r.status === 'MENUNGGU_VALIDASI_KOORDINATOR') {
+      acc[r.eskulId] = (acc[r.eskulId] || 0) + 1;
+    }
+    return acc;
+  }, {} as Record<string, number>);
+
+  const selectedEskulName = eskulList.find(e => e.id === selectedEskulId)?.namaEskul;
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
@@ -302,25 +316,59 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* Master All Eskul Card */}
+            <div 
+              onClick={() => setSelectedEskulId('ALL')}
+              className={`p-3 rounded-lg border transition-all cursor-pointer ${
+                selectedEskulId === 'ALL'
+                  ? 'border-primary bg-primary/10 ring-2 ring-primary shadow-sm'
+                  : 'border-border bg-card hover:bg-muted/40'
+              }`}
+            >
+              <div className="flex items-center justify-between text-xs font-semibold text-foreground">
+                <span className="flex items-center gap-1.5 font-bold">
+                  <Building className="size-3.5 text-primary" />
+                  Semua Ekstrakurikuler
+                </span>
+                <Badge variant={selectedEskulId === 'ALL' ? 'brand' : 'outline'} className="text-[10px] py-0 px-1.5">
+                  {eskulList.length} Cabang
+                </Badge>
+              </div>
+              <div className="text-[11px] text-muted-foreground mt-1 flex items-center justify-between">
+                <span>Total Berkas: {registrations.length}</span>
+                <span className="font-medium text-amber-600 dark:text-amber-400">
+                  {registrations.filter(r => r.status === 'MENUNGGU_VALIDASI_KOORDINATOR').length} Menunggu
+                </span>
+              </div>
+              <div className="w-full bg-muted h-1.5 rounded-full overflow-hidden mt-2">
+                <div className="h-full rounded-full bg-primary" style={{ width: '100%' }} />
+              </div>
+            </div>
+
             {eskulList.map((eskul) => {
               const currentMembers = eskul.jumlahSiswa || 0;
               const quota = eskul.kuota || 40;
               const percent = Math.min(100, Math.round((currentMembers / quota) * 100));
               const isFull = currentMembers >= quota;
+              const pendingForThis = pendingCountByEskul[eskul.id] || 0;
 
               return (
                 <div 
                   key={eskul.id}
-                  onClick={() => setSelectedEskulId(eskul.id)}
+                  onClick={() => setSelectedEskulId(prev => prev === eskul.id ? 'ALL' : eskul.id)}
                   className={`p-3 rounded-lg border transition-all cursor-pointer ${
                     selectedEskulId === eskul.id
-                      ? 'border-primary bg-primary/5 ring-1 ring-primary shadow-xs'
+                      ? 'border-primary bg-primary/10 ring-2 ring-primary shadow-sm'
                       : 'border-border bg-card hover:bg-muted/40'
                   }`}
                 >
                   <div className="flex items-center justify-between text-xs font-semibold text-foreground truncate">
                     <span className="truncate">{eskul.namaEskul}</span>
-                    {isFull ? (
+                    {pendingForThis > 0 ? (
+                      <Badge variant="warning" className="text-[10px] py-0 px-1.5 font-bold animate-pulse">
+                        {pendingForThis} Menunggu
+                      </Badge>
+                    ) : isFull ? (
                       <Badge variant="destructive" className="text-[10px] py-0 px-1.5">PENUH</Badge>
                     ) : (
                       <span className="text-[11px] font-medium text-muted-foreground">{percent}%</span>
@@ -448,16 +496,35 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
             <span className="text-sm font-medium">Memuat berkas pendaftaran...</span>
           </div>
         ) : filteredList.length === 0 ? (
-          <div className="p-12 text-center text-muted-foreground space-y-2">
+          <div className="p-12 text-center text-muted-foreground space-y-3">
             <Users className="size-10 mx-auto text-muted-foreground/60 stroke-[1.5]" />
-            <div className="font-semibold text-foreground">Tidak ada berkas pendaftaran ditemukan</div>
-            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-              {activeTab === 'PENDING'
-                ? 'Semua berkas pendaftaran calon siswa sudah divalidasi atau belum ada pengajuan baru dari Guru Pembina.'
-                : 'Silakan ubah filter atau kata kunci pencarian Anda.'}
+            <div className="font-semibold text-foreground text-base">
+              {selectedEskulId !== 'ALL'
+                ? `Tidak ada berkas pendaftaran untuk ${selectedEskulName || 'ekstrakurikuler ini'}`
+                : 'Tidak ada berkas pendaftaran ditemukan'}
+            </div>
+            <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
+              {selectedEskulId !== 'ALL'
+                ? `Belum ada calon siswa yang mendaftar atau berkas ${selectedEskulName || ''} tidak ada yang berstatus '${activeTab === 'PENDING' ? 'Menunggu Validasi' : activeTab === 'APPROVED' ? 'Resmi Terdaftar' : 'Semua'}'.`
+                : activeTab === 'PENDING'
+                  ? 'Semua berkas pendaftaran calon siswa sudah divalidasi atau belum ada pengajuan baru dari Guru Pembina.'
+                  : 'Silakan ubah filter atau kata kunci pencarian Anda.'}
             </p>
-            {onBack && (
+            {selectedEskulId !== 'ALL' && (
               <div className="pt-2">
+                <Button
+                  variant="brand"
+                  size="sm"
+                  onClick={() => setSelectedEskulId('ALL')}
+                  className="gap-2"
+                >
+                  <Building className="size-3.5" />
+                  <span>Tampilkan Berkas Semua Ekstrakurikuler</span>
+                </Button>
+              </div>
+            )}
+            {onBack && (
+              <div className="pt-1">
                 <Button
                   variant="outline"
                   size="sm"
