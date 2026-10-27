@@ -11,6 +11,7 @@
     "start:backend": "cd backend && npm start",
     "start:frontend": "cd frontend && npm run preview",
     "tunnel:try": "cloudflared tunnel --url http://localhost:3000",
+    "update": "./update.sh",
     "docker:up": "docker compose up -d --build",
     "docker:down": "docker compose down",
     "db:migrate": "cd backend && npx prisma db push",
