@@ -12,9 +12,10 @@ import {
 } from './middlewares/auth.js';
 
 const PORT = process.env.PORT || 5000;
+const HOST = process.env.HOST || '0.0.0.0';
 
-const server = app.listen(PORT, '127.0.0.1', () => {
-  console.log(`🚀 [BACKEND] Server SMK Al Amanah berjalan di http://127.0.0.1:${PORT} (Localhost Only)`);
+const server = app.listen(PORT, HOST, () => {
+  console.log(`🚀 [BACKEND] Server SMK Al Amanah berjalan di http://${HOST}:${PORT}`);
   console.log(`📡 [API] REST Endpoints siap melayani sistem presensi & penilaian (Modular Architecture).`);
 });
 
