@@ -162,7 +162,7 @@ export const KartuHasilNilaiPage: React.FC<KartuHasilNilaiPageProps> = ({
                 Jl. Raya Puspitek No. 12, Buaran, Serpong, Kota Tangerang Selatan, Banten 15310
               </p>
               <div className="text-[11px] font-bold text-emerald-800 mt-1 uppercase tracking-wider">
-                KARTU HASIL NILAI (KHN) EKSTRAKURIKULER • TP 2026/2027
+                KARTU HASIL NILAI (KHN) EKSTRAKURIKULER
               </div>
             </div>
           </div>
@@ -187,8 +187,8 @@ export const KartuHasilNilaiPage: React.FC<KartuHasilNilaiPageProps> = ({
               <span className="font-bold text-slate-900">: {student.kelas}</span>
             </div>
             <div className="flex">
-              <span className="w-32 text-slate-500 font-medium">Semester / Tahun</span>
-              <span className="text-slate-800">: Semester Ganjil / 2026-2027</span>
+              <span className="w-32 text-slate-500 font-medium">Semester</span>
+              <span className="text-slate-800">: Semester Ganjil</span>
             </div>
           </div>
         </div>

@@ -227,10 +227,15 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
       {/* Title & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-[#00B884] tracking-tight">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
+              SMK Al-Amanah
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
             {activeSubTab === 'rapor' ? 'Penilaian & Rekap Nilai' : 'Prestasi & Kejuaraan Lomba'}
           </h1>
-          <p className="text-slate-500 text-sm mt-0.5">
+          <p className="text-slate-500 text-xs sm:text-sm mt-1 max-w-2xl font-normal">
             {activeSubTab === 'rapor' 
               ? 'Format penilaian kompetensi non-akademik akhir semester: Kehadiran (40%), Keaktifan (30%), Kinerja (30%).' 
               : 'Pencatatan medali, piala, dan prestasi perlombaan eksternal yang otomatis menambah poin bonus rapor.'}
@@ -736,7 +741,7 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
 
         {/* Footer info */}
         <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-          <span>{filteredRecords.length} Nilai Siswa Terdaftar untuk Semester Ganjil 2026/2027</span>
+          <span>{filteredRecords.length} Nilai Siswa Terdaftar untuk Semester Ganjil</span>
           <span className="font-semibold text-slate-700">Format Nilai Terintegrasi e-Rapor</span>
         </div>
       </div>

@@ -92,7 +92,7 @@ export const KartuHasilNilaiModal: React.FC<KartuHasilNilaiModalProps> = ({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ duration: 0.25, ease: 'easeOut' }}
-          className="bg-white rounded-lg max-w-xl w-full p-6 sm:p-8 shadow-xl border border-slate-200 max-h-[90vh] overflow-y-auto"
+          className="bg-white rounded-lg w-[94vw] max-w-xl p-4 sm:p-8 shadow-xl border border-slate-200 max-h-[90dvh] overflow-y-auto"
         >
           {/* Top actions */}
           <div className="flex items-center justify-between pb-4 border-b border-slate-100">
@@ -133,7 +133,7 @@ export const KartuHasilNilaiModal: React.FC<KartuHasilNilaiModalProps> = ({
                   KARTU HASIL NILAI (KHN) EKSTRAKURIKULER
                 </p>
                 <div className="text-[10px] text-emerald-700 font-bold mt-1">
-                  TAHUN PELAJARAN 2026/2027 • SEMESTER GANJIL
+                  SEMESTER GANJIL
                 </div>
               </div>
             </div>

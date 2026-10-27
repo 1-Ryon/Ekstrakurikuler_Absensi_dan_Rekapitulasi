@@ -62,7 +62,7 @@ export const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.94, y: 10 }}
             transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-            className="relative w-full max-w-md bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden z-10"
+            className="relative w-[92vw] max-w-md bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden z-10"
           >
             {/* Top Header */}
             <div className="p-6 bg-white border-b border-slate-100 relative">

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { requireRoles } from '../middlewares/auth.js';
 import { prisma } from '../config/prisma.js';
 
 const router = Router();
@@ -67,7 +68,7 @@ router.get('/', async (req, res) => {
 });
 
 // 2. POST /api/presensi/scan: Presensi Scan (Anti-Fraud Window Check & Universal Tolerance)
-router.post('/scan', async (req, res) => {
+router.post('/scan', requireRoles('SISWA', 'PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, res) => {
   try {
     const { qrToken, siswaId, deviceInfo, metode } = req.body;
 
@@ -250,7 +251,7 @@ router.post('/scan', async (req, res) => {
 });
 
 // 3. PATCH /api/presensi/:id/status: Koreksi / Dispensasi status presensi
-router.patch('/:id/status', async (req, res) => {
+router.patch('/:id/status', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -270,7 +271,7 @@ router.patch('/:id/status', async (req, res) => {
 });
 
 // 4. POST /api/presensi/scan-student-card: Pembina scan kartu QR siswa
-router.post('/scan-student-card', async (req, res) => {
+router.post('/scan-student-card', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, res) => {
   try {
     const { sesiId, studentIdOrNis, pembinaId, nilaiKeaktifan, ratingKeaktifan } = req.body;
 
@@ -463,7 +464,7 @@ router.post('/scan-student-card', async (req, res) => {
 });
 
 // 5. POST /api/presensi/bulk-checklist: Metode 3 - Checklist kehadiran manual oleh pembina
-router.post('/bulk-checklist', async (req, res) => {
+router.post('/bulk-checklist', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, res) => {
   try {
     const { sesiId, records, pembinaId } = req.body; // records: [{ siswaId, status: 'HADIR' | 'IZIN' | 'SAKIT' | 'ALPA', keterangan }]
 

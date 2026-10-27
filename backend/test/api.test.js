@@ -2,9 +2,16 @@ import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { PrismaClient } from '@prisma/client';
+import { generateUserToken } from '../src/middlewares/auth.js';
 
 const BASE_URL = 'http://127.0.0.1:5000/api';
 let serverProcess = null;
+
+const ADMIN_TOKEN = generateUserToken({ id: 'adm-01', username: 'admin', role: 'ADMIN', namaLengkap: 'Administrator Sistem' });
+const KOOR_TOKEN = generateUserToken({ id: 'guru-koor-01', username: 'koordinator', role: 'KOORDINATOR', namaLengkap: 'Viska Adawiyah' });
+const PEMBINA_TOKEN = generateUserToken({ id: 'guru-pem-01', username: 'ahmad.futsal', role: 'PEMBINA', namaLengkap: 'Ahmad Syafii' });
+const SISWA_TOKEN = generateUserToken({ id: 'sis-001', username: '20241001', role: 'SISWA', namaLengkap: 'Muhammad Farhan' });
+
 
 before(async () => {
   // 1. Persiapkan fixture eskul untuk pengujian integrasi
@@ -375,7 +382,7 @@ test('13. Sesi Absensi: GET /api/sessions/today returns judul and deskripsi', as
 test('14. Sesi Absensi: POST /api/sessions fails if judul or deskripsi is missing', async () => {
   const res = await fetch(`${BASE_URL}/sessions`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${PEMBINA_TOKEN}` },
     body: JSON.stringify({
       eskulId: 'eskul-03',
       // missing judul and deskripsi
@@ -390,7 +397,7 @@ test('14. Sesi Absensi: POST /api/sessions fails if judul or deskripsi is missin
 test('15. Sesi Absensi: POST /api/sessions successfully opens attendance with judul & deskripsi', async () => {
   const res = await fetch(`${BASE_URL}/sessions`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${PEMBINA_TOKEN}` },
     body: JSON.stringify({
       eskulId: 'eskul-03',
       judul: 'Latihan Dasar Passing Bawah & Service Atas',
@@ -426,7 +433,7 @@ test('17. Jadwal Proposal Workflow: Pembina proposes change & Koordinator valida
   // 1. Pembina submits proposal for eskul-02 (Computer & Web Club)
   const createRes = await fetch(`${BASE_URL}/jadwal-proposals`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${PEMBINA_TOKEN}` },
     body: JSON.stringify({
       eskulId: 'eskul-02',
       pembinaId: 'guru-pem-01',
@@ -447,7 +454,7 @@ test('17. Jadwal Proposal Workflow: Pembina proposes change & Koordinator valida
   // 2. Koordinator validates (approves) the proposal
   const validateRes = await fetch(`${BASE_URL}/jadwal-proposals/${proposalId}/validate`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${KOOR_TOKEN}` },
     body: JSON.stringify({
       status: 'DISETUJUI',
       catatanKoordinator: 'Disetujui. Jadwal Lab RPL 2 telah disesuaikan dan dikonfirmasi teknisi.',
@@ -482,7 +489,7 @@ test('18. Security: OWASP Defensive Security Headers are enforced in responses',
 test('19. Security: Student credential privacy enforces that non-privileged callers receive NO defaultPassword', async () => {
   // A. Pembina / Siswa / Unprivileged caller: defaultPassword is NOT exposed
   const pembinaRes = await fetch(`${BASE_URL}/students`, {
-    headers: { 'X-User-Role': 'PEMBINA' },
+    headers: { 'Authorization': `Bearer ${PEMBINA_TOKEN}` },
   });
   assert.equal(pembinaRes.status, 200);
   const pembinaData = await pembinaRes.json();
@@ -491,7 +498,7 @@ test('19. Security: Student credential privacy enforces that non-privileged call
 
   // B. Admin / Koordinator caller: defaultPassword is provided for administrative card printing
   const adminRes = await fetch(`${BASE_URL}/students`, {
-    headers: { 'X-User-Role': 'ADMIN' },
+    headers: { 'Authorization': `Bearer ${ADMIN_TOKEN}` },
   });
   assert.equal(adminRes.status, 200);
   const adminData = await adminRes.json();
@@ -500,10 +507,16 @@ test('19. Security: Student credential privacy enforces that non-privileged call
 });
 
 test('20. Security: Role Authorization Guard rejects unauthorized mutation with 403 Forbidden', async () => {
-  // Pembina trying to delete an eskul or validate a proposal should get 403 Forbidden
+  // A. Unauthenticated request without JWT -> 401 Unauthorized
+  const unauthRes = await fetch(`${BASE_URL}/eskul/some-eskul-id`, {
+    method: 'DELETE',
+  });
+  assert.equal(unauthRes.status, 401);
+
+  // B. Pembina trying to delete an eskul -> 403 Forbidden
   const res = await fetch(`${BASE_URL}/eskul/some-eskul-id`, {
     method: 'DELETE',
-    headers: { 'X-User-Role': 'PEMBINA' },
+    headers: { 'Authorization': `Bearer ${PEMBINA_TOKEN}` },
   });
   assert.equal(res.status, 403);
   const data = await res.json();
@@ -514,7 +527,7 @@ test('20. Security: Role Authorization Guard rejects unauthorized mutation with 
 test('21. Logic & Validation: Presensi scan rejects empty qrToken or siswaId with 400 Bad Request', async () => {
   const res = await fetch(`${BASE_URL}/presensi/scan`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SISWA_TOKEN}` },
     body: JSON.stringify({
       // missing qrToken and siswaId
     }),
@@ -528,7 +541,7 @@ test('21. Logic & Validation: Presensi scan rejects empty qrToken or siswaId wit
 test('22. Logic & Calculation: Penilaian auto-clamps score bounds and computes weighted nilaiAkhir & predikat', async () => {
   const res = await fetch(`${BASE_URL}/penilaian`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-User-Role': 'PEMBINA' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${PEMBINA_TOKEN}` },
     body: JSON.stringify({
       items: [
         {
@@ -560,7 +573,7 @@ test('22. Logic & Calculation: Penilaian auto-clamps score bounds and computes w
 test('23. Sesi Absensi: Pembina can mark session as holiday / tanggal merah without faulting students', async () => {
   const res = await fetch(`${BASE_URL}/sessions/mark-holiday`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-User-Role': 'PEMBINA' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${PEMBINA_TOKEN}` },
     body: JSON.stringify({
       eskulId: 'eskul-03', // Robotik
       tanggal: '2026-10-15',
@@ -579,7 +592,7 @@ test('24. Sesi Absensi: Multi-stage finalize locks session history and syncs pre
   // 1. Buka sesi baru
   const openRes = await fetch(`${BASE_URL}/sessions`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-User-Role': 'PEMBINA' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${PEMBINA_TOKEN}` },
     body: JSON.stringify({
       eskulId: 'eskul-02',
       judul: 'Workshop Web API & Dynamic QR',
@@ -593,7 +606,7 @@ test('24. Sesi Absensi: Multi-stage finalize locks session history and syncs pre
   // 2. Finalize presensi dengan multi-tahap (Hadir dengan nilai keaktifan, Izin dengan surat keterangan)
   const finalizeRes = await fetch(`${BASE_URL}/sessions/${sessionId}/finalize`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-User-Role': 'PEMBINA' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${PEMBINA_TOKEN}` },
     body: JSON.stringify({
       kehadiran: [
         {
@@ -624,7 +637,7 @@ test('24. Sesi Absensi: Multi-stage finalize locks session history and syncs pre
   // 3. Verifikasi sesi terkunci tidak dapat discan lagi
   const scanAttempt = await fetch(`${BASE_URL}/presensi/scan-student-card`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${PEMBINA_TOKEN}` },
     body: JSON.stringify({
       sesiId: sessionId,
       studentIdOrNis: '20241001',
@@ -667,7 +680,7 @@ test('25. Pendaftaran: Pembina selects applicants and submits batch to Koordinat
   // 2. Pembina menyeleksi & menerima calon siswa
   const seleksiRes = await fetch(`${BASE_URL}/pendaftaran/seleksi-pembina`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', 'X-User-Role': 'PEMBINA' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${PEMBINA_TOKEN}` },
     body: JSON.stringify({
       pendaftaranIds: [pendaftaranId],
       status: 'DITERIMA_PEMBINA',
@@ -679,7 +692,7 @@ test('25. Pendaftaran: Pembina selects applicants and submits batch to Koordinat
   // 3. Pembina mengajukan seluruh siswa terpilih ke Koordinator
   const ajukanRes = await fetch(`${BASE_URL}/pendaftaran/ajukan-koordinator`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-User-Role': 'PEMBINA' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${PEMBINA_TOKEN}` },
     body: JSON.stringify({
       eskulId,
       pendaftaranIds: [pendaftaranId],
@@ -704,7 +717,7 @@ test('26. Pendaftaran: Koordinator validates (approves) and officially enrolls s
   // Koordinator memvalidasi & menyetujui
   const valRes = await fetch(`${BASE_URL}/pendaftaran/validasi-koordinator`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-User-Role': 'KOORDINATOR' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${KOOR_TOKEN}` },
     body: JSON.stringify({
       pendaftaranIds: [target.id],
       aksi: 'SETUJUI',
@@ -734,7 +747,7 @@ test('27. Prestasi: View competition records, add new achievement, and delete wi
   // 2. POST /api/prestasi
   const postRes = await fetch(`${BASE_URL}/prestasi`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${PEMBINA_TOKEN}` },
     body: JSON.stringify({
       eskulId: 'eskul-01',
       siswaId: 'sis-001',
@@ -756,6 +769,7 @@ test('27. Prestasi: View competition records, add new achievement, and delete wi
   // 3. DELETE /api/prestasi/:id
   const delRes = await fetch(`${BASE_URL}/prestasi/${createdId}`, {
     method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${PEMBINA_TOKEN}` },
   });
   assert.equal(delRes.status, 200);
   const delData = await delRes.json();

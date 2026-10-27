@@ -429,13 +429,19 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
       {/* Page Title & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-[#00B884] tracking-tight flex items-center gap-3">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
+              Presensi Proyektor
+            </span>
+            <span className="text-xs text-slate-400 font-medium">QR Dinamis</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
             <span>QR Dinamis Proyektor</span>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
               Rotasi 15 Detik
             </span>
           </h1>
-          <p className="text-slate-500 text-sm mt-0.5">
+          <p className="text-slate-500 text-xs sm:text-sm mt-1 max-w-2xl font-normal">
             Alur 4 tahap resmi: QR Proyektor → Nilai Keaktifan → Dispensasi Izin/Sakit/Telat → Kunci &amp; Masuk Log Presensi.
           </p>
         </div>

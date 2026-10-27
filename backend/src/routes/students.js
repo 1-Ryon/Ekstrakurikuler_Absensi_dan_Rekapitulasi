@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import { prisma } from '../config/prisma.js';
-import { requireRoles, getStudentDefaultPassword } from '../middlewares/auth.js';
+import { requireRoles, extractUser, getStudentDefaultPassword, hashPassword } from '../middlewares/auth.js';
 
 const router = Router();
 
 // GET /api/students
 router.get('/', async (req, res) => {
   try {
-    const roleHeader = (req.headers['x-user-role'] || '').toString().toUpperCase();
-    const isExplicitNonPrivileged = roleHeader === 'PEMBINA' || roleHeader === 'SISWA' || roleHeader === 'WALI_KELAS';
+    const user = extractUser(req);
+    const isPrivileged = user && (user.role === 'ADMIN' || user.role === 'KOORDINATOR');
 
     const students = await prisma.siswa.findMany({
       include: {
@@ -34,7 +34,7 @@ router.get('/', async (req, res) => {
         kehadiranRataRata: 94,
       };
 
-      if (!isExplicitNonPrivileged) {
+      if (isPrivileged) {
         studentObj.defaultPassword = getStudentDefaultPassword(s.nis);
         studentObj.password = getStudentDefaultPassword(s.nis);
       }
@@ -94,7 +94,7 @@ router.post('/import', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) =>
         create: {
           nis: rawNis,
           nisn: row.nisn ? String(row.nisn).trim() : rawNis,
-          passwordHash: defaultPassword,
+          passwordHash: hashPassword(defaultPassword),
           namaLengkap: rawNama,
           kelasId: kelasRecord.id,
           jenisKelamin: rawJk,

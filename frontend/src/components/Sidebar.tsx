@@ -106,7 +106,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <nav className="space-y-1">
               <button
                 onClick={() => handleTabClick('beranda')}
-                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all relative cursor-pointer ${
+                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all duration-150 active:scale-[0.98] select-none relative cursor-pointer ${
                   activeTab === 'beranda'
                     ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
@@ -121,7 +121,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               <button
                 onClick={() => handleTabClick('eskul')}
-                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all relative cursor-pointer ${
+                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all duration-150 active:scale-[0.98] select-none relative cursor-pointer ${
                   activeTab === 'eskul'
                     ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
@@ -136,7 +136,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               <button
                 onClick={() => handleTabClick('pembina')}
-                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all relative cursor-pointer ${
+                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all duration-150 active:scale-[0.98] select-none relative cursor-pointer ${
                   activeTab === 'pembina'
                     ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
@@ -151,7 +151,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               <button
                 onClick={() => handleTabClick('guru')}
-                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all relative cursor-pointer ${
+                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all duration-150 active:scale-[0.98] select-none relative cursor-pointer ${
                   activeTab === 'guru'
                     ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
@@ -166,7 +166,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               <button
                 onClick={() => handleTabClick('siswa')}
-                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all relative cursor-pointer ${
+                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all duration-150 active:scale-[0.98] select-none relative cursor-pointer ${
                   activeTab === 'siswa'
                     ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
@@ -181,7 +181,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               <button
                 onClick={() => handleTabClick('kelas')}
-                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all relative cursor-pointer ${
+                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all duration-150 active:scale-[0.98] select-none relative cursor-pointer ${
                   activeTab === 'kelas'
                     ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
@@ -196,7 +196,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               <button
                 onClick={() => handleTabClick('laporan')}
-                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all relative cursor-pointer ${
+                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all duration-150 active:scale-[0.98] select-none relative cursor-pointer ${
                   activeTab === 'laporan'
                     ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
@@ -307,7 +307,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <nav className="space-y-1">
               <button
                 onClick={() => handleTabClick('live-presensi')}
-                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all relative cursor-pointer ${
+                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all duration-150 active:scale-[0.98] select-none relative cursor-pointer ${
                   activeTab === 'live-presensi'
                     ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
@@ -337,7 +337,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <nav className="space-y-1">
               <button
                 onClick={() => handleTabClick('beranda')}
-                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all relative cursor-pointer ${
+                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all duration-150 active:scale-[0.98] select-none relative cursor-pointer ${
                   activeTab === 'beranda'
                     ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
@@ -352,7 +352,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               <button
                 onClick={() => handleTabClick('siswa')}
-                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all relative cursor-pointer ${
+                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all duration-150 active:scale-[0.98] select-none relative cursor-pointer ${
                   activeTab === 'siswa'
                     ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
@@ -367,7 +367,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               <button
                 onClick={() => handleTabClick('pembina-pendaftaran')}
-                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all relative cursor-pointer ${
+                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all duration-150 active:scale-[0.98] select-none relative cursor-pointer ${
                   activeTab === 'pembina-pendaftaran'
                     ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
@@ -404,7 +404,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               <button
                 onClick={() => handleTabClick('dynamic-qr')}
-                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all relative cursor-pointer ${
+                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all duration-150 active:scale-[0.98] select-none relative cursor-pointer ${
                   activeTab === 'dynamic-qr'
                     ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
@@ -422,7 +422,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               <button
                 onClick={() => handleTabClick('scanner-guru')}
-                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all relative cursor-pointer ${
+                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all duration-150 active:scale-[0.98] select-none relative cursor-pointer ${
                   activeTab === 'scanner-guru'
                     ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
@@ -437,7 +437,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               <button
                 onClick={() => handleTabClick('live-presensi')}
-                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all relative cursor-pointer ${
+                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all duration-150 active:scale-[0.98] select-none relative cursor-pointer ${
                   activeTab === 'live-presensi'
                     ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
@@ -452,7 +452,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               <button
                 onClick={() => handleTabClick('penilaian')}
-                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all relative cursor-pointer ${
+                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all duration-150 active:scale-[0.98] select-none relative cursor-pointer ${
                   activeTab === 'penilaian'
                     ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
@@ -479,7 +479,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <nav className="space-y-1">
               <button
                 onClick={() => handleTabClick('beranda')}
-                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all relative cursor-pointer ${
+                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all duration-150 active:scale-[0.98] select-none relative cursor-pointer ${
                   activeTab === 'beranda'
                     ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
@@ -494,7 +494,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               <button
                 onClick={() => handleTabClick('siswa')}
-                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all relative cursor-pointer ${
+                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all duration-150 active:scale-[0.98] select-none relative cursor-pointer ${
                   activeTab === 'siswa'
                     ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
@@ -509,7 +509,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               <button
                 onClick={() => handleTabClick('laporan')}
-                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all relative cursor-pointer ${
+                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all duration-150 active:scale-[0.98] select-none relative cursor-pointer ${
                   activeTab === 'laporan'
                     ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
@@ -536,7 +536,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <nav className="space-y-1">
               <button
                 onClick={() => handleTabClick('beranda')}
-                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all relative cursor-pointer ${
+                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all duration-150 active:scale-[0.98] select-none relative cursor-pointer ${
                   activeTab === 'beranda'
                     ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
@@ -551,7 +551,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               <button
                 onClick={() => handleTabClick('riwayat-eskul-siswa')}
-                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all relative cursor-pointer ${
+                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all duration-150 active:scale-[0.98] select-none relative cursor-pointer ${
                   activeTab === 'riwayat-eskul-siswa'
                     ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
@@ -566,7 +566,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               <button
                 onClick={() => handleTabClick('kartu-siswa')}
-                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all relative cursor-pointer ${
+                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all duration-150 active:scale-[0.98] select-none relative cursor-pointer ${
                   activeTab === 'kartu-siswa'
                     ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
@@ -589,7 +589,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <nav className="space-y-1">
               <button
                 onClick={() => handleTabClick('scanner-siswa')}
-                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all relative cursor-pointer ${
+                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all duration-150 active:scale-[0.98] select-none relative cursor-pointer ${
                   activeTab === 'scanner-siswa'
                     ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
@@ -604,7 +604,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               <button
                 onClick={() => handleTabClick('khn-siswa')}
-                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all relative cursor-pointer ${
+                className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all duration-150 active:scale-[0.98] select-none relative cursor-pointer ${
                   activeTab === 'khn-siswa'
                     ? 'text-[#00B884] font-bold bg-emerald-50/70 shadow-2xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
@@ -623,9 +623,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </div>
   );
 
-  // Bottom section: pinned UMUM (Pengaturan & Keluar)
+  // Bottom section: pinned UMUM (Pengaturan & Keluar) with safe-area padding
   const renderBottomSection = () => (
-    <div className="pt-3 border-t border-slate-200/80 shrink-0 bg-[#F8F9FA]">
+    <div className="pt-3 border-t border-slate-200/80 shrink-0 bg-[#F8F9FA] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       <div className="text-[11px] font-semibold text-slate-400 tracking-wider uppercase mb-2 px-3">
         UMUM
       </div>
@@ -665,7 +665,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             animate={{ width: 256, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-            className="hidden lg:flex overflow-hidden bg-[#F8F9FA] h-screen sticky top-0 border-r border-slate-200/80 flex-col justify-between select-none shrink-0 z-40"
+            className="hidden lg:flex overflow-hidden bg-[#F8F9FA] h-dvh max-h-screen border-r border-slate-200/80 flex-col justify-between select-none shrink-0 z-40"
           >
             <div className="w-64 h-full flex flex-col justify-between p-5 shrink-0">
               {/* School Branding */}
@@ -703,7 +703,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-              className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-[#F8F9FA] h-screen flex flex-col justify-between p-5 z-50 shadow-2xl lg:hidden select-none"
+              className="fixed inset-y-0 left-0 w-[82vw] max-w-[310px] bg-[#F8F9FA] h-dvh flex flex-col justify-between p-4 sm:p-5 z-50 shadow-2xl lg:hidden select-none safe-area-bottom"
             >
               {/* Header with Logo and Close Button */}
               <div className="flex items-center justify-between pb-4 pt-1 px-1 shrink-0 border-b border-slate-200/60">

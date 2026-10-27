@@ -394,7 +394,13 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight flex items-center gap-3">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
+              Presensi Lapangan
+            </span>
+            <span className="text-xs text-slate-400 font-medium">Real-Time Sync</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
             <span>Presensi Langsung Lapangan</span>
             {isSessionLocked && (
               <Badge variant="warning" className="text-xs">
@@ -402,7 +408,7 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
               </Badge>
             )}
           </h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
+          <p className="text-slate-500 text-xs sm:text-sm mt-1 max-w-2xl font-normal">
             Checklist kehadiran langsung di lapangan dengan alur 4 tahap resmi: Hadir → Nilai Keaktifan → Dispensasi → Kunci & Masuk Log.
           </p>
         </div>

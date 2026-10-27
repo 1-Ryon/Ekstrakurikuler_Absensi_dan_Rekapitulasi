@@ -96,7 +96,7 @@ export const ValidasiPerubahanJadwalModal: React.FC<ValidasiPerubahanJadwalModal
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
-          className="bg-white rounded-lg max-w-2xl w-full shadow-xl border border-slate-200 overflow-hidden my-auto flex flex-col max-h-[90vh]"
+          className="bg-white rounded-lg w-[92vw] max-w-2xl shadow-xl border border-slate-200 overflow-hidden my-auto flex flex-col max-h-[90dvh]"
         >
           {/* Header */}
           <div className="p-6 border-b border-slate-100 bg-white shrink-0">

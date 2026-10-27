@@ -13,6 +13,11 @@ export function getStudentDefaultPassword(nis) {
   return `al_amanah_${last3}`;
 }
 
+// Helper: Hash password dengan Bcrypt
+export function hashPassword(plainPassword) {
+  return bcrypt.hashSync(String(plainPassword).trim(), 10);
+}
+
 // Rate Limiter for Login (Defensive Brute-Force Prevention)
 const loginAttemptTracker = new Map();
 
@@ -59,7 +64,7 @@ export function verifyPassword(inputPassword, storedHash, fallbackCheck) {
   if (storedHash.startsWith('$2a$') || storedHash.startsWith('$2b$') || storedHash.startsWith('$2y$')) {
     return bcrypt.compareSync(inputPassword, storedHash);
   }
-  // Plaintext match
+  // Plaintext match untuk data legacy yang belum termigrasi
   if (inputPassword === storedHash) return true;
   if (typeof fallbackCheck === 'function' && fallbackCheck(inputPassword)) return true;
   return false;
@@ -79,70 +84,54 @@ export function generateUserToken(user) {
   );
 }
 
-// Middleware: Role-Based Authorization Guard (Verifikasi JWT Token Asli)
+// Helper: Ekstrak user dari header Authorization jika ada (aman & non-throwing)
+export function extractUser(req) {
+  const authHeader = (req.headers['authorization'] || '').toString();
+  if (authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7).trim();
+    try {
+      return jwt.verify(token, JWT_SECRET);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+// Middleware: Role-Based Authorization Guard (Verifikasi Kriptografis Token JWT)
 export function requireRoles(...allowedRoles) {
   return (req, res, next) => {
     const authHeader = (req.headers['authorization'] || '').toString();
-    const roleHeader = (req.headers['x-user-role'] || '').toString().toUpperCase();
 
-    let callerRole = null;
-    let decodedUser = null;
-
-    if (authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7).trim();
-      try {
-        decodedUser = jwt.verify(token, JWT_SECRET);
-        callerRole = decodedUser.role;
-        req.user = decodedUser;
-      } catch {
-        // Fallback backward compatibility untuk mock test token
-        const lowerToken = token.toLowerCase();
-        if (lowerToken.includes('admin')) callerRole = 'ADMIN';
-        else if (lowerToken.includes('koordinator')) callerRole = 'KOORDINATOR';
-        else if (lowerToken.includes('pembina') || lowerToken.includes('guru')) callerRole = 'PEMBINA';
-        else if (lowerToken.includes('walikelas')) callerRole = 'WALI_KELAS';
-        else if (lowerToken.includes('siswa')) callerRole = 'SISWA';
-        else {
-          return res.status(401).json({
-            success: false,
-            message: 'Token otentikasi tidak valid atau telah kedaluwarsa.',
-          });
-        }
-      }
-    } else if (authHeader) {
-      const lowerAuth = authHeader.toLowerCase();
-      if (lowerAuth.includes('admin')) callerRole = 'ADMIN';
-      else if (lowerAuth.includes('koordinator')) callerRole = 'KOORDINATOR';
-      else if (lowerAuth.includes('pembina') || lowerAuth.includes('guru')) callerRole = 'PEMBINA';
-      else if (lowerAuth.includes('walikelas')) callerRole = 'WALI_KELAS';
-      else if (lowerAuth.includes('siswa')) callerRole = 'SISWA';
-    }
-
-    // Role header fallback for tests/scripts explicitly supplying role
-    if (!callerRole && roleHeader) {
-      callerRole = roleHeader;
-    }
-
-    // Body identifier fallback for test runner
-    if (!callerRole && (req.body?.koordinatorId || req.body?.verifikatorId)) {
-      callerRole = 'KOORDINATOR';
-    }
-
-    if (!callerRole) {
+    if (!authHeader.startsWith('Bearer ')) {
       return res.status(401).json({
         success: false,
         message: 'Akses ditolak: Autentikasi diperlukan. Silakan sertakan token JWT yang valid.',
       });
     }
 
-    if (!allowedRoles.includes(callerRole)) {
+    const token = authHeader.substring(7).trim();
+    let decodedUser = null;
+    try {
+      decodedUser = jwt.verify(token, JWT_SECRET);
+    } catch {
+      return res.status(401).json({
+        success: false,
+        message: 'Token otentikasi tidak valid atau telah kedaluwarsa.',
+      });
+    }
+
+    const callerRole = decodedUser.role;
+    req.user = decodedUser;
+    req.callerRole = callerRole;
+
+    if (allowedRoles.length > 0 && !allowedRoles.includes(callerRole)) {
       return res.status(403).json({
         success: false,
         message: `Akses ditolak: Operasi ini membutuhkan hak akses [${allowedRoles.join(', ')}]. Peran Anda: ${callerRole}.`,
       });
     }
 
-    req.callerRole = callerRole;
     next();
   };
 }

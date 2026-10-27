@@ -126,10 +126,15 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
       {/* Top Header Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
+              SMK Al-Amanah
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
             Data Guru & Wali Kelas
           </h1>
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-slate-500 text-xs sm:text-sm mt-1 max-w-2xl font-normal">
             Master data tenaga pendidik, penetapan wali kelas per rombel, dan manajemen akun.
           </p>
         </div>
@@ -163,10 +168,10 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
         <Card>
           <CardContent className="p-4 sm:p-5 flex items-center justify-between">
             <div>
-              <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                 Total Guru Terdata
               </div>
-              <div className="text-2xl font-bold text-foreground mt-1">
+              <div className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mt-1">
                 {totalGuru} <span className="text-xs font-normal text-muted-foreground">Guru</span>
               </div>
             </div>
@@ -179,10 +184,10 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
         <Card>
           <CardContent className="p-4 sm:p-5 flex items-center justify-between">
             <div>
-              <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                 Wali Kelas Ditugaskan
               </div>
-              <div className="text-2xl font-bold text-foreground mt-1">
+              <div className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mt-1">
                 {waliKelasCount} <span className="text-xs font-normal text-muted-foreground">Rombel</span>
               </div>
             </div>
@@ -195,10 +200,10 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
         <Card>
           <CardContent className="p-4 sm:p-5 flex items-center justify-between">
             <div>
-              <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                 Total Kelas / Rombel
               </div>
-              <div className="text-2xl font-bold text-foreground mt-1">
+              <div className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mt-1">
                 {totalKelas} <span className="text-xs font-normal text-muted-foreground">Kelas</span>
               </div>
             </div>
@@ -211,10 +216,10 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
         <Card>
           <CardContent className="p-4 sm:p-5 flex items-center justify-between">
             <div>
-              <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+              <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                 Kelas Belum Ada Wali
               </div>
-              <div className="text-2xl font-bold text-foreground mt-1">
+              <div className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mt-1">
                 {unassignedKelasCount} <span className="text-xs font-normal text-muted-foreground">Kelas</span>
               </div>
             </div>
@@ -431,13 +436,13 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
         <Card className="overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="bg-muted/40 hover:bg-muted/40">
-                <TableHead className="py-3 px-4 text-xs font-semibold">Guru Pendidik</TableHead>
-                <TableHead className="py-3 px-4 text-xs font-semibold">Tugas Wali Kelas</TableHead>
-                <TableHead className="py-3 px-4 text-xs font-semibold">Akun Login</TableHead>
-                <TableHead className="py-3 px-4 text-xs font-semibold">Kontak</TableHead>
-                <TableHead className="py-3 px-4 text-xs font-semibold text-center">Status</TableHead>
-                <TableHead className="py-3 px-4 text-xs font-semibold text-right">Aksi</TableHead>
+              <TableRow className="border-b border-slate-200 bg-slate-50/75 hover:bg-slate-50/75 text-slate-500 font-bold text-xs uppercase tracking-wider">
+                <TableHead className="py-3 px-4 font-bold text-xs uppercase tracking-wider text-slate-500">Guru Pendidik</TableHead>
+                <TableHead className="py-3 px-4 font-bold text-xs uppercase tracking-wider text-slate-500">Tugas Wali Kelas</TableHead>
+                <TableHead className="py-3 px-4 font-bold text-xs uppercase tracking-wider text-slate-500">Akun Login</TableHead>
+                <TableHead className="py-3 px-4 font-bold text-xs uppercase tracking-wider text-slate-500">Kontak</TableHead>
+                <TableHead className="py-3 px-4 font-bold text-xs uppercase tracking-wider text-slate-500 text-center">Status</TableHead>
+                <TableHead className="py-3 px-4 font-bold text-xs uppercase tracking-wider text-slate-500 text-right whitespace-nowrap min-w-[120px]">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -562,7 +567,7 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
                     </TableCell>
 
                     {/* Actions */}
-                    <TableCell className="py-3.5 px-4 text-right">
+                    <TableCell className="py-3.5 px-4 text-right whitespace-nowrap min-w-[120px]">
                       <div className="flex items-center justify-end gap-1">
                         <Button
                           variant="ghost"

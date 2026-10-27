@@ -1,21 +1,23 @@
 import React, { useState } from 'react';
-import { X, Plus, Calendar, Clock, MapPin, Users, Award } from 'lucide-react';
-import { Eskul } from '../../types';
+import { X, Plus, Volleyball } from 'lucide-react';
+import { Eskul, Guru } from '../../types';
 import { PEMBINA_LIST } from '../../data/mockData';
 
 interface AddEskulModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (newEskul: Omit<Eskul, 'id' | 'jumlahSiswa'>) => void;
+  onSave: (eskul: Omit<Eskul, 'id' | 'jumlahSiswa'>) => void;
+  pembinaList?: Guru[];
 }
 
 export const AddEskulModal: React.FC<AddEskulModalProps> = ({
   isOpen,
   onClose,
   onSave,
+  pembinaList = [],
 }) => {
   const [namaEskul, setNamaEskul] = useState('');
-  const [pembinaId, setPembinaId] = useState(PEMBINA_LIST[0].id);
+  const [pembinaId, setPembinaId] = useState(pembinaList[0]?.id || PEMBINA_LIST[0].id);
   const [jadwalHari, setJadwalHari] = useState('Kamis');
   const [jamMulai, setJamMulai] = useState('15:30');
   const [jamSelesai, setJamSelesai] = useState('17:00');
@@ -28,7 +30,8 @@ export const AddEskulModal: React.FC<AddEskulModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const selectedPembina = PEMBINA_LIST.find(p => p.id === pembinaId) || PEMBINA_LIST[0];
+    const allPembinas = pembinaList.length > 0 ? pembinaList : PEMBINA_LIST;
+    const selectedPembina = allPembinas.find(p => p.id === pembinaId) || allPembinas[0];
     const resolvedKuota = typeof kuota === 'number' && kuota > 0 ? kuota : (parseInt(String(kuota), 10) || 35);
 
     onSave({
@@ -49,6 +52,8 @@ export const AddEskulModal: React.FC<AddEskulModalProps> = ({
     onClose();
   };
 
+  const allPembinaOptions = pembinaList.length > 0 ? pembinaList : PEMBINA_LIST;
+
   return (
     <div
       onClick={onClose}
@@ -56,16 +61,21 @@ export const AddEskulModal: React.FC<AddEskulModalProps> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-lg max-w-lg w-full p-6 shadow-xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150"
+        className="bg-white rounded-lg w-[92vw] max-w-lg p-4 sm:p-6 shadow-xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150 max-h-[92dvh] flex flex-col"
       >
         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
-          <div>
-            <h3 className="text-lg font-bold text-slate-800">
-              Tambah Ekstrakurikuler Baru
-            </h3>
-            <p className="text-xs text-slate-500">
-              Daftarkan cabang ekstrakurikuler baru untuk semester aktif.
-            </p>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-md bg-emerald-50 text-[#00B884] flex items-center justify-center">
+              <Plus className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-base sm:text-lg font-bold text-slate-800">
+                Tambah Ekstrakurikuler Baru
+              </h3>
+              <p className="text-xs text-slate-500">
+                SMK Al Amanah Kota Tangerang Selatan
+              </p>
+            </div>
           </div>
           <button
             type="button"
@@ -76,7 +86,7 @@ export const AddEskulModal: React.FC<AddEskulModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
+        <form onSubmit={handleSubmit} className="space-y-3.5 text-xs max-h-[75vh] overflow-y-auto pr-1">
           {/* Nama Eskul */}
           <div>
             <label className="font-semibold text-slate-700 block mb-1">
@@ -121,13 +131,17 @@ export const AddEskulModal: React.FC<AddEskulModalProps> = ({
                 required
                 value={kuota}
                 placeholder="Contoh: 35"
-                onFocus={(e) => e.target.select()}
+                onFocus={(e) => {
+                  if (kuota === 0) setKuota('');
+                  e.target.select();
+                }}
                 onChange={(e) => {
                   const val = e.target.value;
                   if (val === '') {
                     setKuota('');
                   } else {
-                    const num = parseInt(val, 10);
+                    const cleaned = val.replace(/^0+/, '') || '0';
+                    const num = parseInt(cleaned, 10);
                     setKuota(isNaN(num) ? '' : num);
                   }
                 }}
@@ -151,18 +165,18 @@ export const AddEskulModal: React.FC<AddEskulModalProps> = ({
               onChange={(e) => setPembinaId(e.target.value)}
               className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
             >
-              {PEMBINA_LIST.map((p) => (
+              {allPembinaOptions.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.namaLengkap} ({p.spesialisasi})
+                  {p.namaLengkap} {p.spesialisasi ? `(${p.spesialisasi})` : ''}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Jadwal & Waktu */}
+          {/* Jadwal Hari & Jam */}
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <label className="font-semibold text-slate-700 block mb-1">Hari Rutin</label>
+              <label className="font-semibold text-slate-700 block mb-1">Hari</label>
               <select
                 value={jadwalHari}
                 onChange={(e) => setJadwalHari(e.target.value)}
@@ -177,23 +191,19 @@ export const AddEskulModal: React.FC<AddEskulModalProps> = ({
                 <option value="Minggu">Minggu</option>
               </select>
             </div>
-
             <div>
-              <label className="font-semibold text-slate-700 block mb-1">Jam Mulai</label>
+              <label className="font-semibold text-slate-700 block mb-1">Mulai</label>
               <input
                 type="time"
-                required
                 value={jamMulai}
                 onChange={(e) => setJamMulai(e.target.value)}
                 className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
               />
             </div>
-
             <div>
-              <label className="font-semibold text-slate-700 block mb-1">Jam Selesai</label>
+              <label className="font-semibold text-slate-700 block mb-1">Selesai</label>
               <input
                 type="time"
-                required
                 value={jamSelesai}
                 onChange={(e) => setJamSelesai(e.target.value)}
                 className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
@@ -203,43 +213,47 @@ export const AddEskulModal: React.FC<AddEskulModalProps> = ({
 
           {/* Lokasi */}
           <div>
-            <label className="font-semibold text-slate-700 block mb-1">Lokasi Latihan / Ruangan</label>
+            <label className="font-semibold text-slate-700 block mb-1">
+              Lokasi Latihan
+            </label>
             <input
               type="text"
-              required
               value={lokasi}
               onChange={(e) => setLokasi(e.target.value)}
-              placeholder="Contoh: Lab Komputer RPL 1 / Lapangan Utama"
+              placeholder="Contoh: Plaza Upacara SMK Al Amanah"
               className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
             />
           </div>
 
           {/* Deskripsi */}
           <div>
-            <label className="font-semibold text-slate-700 block mb-1">Deskripsi & Tujuan Kegiatan</label>
+            <label className="font-semibold text-slate-700 block mb-1">
+              Deskripsi Singkat Ekstrakurikuler
+            </label>
             <textarea
               rows={2}
               value={deskripsi}
               onChange={(e) => setDeskripsi(e.target.value)}
-              placeholder="Jelaskan silabus singkat atau capaian eskul..."
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884] resize-none"
+              placeholder="Rangkuman kegiatan pembinaan dan kompetensi..."
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
             />
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+          {/* Action Buttons */}
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-slate-200 text-slate-600 rounded-md text-xs font-medium hover:bg-slate-50 transition-colors cursor-pointer"
+              className="px-4 py-2 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-md text-xs font-semibold transition-colors cursor-pointer"
             >
               Batal
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-[#00B884] hover:bg-emerald-600 text-white rounded-md text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+              className="px-5 py-2 bg-[#00B884] hover:bg-[#009e70] active:scale-[0.98] text-white rounded-md text-xs font-semibold shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
             >
-              Simpan Ekstrakurikuler
+              <Volleyball className="w-3.5 h-3.5" />
+              <span>Simpan Ekstrakurikuler</span>
             </button>
           </div>
         </form>

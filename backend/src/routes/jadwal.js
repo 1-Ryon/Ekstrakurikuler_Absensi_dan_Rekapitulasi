@@ -79,7 +79,7 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/jadwal-proposals
-router.post('/', async (req, res) => {
+router.post('/', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, res) => {
   try {
     const {
       eskulId,

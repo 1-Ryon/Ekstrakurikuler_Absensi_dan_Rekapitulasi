@@ -42,6 +42,15 @@ async function main() {
   assert.ok(koorToken, 'Koordinator token harus ada');
   console.log('  ✓ Koordinator login berhasil');
 
+  const siswaLogin = await req('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ username: '20241001', password: 'al_amanah_001' }),
+  });
+  assert.equal(siswaLogin.status, 200, 'Siswa login harus 200');
+  const siswaToken = siswaLogin.data.token;
+  assert.ok(siswaToken, 'Siswa token harus ada');
+  console.log('  ✓ Siswa login berhasil');
+
   // ==========================================
   // TAHAP 2: PEMBUATAN ESKUL BARU OLEH ADMIN
   // ==========================================
@@ -59,14 +68,14 @@ async function main() {
       jadwalHari: 'Sabtu',
       jamMulai: '08:30',
       jamSelesai: '11:00',
-      lokasi: 'Laboratorium Komputer & Elektronika',
-      deskripsi: 'Pelatihan mikrokontroler Arduino, IoT, sensor cerdas, dan pemrograman C++.',
+      lokasi: 'Laboratorium Komputer 3',
+      deskripsi: 'Pengembangan robot cerdas, sensor IoT, dan pemrograman mikrokontroler.',
     }),
   });
-  assert.equal(createEskul.status, 201, 'Pembuatan eskul baru harus 201 Created');
-  const newEskul = createEskul.data.data;
-  const newEskulId = newEskul.id;
-  console.log(`  ✓ Eskul '${newEskul.namaEskul}' berhasil dibuat (ID: ${newEskulId}, Kuota: ${newEskul.kuota})`);
+  assert.equal(createEskul.status, 201, 'Pembuatan eskul harus 201 Created');
+  const newEskulId = createEskul.data.data.id;
+  assert.ok(newEskulId, 'ID eskul baru harus ada');
+  console.log(`  ✓ Eskul '${eskulName}' berhasil dibuat (ID: ${newEskulId}, Kuota: 30)`);
 
   // ==========================================
   // TAHAP 3: PEMBUATAN AKUN PEMBINA BARU
@@ -78,28 +87,31 @@ async function main() {
     token: adminToken,
     body: JSON.stringify({
       namaLengkap: `Dr. Eng. Hendra Gunawan, S.T. ${uniqueCode}`,
-      nip: `19880520201201${uniqueCode}`,
+      nip: `19851120${uniqueCode}`,
       username: pembinaUsername,
       password: 'pembina123',
-      spesialisasi: 'Robotika Industri & IoT',
+      noHp: '081299887766',
+      email: `${pembinaUsername}@smk-alamanah.sch.id`,
+      spesialisasi: 'Dosen Praktisi Robotika & IoT',
       assignedEskulId: newEskulId,
     }),
   });
-  assert.equal(createPembina.status, 201, 'Pembuatan pembina harus 201 Created');
+  assert.equal(createPembina.status, 201, 'Pembuatan pembina harus 201');
   console.log(`  ✓ Akun pembina '${pembinaUsername}' berhasil dibuat dan ditautkan ke ${eskulName}`);
 
-  // Login sebagai Pembina baru
+  // Login sebagai pembina baru
   const pembinaLogin = await req('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ username: pembinaUsername, password: 'pembina123' }),
   });
-  assert.equal(pembinaLogin.status, 200, 'Pembina baru harus bisa login');
+  assert.equal(pembinaLogin.status, 200, 'Login pembina baru harus 200');
   const pembinaToken = pembinaLogin.data.token;
   const pembinaUser = pembinaLogin.data.user;
-  console.log(`  ✓ Pembina baru '${pembinaUser.namaLengkap}' berhasil login (Role: ${pembinaUser.role})`);
+  assert.equal(pembinaUser.role, 'PEMBINA');
+  console.log(`  ✓ Pembina baru '${pembinaUser.namaLengkap}' berhasil login (Role: PEMBINA)`);
 
   // ==========================================
-  // TAHAP 4: PENDAFTARAN SISWA KE ESKUL BARU
+  // TAHAP 4: PENDAFTARAN SISWA (CALON ANGGOTA)
   // ==========================================
   console.log('\n--- 4. PENDAFTARAN SISWA (CALON ANGGOTA) ---');
   const candidateStudent1 = 'sis-041';
@@ -109,6 +121,7 @@ async function main() {
   // Pendaftar 1
   const reg1 = await req('/pendaftaran', {
     method: 'POST',
+    token: siswaToken,
     body: JSON.stringify({
       eskulId: newEskulId,
       siswaId: candidateStudent1,
@@ -123,27 +136,31 @@ async function main() {
   // Pendaftar 2
   const reg2 = await req('/pendaftaran', {
     method: 'POST',
+    token: siswaToken,
     body: JSON.stringify({
       eskulId: newEskulId,
       siswaId: candidateStudent2,
       alasanDaftar: 'Tertarik membuat smart greenhouse berbasis Arduino.',
     }),
   });
-  assert.equal(reg2.status, 201, 'Pendaftaran siswa 2 harus 201 Created');
+  assert.equal(reg2.status, 201);
   const regId2 = reg2.data.data.id;
+  assert.equal(reg2.data.data.status, 'MENUNGGU_SELEKSI');
   console.log(`  ✓ Siswa 2 (ID: ${candidateStudent2}) berhasil mendaftar (Status: MENUNGGU_SELEKSI)`);
 
-  // Pendaftar 3
+  // Pendaftar 3 (akan ditolak saat seleksi pembina)
   const reg3 = await req('/pendaftaran', {
     method: 'POST',
+    token: siswaToken,
     body: JSON.stringify({
       eskulId: newEskulId,
       siswaId: candidateStudent3,
-      alasanDaftar: 'Coba-coba daftar eskul teknologi.',
+      alasanDaftar: 'Hanya ingin coba-coba.',
     }),
   });
-  assert.equal(reg3.status, 201, 'Pendaftaran siswa 3 harus 201 Created');
+  assert.equal(reg3.status, 201);
   const regId3 = reg3.data.data.id;
+  assert.equal(reg3.data.data.status, 'MENUNGGU_SELEKSI');
   console.log(`  ✓ Siswa 3 (ID: ${candidateStudent3}) berhasil mendaftar (Status: MENUNGGU_SELEKSI)`);
 
   // ==========================================
@@ -245,6 +262,7 @@ async function main() {
   // Metode 1: Siswa 1 scan Dynamic QR token sesi
   const scanQr = await req('/presensi/scan', {
     method: 'POST',
+    token: siswaToken,
     body: JSON.stringify({
       qrToken: qrToken,
       siswaId: candidateStudent1,
@@ -258,6 +276,7 @@ async function main() {
   // Metode 2: Pembina scan kartu QR Siswa 2
   const scanCard = await req('/presensi/scan-student-card', {
     method: 'POST',
+    token: pembinaToken,
     body: JSON.stringify({
       sesiId: sessionId,
       studentIdOrNis: candidateStudent2,
@@ -292,6 +311,7 @@ async function main() {
   // Verifikasi presensi baru ditolak karena sesi terkunci
   const scanAfterLock = await req('/presensi/scan', {
     method: 'POST',
+    token: siswaToken,
     body: JSON.stringify({
       qrToken: qrToken,
       siswaId: candidateStudent3,

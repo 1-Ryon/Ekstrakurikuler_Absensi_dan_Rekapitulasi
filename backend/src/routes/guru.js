@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../config/prisma.js';
-import { requireRoles } from '../middlewares/auth.js';
+import { requireRoles, hashPassword } from '../middlewares/auth.js';
 
 const router = Router();
 
@@ -24,9 +24,7 @@ router.get('/pembina', async (req, res) => {
       namaLengkap: p.namaLengkap,
       nip: p.nip || '-',
       username: p.username || '-',
-      password: p.passwordHash || `pembina_${p.username}`,
-      defaultPassword: p.passwordHash || `pembina_${p.username}`,
-      noHp: p.noHp || '-',
+            noHp: p.noHp || '-',
       email: p.email || '-',
       spesialisasi: p.spesialisasi || 'Pembina Eskul',
       avatarUrl: p.avatarUrl,
@@ -55,7 +53,7 @@ router.post('/pembina', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) =
     const guru = await prisma.guru.create({
       data: {
         username: finalUsername,
-        passwordHash: finalPassword,
+        passwordHash: hashPassword(finalPassword),
         namaLengkap,
         nip: nip || null,
         noHp: noHp || null,
@@ -134,9 +132,7 @@ router.get('/guru', async (req, res) => {
       isWaliKelas: g.isWaliKelas,
       role: g.role,
       username: g.username || '-',
-      password: g.passwordHash || (g.isPembina ? `pembina_${g.username}` : `guru_${g.username}`),
-      defaultPassword: g.passwordHash || (g.isPembina ? `pembina_${g.username}` : `guru_${g.username}`),
-      statusAktif: g.statusAktif,
+            statusAktif: g.statusAktif,
       eskulDiampu: g.eskulDiampu || [],
       kelasWali: g.kelasWali || [],
     }));
@@ -176,7 +172,7 @@ router.post('/guru', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
     const guru = await prisma.guru.create({
       data: {
         username: finalUsername,
-        passwordHash: finalPassword,
+        passwordHash: hashPassword(finalPassword),
         role: role || (isWaliKelas ? 'WALI_KELAS' : isPembina ? 'PEMBINA' : 'KOORDINATOR'),
         namaLengkap,
         nip: nip || null,
@@ -262,7 +258,7 @@ router.put('/guru/:id', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) =
     if (isWaliKelas !== undefined) updateData.isWaliKelas = Boolean(isWaliKelas);
     if (role !== undefined) updateData.role = role;
     if (statusAktif !== undefined) updateData.statusAktif = Boolean(statusAktif);
-    if (password) updateData.passwordHash = password;
+    if (password && password.trim() !== "") updateData.passwordHash = hashPassword(password);
 
     const updatedGuru = await prisma.guru.update({
       where: { id },
@@ -430,7 +426,7 @@ router.post('/guru/import', requireRoles('ADMIN', 'KOORDINATOR'), async (req, re
         guruRecord = await prisma.guru.create({
           data: {
             username,
-            passwordHash: defaultPassword,
+            passwordHash: hashPassword(defaultPassword),
             namaLengkap: rawNama,
             nip: rawNip,
             jenisKelamin: rawJk,

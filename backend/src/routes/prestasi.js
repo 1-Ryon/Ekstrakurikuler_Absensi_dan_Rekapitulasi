@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { requireRoles } from '../middlewares/auth.js';
 import { prisma } from '../config/prisma.js';
 
 const router = Router();
@@ -31,7 +32,7 @@ router.get('/', async (req, res) => {
 });
 
 // 2. POST /api/prestasi: Tambah capaian prestasi & sinkronisasi nilai akhir
-router.post('/', async (req, res) => {
+router.post('/', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN', 'SISWA'), async (req, res) => {
   try {
     const { eskulId, siswaId, namaLomba, penyelenggara, tingkat, peringkat, tanggal, buktiSertifikat, keterangan } = req.body;
 
@@ -109,7 +110,7 @@ router.post('/', async (req, res) => {
 });
 
 // 3. DELETE /api/prestasi/:id: Hapus data prestasi & kalkulasi ulang nilai akhir
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, res) => {
   try {
     const { id } = req.params;
     const target = await prisma.prestasiLomba.findUnique({ where: { id } });

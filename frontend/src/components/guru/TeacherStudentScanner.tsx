@@ -467,7 +467,13 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-[#00B884] tracking-tight flex items-center gap-3">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
+              Kamera Pendidik
+            </span>
+            <span className="text-xs text-slate-400 font-medium">Scanner Barcode</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
             <span>Pindai Presensi (Kamera Guru)</span>
             {isSessionLocked && (
               <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300">
@@ -475,7 +481,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
               </span>
             )}
           </h1>
-          <p className="text-slate-500 text-sm mt-0.5">
+          <p className="text-slate-500 text-xs sm:text-sm mt-1 max-w-2xl font-normal">
             Alur 4 tahap resmi: Pindai Kartu → Nilai Keaktifan → Dispensasi Izin/Sakit/Telat → Kunci &amp; Masuk Log Presensi.
           </p>
         </div>
@@ -639,7 +645,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
                 />
 
                 {isCameraActive && (
-                  <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-[#00B884] to-transparent shadow-[0_0_15px_#00B884] animate-bounce top-1/2 pointer-events-none" />
+                  <div className="absolute inset-x-0 h-0.5 bg-[#00B884] opacity-80 animate-pulse top-1/2 pointer-events-none" />
                 )}
 
                 <div className="absolute inset-0 pointer-events-none flex items-center justify-center">

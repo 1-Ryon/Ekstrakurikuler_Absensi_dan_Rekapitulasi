@@ -129,7 +129,7 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-lg max-w-xl w-full p-6 shadow-xl border border-slate-200 max-h-[90vh] flex flex-col justify-between animate-in fade-in zoom-in-95 duration-150"
+        className="bg-white rounded-lg w-[92vw] max-w-xl p-4 sm:p-6 shadow-xl border border-slate-200 max-h-[92dvh] flex flex-col justify-between animate-in fade-in zoom-in-95 duration-150"
       >
         <div>
           {/* Header */}

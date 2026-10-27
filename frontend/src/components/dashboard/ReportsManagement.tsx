@@ -38,7 +38,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
   defaultEskuls = [],
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSemester, setSelectedSemester] = useState('Ganjil 2026/2027');
+  const [selectedSemester, setSelectedSemester] = useState('Semester Ganjil');
   const [selectedEskuls, setSelectedEskuls] = useState<string[]>(defaultEskuls);
   const [selectedClasses, setSelectedClasses] = useState<string[]>(defaultClasses);
   const [selectedPredikatFilter, setSelectedPredikatFilter] = useState<string>('ALL');
@@ -76,7 +76,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
   };
 
   const activeFiltersCount = 
-    (selectedSemester !== 'Ganjil 2026/2027' ? 1 : 0) +
+    (selectedSemester !== 'Semester Ganjil' ? 1 : 0) +
     selectedEskuls.length + 
     selectedClasses.length +
     (selectedPredikatFilter !== 'ALL' ? 1 : 0);
@@ -180,16 +180,15 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
       {/* 1. Header & Title Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mb-1">
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
               SMK Al-Amanah
             </span>
-            <span className="text-xs text-slate-400 font-medium">T.A. 2026/2027</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
             Laporan &amp; Rekapitulasi Nilai Eskul
           </h1>
-          <p className="text-slate-500 text-sm mt-0.5 max-w-2xl">
+          <p className="text-slate-500 text-xs sm:text-sm mt-1 max-w-2xl font-normal">
             Rekapitulasi resmi kehadiran presensi QR, akumulasi bobot kompetensi siswa, dan pencetakan rapor ekstrakurikuler.
           </p>
         </div>
@@ -421,7 +420,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  setSelectedSemester('Ganjil 2026/2027');
+                  setSelectedSemester('Semester Ganjil');
                   setSelectedEskuls([]);
                   setSelectedClasses([]);
                   setSelectedPredikatFilter('ALL');
@@ -440,7 +439,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50/90 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              <tr className="bg-slate-50/75 border-b border-slate-200 text-xs font-bold uppercase tracking-wider text-slate-500">
                 <th className="py-3.5 px-4 w-12 text-center">No</th>
                 <th className="py-3.5 px-4 whitespace-nowrap">Nama Siswa</th>
                 <th className="py-3.5 px-4 whitespace-nowrap">NISN &amp; Kelas</th>
@@ -574,7 +573,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
         {/* Footer Summary */}
         <div className="p-4 bg-slate-50/80 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-500">
           <span>Menampilkan <strong>{filteredPenilaian.length}</strong> dari <strong>{penilaianList.length}</strong> data rekapitulasi penilaian</span>
-          <span className="font-semibold text-slate-700">Tahun Ajaran 2026/2027 • Semester Ganjil</span>
+          <span className="font-semibold text-slate-700">Semester Ganjil</span>
         </div>
       </div>
 
@@ -618,13 +617,13 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
 
               {/* Filter Options */}
               <div className="space-y-4">
-                {/* 1. Tahun Ajaran / Semester */}
+                {/* 1. Semester */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
-                    Tahun Ajaran &amp; Semester
+                    Semester
                   </label>
                   <div className="grid grid-cols-2 gap-2">
-                    {['Ganjil 2026/2027', 'Genap 2025/2026'].map((sem) => (
+                    {['Semester Ganjil', 'Semester Genap'].map((sem) => (
                       <button
                         key={sem}
                         type="button"
@@ -636,7 +635,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
                         }`}
                       >
                         <Calendar className="w-3.5 h-3.5" />
-                        <span>Semester {sem}</span>
+                        <span>{sem}</span>
                       </button>
                     ))}
                   </div>
@@ -748,7 +747,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    setSelectedSemester('Ganjil 2026/2027');
+                    setSelectedSemester('Semester Ganjil');
                     setSelectedEskuls([]);
                     setSelectedClasses([]);
                   }}
@@ -812,7 +811,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
                   LEMBAR REKAPITULASI NILAI EKSTRAKURIKULER SISWA
                 </h3>
                 <div className="text-xs text-slate-500 mt-0.5 font-medium">
-                  Tahun Pelajaran 2026/2027 • Semester {selectedSemester}
+                  {selectedSemester}
                 </div>
               </div>
             </div>

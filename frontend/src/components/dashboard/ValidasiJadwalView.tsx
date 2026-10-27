@@ -144,15 +144,16 @@ export const ValidasiJadwalView: React.FC<ValidasiJadwalViewProps> = ({
                     <span>Kembali ke Dasbor</span>
                   </Button>
                 )}
-                <Badge variant="warning" className="text-[10px] font-bold uppercase tracking-wider">
-                  Modul Validasi Koordinator
-                </Badge>
-                <span className="text-xs text-muted-foreground">Verifikator: {currentUser.namaLengkap}</span>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
+                    Approval Center
+                  </span>
+                </div>
               </div>
-              <h1 className="text-2xl font-bold text-foreground mt-1 tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
                 Validasi Perubahan Jadwal Ekstrakurikuler
               </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-2xl leading-relaxed">
+              <p className="text-slate-500 text-xs sm:text-sm mt-1 max-w-2xl font-normal">
                 Tinjau dan putuskan permohonan pergantian hari, jam, atau lokasi latihan yang diajukan oleh pembina. Jadwal yang disetujui otomatis mengupdate kalender sekolah.
               </p>
             </div>
@@ -411,7 +412,6 @@ export const ValidasiJadwalView: React.FC<ValidasiJadwalViewProps> = ({
                       isApproved ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900' : 'bg-rose-50/70 border-rose-200 text-rose-900'
                     }`}>
                       <div className="flex items-center gap-1.5 font-bold mb-1">
-                        <ShieldCheck className="size-3.5" />
                         <span>Catatan Koordinator:</span>
                       </div>
                       <p className="italic">

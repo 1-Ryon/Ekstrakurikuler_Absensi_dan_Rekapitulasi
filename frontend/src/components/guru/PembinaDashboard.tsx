@@ -224,17 +224,16 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
       <Card className="p-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2">
-              <Badge variant="brand" className="text-xs">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
                 Portal Guru Pembina
-              </Badge>
-              <span className="text-xs text-muted-foreground">T.A. 2026/2027</span>
+              </span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
               Selamat Bertugas, {currentPembina.namaLengkap}!
             </h1>
-            <p className="text-muted-foreground text-xs sm:text-sm max-w-xl">
-              Membina <strong className="text-foreground">{coachedEskuls.length} Cabang Ekstrakurikuler</strong> • NIP: {currentPembina.nomorInduk || '-'}
+            <p className="text-slate-500 text-xs sm:text-sm mt-1 max-w-2xl font-normal">
+              Membina <strong className="text-slate-800">{coachedEskuls.length} Cabang Ekstrakurikuler</strong> • NIP: {currentPembina.nomorInduk || '-'}
             </p>
 
             {/* Multi-Eskul Tab Pills */}

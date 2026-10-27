@@ -27,8 +27,12 @@ async function fetchWithFallback<T>(url: string, options?: RequestInit, fallback
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 20000);
 
-    const userSession = typeof window !== 'undefined' ? localStorage.getItem('al_amanah_user_session') : null;
-    const authToken = typeof window !== 'undefined' ? localStorage.getItem('al_amanah_auth_token') : null;
+    const userSession = typeof window !== 'undefined'
+      ? (sessionStorage.getItem('al_amanah_user_session') || localStorage.getItem('al_amanah_user_session'))
+      : null;
+    const authToken = typeof window !== 'undefined'
+      ? (sessionStorage.getItem('al_amanah_auth_token') || localStorage.getItem('al_amanah_auth_token'))
+      : null;
     let userRole = '';
     if (userSession) {
       try {

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { requireRoles } from '../middlewares/auth.js';
 import { prisma } from '../config/prisma.js';
 
 const router = Router();
@@ -44,7 +45,7 @@ router.get('/', async (req, res) => {
 });
 
 // 2. POST /api/penilaian: Batch input/update nilai rapor (Formula Kurikulum Merdeka)
-router.post('/', async (req, res) => {
+router.post('/', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, res) => {
   try {
     const { items } = req.body;
     if (!items || !Array.isArray(items)) {

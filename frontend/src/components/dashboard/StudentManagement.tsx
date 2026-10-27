@@ -263,16 +263,15 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
       {/* 1. Header & Title Section */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mb-1">
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
               SMK Al-Amanah
             </span>
-            <span className="text-xs text-slate-400 font-medium">T.A. 2026/2027</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">
-            Data & Keanggotaan Siswa
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+            Data &amp; Keanggotaan Siswa
           </h1>
-          <p className="text-slate-500 text-sm mt-0.5 max-w-2xl">
+          <p className="text-slate-500 text-xs sm:text-sm mt-1 max-w-2xl font-normal">
             Kelola database profil siswa, verifikasi partisipasi kegiatan ekstrakurikuler, cetak kartu QR Code presensi, dan kelola kredensial login.
           </p>
         </div>
@@ -314,8 +313,8 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
             <Users className="size-5" />
           </div>
           <div className="min-w-0">
-            <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Total Siswa</div>
-            <div className="text-xl sm:text-2xl font-bold text-foreground tracking-tight mt-0.5">
+            <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Siswa</div>
+            <div className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mt-0.5">
               {stats.total}
               <span className="text-xs font-medium text-muted-foreground ml-1">Siswa</span>
             </div>
@@ -332,8 +331,8 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
             <Award className="size-5" />
           </div>
           <div className="min-w-0">
-            <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Ber-Eskul</div>
-            <div className="text-xl sm:text-2xl font-bold text-foreground tracking-tight mt-0.5">
+            <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Ber-Eskul</div>
+            <div className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mt-0.5">
               {stats.withEskulCount}
               <span className="text-xs font-semibold text-blue-600 ml-1.5">({stats.coveragePercent}%)</span>
             </div>
@@ -356,8 +355,8 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
             <AlertCircle className="size-5" />
           </div>
           <div className="min-w-0">
-            <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Belum Ber-Eskul</div>
-            <div className="text-xl sm:text-2xl font-bold text-foreground tracking-tight mt-0.5">
+            <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Belum Ber-Eskul</div>
+            <div className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mt-0.5">
               {stats.withoutEskulCount}
               <span className="text-xs font-medium text-muted-foreground ml-1">Siswa</span>
             </div>
@@ -374,8 +373,8 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
             <CalendarCheck className="size-5" />
           </div>
           <div className="min-w-0">
-            <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Rerata Presensi</div>
-            <div className="text-xl sm:text-2xl font-bold text-foreground tracking-tight mt-0.5">
+            <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Rerata Presensi</div>
+            <div className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mt-0.5">
               {stats.avgAttendance}%
             </div>
             <div className="text-[11px] text-muted-foreground font-medium mt-0.5 truncate">
@@ -567,7 +566,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/40 hover:bg-muted/40 border-b border-border">
+                <TableRow className="border-b border-slate-200 bg-slate-50/75 hover:bg-slate-50/75 text-slate-500 font-bold text-xs uppercase tracking-wider">
                   {/* Checkbox Select All */}
                   <TableHead className="w-10 text-center py-3">
                     <input
@@ -586,7 +585,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                   <TableHead className="py-3 whitespace-nowrap">Presensi</TableHead>
                   <TableHead className="py-3 whitespace-nowrap">{isKoordinator ? 'Kredensial Login' : 'Status Akun'}</TableHead>
                   <TableHead className="py-3 text-center whitespace-nowrap">Status</TableHead>
-                  <TableHead className="py-3 text-right whitespace-nowrap">Aksi</TableHead>
+                  <TableHead className="py-3 text-right whitespace-nowrap min-w-[100px]">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -784,7 +783,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                       </TableCell>
 
                       {/* Aksi */}
-                      <TableCell className="py-3 px-4 text-right whitespace-nowrap">
+                      <TableCell className="py-3 px-4 text-right whitespace-nowrap min-w-[100px]">
                         <div className="flex items-center justify-end gap-1.5">
                           {/* Tombol Cetak / Tampilkan Kartu QR Siswa */}
                           <Button

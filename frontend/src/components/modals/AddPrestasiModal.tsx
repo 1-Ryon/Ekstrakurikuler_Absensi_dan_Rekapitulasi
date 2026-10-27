@@ -126,7 +126,7 @@ export const AddPrestasiModal: React.FC<AddPrestasiModalProps> = ({
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
-        className="bg-white rounded-xl shadow-2xl border border-slate-100 w-full max-w-xl overflow-hidden my-8"
+        className="bg-white rounded-xl shadow-2xl border border-slate-100 w-[92vw] max-w-xl overflow-hidden my-auto max-h-[92dvh] flex flex-col"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-linear-to-r from-emerald-50 via-teal-50 to-white">

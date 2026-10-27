@@ -264,10 +264,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Title & Top Action Buttons */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#000000] tracking-tight">
-            Dashbord Koordinator
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
+              SMK Al-Amanah
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+            Dashboard Koordinator
           </h1>
-          <p className="text-slate-500 text-xs sm:text-sm mt-0.5 font-normal">
+          <p className="text-slate-500 text-xs sm:text-sm mt-1 max-w-2xl font-normal">
             Memantau jadwal mingguan eskul, daftar guru pembina bertugas, dan fasilitas yang digunakan Pada Eskul.
           </p>
         </div>
@@ -371,7 +376,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <ArrowUpRight className="size-4 text-slate-400" />
           </CardHeader>
           <CardContent className="space-y-2">
-            <div className="text-2xl sm:text-3xl font-extrabold text-[#00B884] tracking-tight">
+            <div className="text-2xl sm:text-3xl font-bold text-[#00B884] tracking-tight">
               {effectiveEskulList.length}
             </div>
             <div>
@@ -394,11 +399,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <ArrowUpRight className="size-4 text-slate-400" />
           </CardHeader>
           <CardContent className="space-y-2">
-            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <div className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
               {effectiveStudents.length}
             </div>
             <div className="text-xs text-slate-500 truncate">
-              {enrolledPercentage}% ({enrolledStudentsCount} siswa ber-eskul)
+              {enrolledPercentage}% ({enrolledStudentsCount} siswa terdaftar di eskul)
             </div>
           </CardContent>
         </Card>
@@ -415,7 +420,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <ArrowUpRight className="size-4 text-slate-400" />
           </CardHeader>
           <CardContent className="space-y-2">
-            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <div className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
               {effectivePembinaList.length}
             </div>
             <div>
@@ -438,7 +443,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <ArrowUpRight className="size-4 text-slate-400" />
           </CardHeader>
           <CardContent className="space-y-2">
-            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <div className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
               {todayActiveSessionsCount}
             </div>
             <div className="text-xs text-slate-500 truncate">

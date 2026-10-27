@@ -197,11 +197,16 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
       {/* Top Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
+              SMK Al-Amanah
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
             Kelola Ekstrakurikuler
           </h1>
-          <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">
-            Manajemen data ESKUL, Guru Pembina, Jadwal Latihan Mingguan, dan Status Jam Latihan.
+          <p className="text-slate-500 text-xs sm:text-sm mt-1 max-w-2xl font-normal">
+            Manajemen data eskul, guru pembina, jadwal latihan mingguan, dan kuota pendaftaran.
           </p>
         </div>
 
@@ -310,16 +315,16 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
 
         <Card className="p-5 border-border flex items-center justify-between">
           <div>
-            <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
               <span>Status Eskul &amp; Sesi Jam</span>
               {currentlyRunningCount > 0 && (
                 <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.2 rounded-full">
                   <span className="size-1.5 rounded-full bg-emerald-500 animate-ping" />
-                  Live
+                  Berjalan
                 </span>
               )}
             </div>
-            <div className="text-2xl font-bold text-foreground mt-1 flex items-baseline gap-2">
+            <div className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mt-1 flex items-baseline gap-2">
               <span>{activeEskul}</span>
               <span className="text-xs font-normal text-muted-foreground">Aktif</span>
               {currentlyRunningCount > 0 ? (
@@ -353,10 +358,10 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
 
         <Card className="p-5 border-border flex items-center justify-between">
           <div>
-            <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
               Total Kuota &amp; Pendaftar
             </div>
-            <div className="text-2xl font-bold text-foreground mt-1">
+            <div className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mt-1">
               {totalTerisi} <span className="text-xs font-normal text-muted-foreground">/ {totalKuota} Siswa</span>
             </div>
           </div>
@@ -614,16 +619,16 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
         <Card className="border-border overflow-hidden">
           <div className="overflow-x-auto">
             {/* table-fixed locks all column widths so changing status never causes columns to shift */}
-            <Table className="w-full table-fixed min-w-[920px]">
+            <Table className="w-full table-fixed min-w-[980px]">
               <TableHeader>
-                <TableRow className="border-b border-border bg-muted/40 hover:bg-muted/40 text-muted-foreground font-semibold text-[11px] uppercase tracking-wider">
-                  <TableHead className="w-[26%] py-3 px-4">Ekstrakurikuler</TableHead>
-                  <TableHead className="w-[20%] py-3 px-4">Guru Pembina</TableHead>
-                  <TableHead className="w-[22%] py-3 px-4">Jadwal &amp; Lokasi</TableHead>
-                  <TableHead className="w-[14%] py-3 px-4">Kapasitas &amp; Kuota</TableHead>
+                <TableRow className="border-b border-slate-200 bg-slate-50/75 hover:bg-slate-50/75 text-slate-500 font-bold text-xs uppercase tracking-wider">
+                  <TableHead className="w-[23%] min-w-[210px] py-3 px-4 font-bold text-xs uppercase tracking-wider text-slate-500">Ekstrakurikuler</TableHead>
+                  <TableHead className="w-[18%] min-w-[170px] py-3 px-4 font-bold text-xs uppercase tracking-wider text-slate-500">Guru Pembina</TableHead>
+                  <TableHead className="w-[21%] min-w-[190px] py-3 px-4 font-bold text-xs uppercase tracking-wider text-slate-500">Jadwal &amp; Lokasi</TableHead>
+                  <TableHead className="w-[14%] min-w-[130px] py-3 px-4 font-bold text-xs uppercase tracking-wider text-slate-500">Kapasitas &amp; Kuota</TableHead>
                   {/* Status header with locked width */}
-                  <TableHead className="w-[12%] min-w-[130px] py-3 px-4 text-center">Status</TableHead>
-                  <TableHead className="w-[6%] min-w-[80px] py-3 px-4 text-right">Aksi</TableHead>
+                  <TableHead className="w-[14%] min-w-[140px] py-3 px-4 text-center font-bold text-xs uppercase tracking-wider text-slate-500">Status</TableHead>
+                  <TableHead className="w-[10%] min-w-[100px] py-3 px-3 text-center font-bold text-xs uppercase tracking-wider text-slate-500 whitespace-nowrap">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -710,17 +715,17 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
 
                       {/* Status (Rigidly constrained container: ZERO TABLE SHIFTING) */}
                       <TableCell className="py-3 px-4 text-center">
-                        <div className="flex flex-col items-center justify-center gap-1 mx-auto w-[130px]">
+                        <div className="flex flex-col items-center justify-center gap-1 mx-auto w-full max-w-[130px]">
                           <button
                             type="button"
                             onClick={() => onToggleStatus(eskul.id)}
-                            className="cursor-pointer group relative focus:outline-none transition-transform active:scale-95 inline-flex items-center justify-center"
+                            className="cursor-pointer group relative focus:outline-none transition-transform active:scale-95 inline-flex items-center justify-center w-full"
                             title={`Status Operasional: ${eskul.status}. Real-time: ${statusInfo.detail}. Klik untuk toggle keaktifan.`}
                           >
                             <Badge
                               variant="outline"
                               className={cn(
-                                "h-6 px-2.5 w-[125px] justify-center text-[10px] font-semibold gap-1.5 transition-all shadow-2xs border shrink-0",
+                                "h-6 px-2.5 w-full max-w-[125px] justify-center text-[10px] font-semibold gap-1.5 transition-all shadow-2xs border shrink-0",
                                 statusInfo.badgeClass
                               )}
                             >
@@ -746,17 +751,17 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
                       </TableCell>
 
                       {/* Aksi */}
-                      <TableCell className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                      <TableCell className="py-3 px-3 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-1.5">
                           <Button
                             type="button"
                             variant="ghost"
                             size="icon"
                             onClick={() => onEditEskul(eskul)}
-                            className="size-7 text-muted-foreground hover:text-foreground cursor-pointer"
+                            className="size-8 text-muted-foreground hover:text-foreground hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
                             title="Edit Data Eskul"
                           >
-                            <Edit3 className="size-3.5" />
+                            <Edit3 className="size-4" />
                           </Button>
 
                           <Button
@@ -764,10 +769,10 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
                             variant="ghost"
                             size="icon"
                             onClick={() => onDeleteEskul(eskul.id)}
-                            className="size-7 text-muted-foreground hover:text-destructive cursor-pointer"
+                            className="size-8 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
                             title="Hapus Eskul"
                           >
-                            <Trash2 className="size-3.5" />
+                            <Trash2 className="size-4" />
                           </Button>
                         </div>
                       </TableCell>

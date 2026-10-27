@@ -101,13 +101,9 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
 
       // Send to backend API
       let resolvedEskul = 'Ekstrakurikuler SMK Al Amanah';
-      try {
-        const res = await api.scanPresensi(decodedText, studentId, 'Kamera Siswa (PWA Valid)');
-        if (res) {
-          resolvedEskul = (res as any).namaEskul || (res as any).data?.namaEskul || resolvedEskul;
-        }
-      } catch (apiErr: any) {
-        console.warn('Backend scan API notice:', apiErr);
+      const res = await api.scanPresensi(decodedText, studentId, 'Kamera Siswa (PWA Valid)');
+      if (res) {
+        resolvedEskul = (res as any).namaEskul || (res as any).data?.namaEskul || resolvedEskul;
       }
 
       setScanState('SUCCESS');
@@ -115,7 +111,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
       onSuccessScan(studentName, resolvedEskul, decodedText);
     } catch (err: any) {
       setScanState('ERROR');
-      setErrorMessage(err.message || 'Gagal memverifikasi token QR Code.');
+      setErrorMessage(err.message || 'Gagal memverifikasi token QR Code. Pastikan sesi eskul sedang berlangsung.');
     }
   };
 
@@ -232,7 +228,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-slate-900 border border-slate-800 rounded-lg max-w-sm w-full p-5 sm:p-6 text-white shadow-xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+        className="bg-slate-900 border border-slate-800 rounded-lg w-[92vw] max-w-sm p-4 sm:p-6 text-white shadow-xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-200"
       >
         
         {/* Close Button */}
@@ -278,7 +274,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
           {scanState === 'SCANNING' && (
             <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
               {/* Laser scan line animation */}
-              <div className="absolute inset-x-4 h-0.5 bg-gradient-to-r from-transparent via-[#00B884] to-transparent shadow-[0_0_12px_#00B884] animate-bounce top-1/3" />
+              <div className="absolute inset-x-4 h-0.5 bg-[#00B884] opacity-80 animate-pulse top-1/3" />
 
               {/* Viewfinder Target corners */}
               <div className="w-48 h-48 border-2 border-dashed border-[#00B884]/80 rounded-md flex items-center justify-center relative">

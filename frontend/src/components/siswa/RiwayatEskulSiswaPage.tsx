@@ -266,14 +266,15 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
       <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-xs relative">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
           <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 bg-emerald-50 border border-emerald-200 rounded-md text-xs font-semibold text-emerald-800">
-              <Volleyball className="size-3.5 text-emerald-600" />
-              <span>Portal Riwayat & Ekstrakurikuler Siswa</span>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
+                SMK Al-Amanah
+              </span>
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
               Riwayat Ekstrakurikuler
             </h1>
-            <p className="text-slate-500 text-xs sm:text-sm max-w-xl">
+            <p className="text-slate-500 text-xs sm:text-sm mt-1 max-w-2xl font-normal">
               Lihat seluruh cabang ekstrakurikuler yang Anda ikuti, pantau riwayat presensi kehadiran di setiap sesi latihan, materi yang dipelajari, serta pembaruan jadwal.
             </p>
           </div>

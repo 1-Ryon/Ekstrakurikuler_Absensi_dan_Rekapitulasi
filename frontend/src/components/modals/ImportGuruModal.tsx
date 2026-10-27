@@ -184,7 +184,7 @@ export const ImportGuruModal: React.FC<ImportGuruModalProps> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-lg max-w-2xl w-full p-6 shadow-xl border border-slate-200 max-h-[92vh] flex flex-col justify-between animate-in fade-in zoom-in-95 duration-150"
+        className="bg-white rounded-lg w-[92vw] max-w-2xl p-4 sm:p-6 shadow-xl border border-slate-200 max-h-[92dvh] flex flex-col justify-between animate-in fade-in zoom-in-95 duration-150"
       >
         <div>
           {/* Header */}

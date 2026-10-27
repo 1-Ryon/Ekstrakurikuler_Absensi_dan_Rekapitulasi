@@ -51,7 +51,7 @@ export const RiwayatPengajuanJadwalModal: React.FC<RiwayatPengajuanJadwalModalPr
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
-          className="bg-white rounded-lg max-w-xl w-full shadow-xl border border-slate-200 overflow-hidden my-auto flex flex-col max-h-[85vh]"
+          className="bg-white rounded-lg w-[92vw] max-w-xl shadow-xl border border-slate-200 overflow-hidden my-auto flex flex-col max-h-[90dvh]"
         >
           {/* Header */}
           <div className="p-5 sm:p-6 border-b border-slate-100 flex items-start justify-between gap-4 shrink-0">

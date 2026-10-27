@@ -108,14 +108,15 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
       <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-xs relative">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 bg-blue-50 border border-blue-200 text-blue-800 rounded-md text-xs font-semibold">
-              <GraduationCap className="size-3.5" />
-              <span>Portal Wali Kelas SMK Al Amanah</span>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
+                SMK Al-Amanah
+              </span>
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              Dasbor Wali Kelas — {targetClass}
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+              Dashboard Wali Kelas — {targetClass}
             </h1>
-            <p className="text-slate-500 text-xs sm:text-sm max-w-xl leading-relaxed">
+            <p className="text-slate-500 text-xs sm:text-sm mt-1 max-w-2xl font-normal">
               Wali Kelas: <strong className="text-slate-800">{currentWali.namaLengkap}</strong> • NIP: {currentWali.nomorInduk || '-'}
             </p>
           </div>
@@ -278,11 +279,11 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left">
                 <thead>
-                  <tr className="text-slate-400 border-b border-slate-100 font-semibold">
-                    <th className="pb-2.5">Siswa</th>
-                    <th className="pb-2.5">Eskul yang Diikuti</th>
-                    <th className="pb-2.5 text-center">Presensi</th>
-                    <th className="pb-2.5 text-right">Nilai Rapor</th>
+                  <tr className="border-b border-slate-200 bg-slate-50/75 text-slate-500 font-bold text-xs uppercase tracking-wider">
+                    <th className="py-2.5 px-3">Siswa</th>
+                    <th className="py-2.5 px-3">Eskul yang Diikuti</th>
+                    <th className="py-2.5 px-3 text-center">Presensi</th>
+                    <th className="py-2.5 px-3 text-right">Nilai Rapor</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
