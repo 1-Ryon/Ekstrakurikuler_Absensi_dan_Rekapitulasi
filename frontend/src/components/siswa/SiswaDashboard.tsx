@@ -134,18 +134,16 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
       <Card className="p-6 border-slate-200/90 shadow-2xs">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-emerald-700 bg-emerald-50 border-emerald-200 text-xs">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
                 Portal Presensi Siswa
-              </Badge>
-              <Badge variant="secondary" className="text-xs">
-                Kelas {currentStudent.kelas}
-              </Badge>
+              </span>
+              <span className="text-xs text-slate-400 font-medium">Kelas {currentStudent.kelas}</span>
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
               Halo, {currentStudent.namaLengkap}!
             </h1>
-            <p className="text-slate-500 text-xs sm:text-sm">
+            <p className="text-slate-500 text-xs sm:text-sm mt-1 max-w-2xl font-normal">
               NISN: <span className="font-mono text-slate-700 font-semibold">{currentStudent.nomorInduk || currentStudent.nis}</span> • Kehadiran Semester Ini: <span className="font-semibold text-emerald-600">{currentStudent.kehadiranRataRata}%</span>
             </p>
           </div>

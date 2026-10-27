@@ -71,10 +71,24 @@
     font-family: 'Poppins', sans-serif;
   }
 
-  html,
+  html {
+    @apply font-sans bg-[#F0F2F5] text-slate-800;
+    font-family: 'Poppins', sans-serif;
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    height: 100%;
+  }
+
   body {
     @apply font-sans bg-[#F0F2F5] text-slate-800;
     font-family: 'Poppins', sans-serif;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    -webkit-overflow-scrolling: touch;
+    touch-action: manipulation;
   }
 
   button,
@@ -105,46 +119,67 @@
   background: #94a3b8;
 }
 
-@keyframes pulseGlow {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(0, 184, 132, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 0 10px rgba(0, 184, 132, 0);
-  }
-}
-
-.pulse-glow {
-  animation: pulseGlow 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+/* Clean, subtle pulse animation without neon glow */
+@keyframes softPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 /* Print Isolation for Student ID & Attendance Cards */
 @media print {
-  body {
-    background: transparent !important;
-    color: #000 !important;
+  @page {
+    size: auto;
+    margin: 8mm;
   }
 
-  body * {
-    visibility: hidden;
+  /* When printing student card in portal, completely isolate and hide #root */
+  body:has(#printable-student-card-area) #root {
+    display: none !important;
   }
 
-  #printable-student-card-area,
-  #printable-student-card-area * {
-    visibility: visible;
-  }
-
-  #printable-student-card-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
+  body:has(#printable-student-card-area) {
+    background: #ffffff !important;
+    color: #000000 !important;
+    height: auto !important;
+    overflow: visible !important;
     margin: 0 !important;
     padding: 0 !important;
   }
 
-  @page {
-    size: auto;
-    margin: 8mm;
+  body:has(#printable-student-card-area) .student-card-modal-backdrop {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+
+  body:has(#printable-student-card-area) .student-card-modal-content {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  #printable-student-card-area {
+    visibility: visible !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  .print-single-card {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    max-width: 440px !important;
+    margin: 0 auto !important;
   }
 }

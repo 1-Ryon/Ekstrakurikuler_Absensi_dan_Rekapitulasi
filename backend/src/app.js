@@ -18,16 +18,26 @@ import prestasiRoutes from './routes/prestasi.js';
 
 const app = express();
 
-// 1. CORS Configuration
+// 1. CORS Configuration (Defensive whitelist, safe in development and production)
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim()) 
+  : ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:3000', 'http://127.0.0.1:5173'];
+
 app.use(cors({
-  origin: '*',
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+      callback(null, true);
+    } else {
+      callback(new Error('Akses diblokir oleh kebijakan CORS.'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-User-Role', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
 }));
 
-// 2. Request Parsers
-app.use(express.json({ limit: '15mb' }));
-app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+// 2. Request Parsers (Bounded body size)
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
 // 3. OWASP Defensive Security Headers
 app.use(securityHeaders);

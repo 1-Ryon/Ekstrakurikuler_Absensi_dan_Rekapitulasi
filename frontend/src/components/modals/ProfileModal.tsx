@@ -101,11 +101,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-lg max-w-2xl w-full shadow-xl border border-slate-200 max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-200 overflow-hidden"
+        className="bg-white rounded-lg w-[92vw] max-w-2xl shadow-xl border border-slate-200 max-h-[92dvh] flex flex-col animate-in fade-in zoom-in-95 duration-200 overflow-hidden"
       >
         
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 bg-slate-50/50">
           <div className="flex items-center gap-3">
             <SchoolLogo size="sm" showText={false} />
             <div>

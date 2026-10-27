@@ -236,15 +236,16 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
                     <span>Kembali ke Dasbor</span>
                   </Button>
                 )}
-                <Badge variant="outline" className="gap-1.5 py-0.5 border-primary/30 text-primary">
-                  <ShieldCheck className="size-3.5" />
-                  <span>Otoritas Validasi Koordinator Ekstrakurikuler</span>
-                </Badge>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
+                    Approval Center
+                  </span>
+                </div>
               </div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                Validasi Pendaftaran & Kuota Siswa Eskul
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+                Validasi Pendaftaran &amp; Kuota Siswa Eskul
               </h1>
-              <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">
+              <p className="text-slate-500 text-xs sm:text-sm mt-1 max-w-2xl font-normal">
                 Tinjau dan sahkan seluruh berkas calon siswa yang telah diseleksi oleh Guru Pembina. Setelah divalidasi resmi, siswa akan otomatis tercatat sebagai Anggota Resmi di database sekolah.
               </p>
             </div>
@@ -309,9 +310,6 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
               <Users className="size-4 text-primary" />
               <span>Kapasitas & Kuota Ekstrakurikuler</span>
             </CardTitle>
-            <span className="text-xs text-muted-foreground font-medium">
-              Tahun Ajaran 2026/2027
-            </span>
           </div>
         </CardHeader>
         <CardContent>
@@ -541,7 +539,7 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="border-b border-slate-200 bg-slate-50/75 hover:bg-slate-50/75 text-slate-500 font-bold text-xs uppercase tracking-wider">
                   <TableHead className="w-10">
                     <input
                       type="checkbox"
@@ -550,11 +548,11 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
                       className="rounded border-input text-primary focus:ring-primary"
                     />
                   </TableHead>
-                  <TableHead>Calon Siswa</TableHead>
-                  <TableHead>Ekstrakurikuler Tujuan</TableHead>
-                  <TableHead>Catatan Seleksi Pembina</TableHead>
-                  <TableHead>Status & Tanggal</TableHead>
-                  <TableHead className="text-center">Aksi Koordinator</TableHead>
+                  <TableHead className="font-bold text-xs uppercase tracking-wider text-slate-500">Calon Siswa</TableHead>
+                  <TableHead className="font-bold text-xs uppercase tracking-wider text-slate-500">Ekstrakurikuler Tujuan</TableHead>
+                  <TableHead className="font-bold text-xs uppercase tracking-wider text-slate-500">Catatan Seleksi Pembina</TableHead>
+                  <TableHead className="font-bold text-xs uppercase tracking-wider text-slate-500">Status &amp; Tanggal</TableHead>
+                  <TableHead className="text-center font-bold text-xs uppercase tracking-wider text-slate-500">Aksi Koordinator</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

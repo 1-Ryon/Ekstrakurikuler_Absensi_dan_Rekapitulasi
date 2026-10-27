@@ -82,7 +82,6 @@ export default {
       boxShadow: {
         soft: '0 2px 10px -2px rgba(0, 0, 0, 0.05), 0 1px 3px -1px rgba(0, 0, 0, 0.03)',
         card: '0 4px 20px -2px rgba(0, 0, 0, 0.04)',
-        glow: '0 0 20px -3px rgba(0, 184, 132, 0.25)',
       },
       keyframes: {
         'accordion-down': {

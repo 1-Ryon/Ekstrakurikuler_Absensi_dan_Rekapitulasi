@@ -98,7 +98,7 @@ export const EditEskulModal: React.FC<EditEskulModalProps> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-lg max-w-lg w-full p-6 shadow-xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150"
+        className="bg-white rounded-lg w-[92vw] max-w-lg p-4 sm:p-6 shadow-xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150 max-h-[92dvh] flex flex-col"
       >
         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
@@ -218,13 +218,17 @@ export const EditEskulModal: React.FC<EditEskulModalProps> = ({
                 required
                 value={kuota}
                 placeholder="Contoh: 35"
-                onFocus={(e) => e.target.select()}
+                onFocus={(e) => {
+                  if (kuota === 0) setKuota('');
+                  e.target.select();
+                }}
                 onChange={(e) => {
                   const val = e.target.value;
                   if (val === '') {
                     setKuota('');
                   } else {
-                    const num = parseInt(val, 10);
+                    const cleaned = val.replace(/^0+/, '') || '0';
+                    const num = parseInt(cleaned, 10);
                     setKuota(isNaN(num) ? '' : num);
                   }
                 }}

@@ -371,11 +371,11 @@ export const Header: React.FC<HeaderProps> = ({
   const IconComponent = badge.icon;
 
   return (
-    <header className="w-full bg-[#EEF1F5] px-4 sm:px-6 py-3.5 flex items-center justify-between gap-3 sticky top-0 z-30">
+    <header className="w-full bg-[#EEF1F5]/95 backdrop-blur-xs px-2.5 sm:px-6 py-2 sm:py-3 flex items-center justify-between gap-1.5 sm:gap-3 sticky top-0 z-30 border-b border-slate-200/60 shadow-2xs">
       {/* Left: Mobile Hamburger & Interactive Global Search Input */}
       <div 
-        className={`flex items-center gap-2 sm:gap-2.5 transition-all duration-300 ease-out relative ${
-          isSearchFocused ? 'flex-1 max-w-full sm:max-w-2xl' : 'flex-1 max-w-xs sm:max-w-md lg:max-w-lg'
+        className={`flex items-center gap-1.5 sm:gap-2.5 transition-all duration-300 ease-out relative min-w-0 ${
+          isSearchFocused ? 'flex-1 max-w-full sm:max-w-2xl' : 'flex-1 max-w-[60%] sm:max-w-[45%] lg:max-w-[35%]'
         }`} 
         ref={searchContainerRef}
       >
@@ -385,11 +385,11 @@ export const Header: React.FC<HeaderProps> = ({
             type="button"
             onClick={onToggleMobileMenu}
             aria-label="Buka Menu Navigasi"
-            className={`lg:hidden p-2 rounded-md bg-white border border-slate-200/90 text-slate-700 hover:bg-slate-50 active:scale-95 transition-all shadow-xs shrink-0 cursor-pointer ${
+            className={`lg:hidden p-1.5 sm:p-2 rounded-md bg-white border border-slate-200/90 text-slate-700 hover:bg-slate-50 active:scale-95 transition-all shadow-xs shrink-0 cursor-pointer ${
               isSearchFocused ? 'hidden sm:flex' : 'flex'
             }`}
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="size-5" />
           </button>
         )}
 
@@ -407,9 +407,9 @@ export const Header: React.FC<HeaderProps> = ({
         )}
 
         {/* Interactive Global Search Input */}
-        <div className="relative flex-1">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-            <Search className="w-4 h-4" />
+        <div className="relative flex-1 min-w-0">
+          <div className="absolute inset-y-0 left-0 pl-2.5 sm:pl-3.5 flex items-center pointer-events-none text-slate-400">
+            <Search className="size-3.5 sm:size-4" />
           </div>
           <input
             ref={searchInputRef}
@@ -420,12 +420,12 @@ export const Header: React.FC<HeaderProps> = ({
               setIsSearchFocused(true);
               if (searchVal.trim()) setIsSearchOpen(true);
             }}
-            placeholder="Cari eskul, siswa, pembina, kelas..."
-            className="w-full pl-9 sm:pl-10 pr-20 py-2 bg-white border border-slate-200/90 rounded-full text-xs sm:text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00B884]/30 focus:border-[#00B884] shadow-xs transition-all"
+            placeholder="Cari eskul, siswa..."
+            className="w-full pl-8 sm:pl-10 pr-7 sm:pr-20 py-1.5 sm:py-2 bg-white border border-slate-200/90 rounded-full text-xs sm:text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00B884]/30 focus:border-[#00B884] shadow-xs transition-all"
           />
 
           {/* Right Action within Search Input */}
-          <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center gap-1.5">
+          <div className="absolute inset-y-0 right-0 pr-2 sm:pr-2.5 flex items-center gap-1">
             {searchVal ? (
               <button
                 type="button"
@@ -433,7 +433,7 @@ export const Header: React.FC<HeaderProps> = ({
                 aria-label="Hapus pencarian"
                 className="p-1 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="size-3.5" />
               </button>
             ) : (
               <kbd className="hidden sm:inline-flex items-center gap-0.5 text-[10px] font-mono font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200/80">
@@ -812,19 +812,19 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Right controls: Role Selector, Action Buttons, and User Profile */}
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
         {/* Multi-Role Switcher Feature - Khusus Administrator */}
         {canSwitchRole && (
-          <div className="relative">
+          <div className="relative shrink-0">
             <button
               onClick={() => setShowRoleMenu(!showRoleMenu)}
               title="Fitur Administrator: Beralih Mode Tampilan Peran"
-              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full border text-[11px] sm:text-xs font-semibold shadow-xs transition-all cursor-pointer ${badge.bg}`}
+              className={`flex items-center justify-center gap-1.5 size-8 sm:size-auto sm:px-2.5 sm:py-1.5 rounded-full border text-[11px] sm:text-xs font-semibold shadow-xs transition-all cursor-pointer ${badge.bg}`}
             >
-              <IconComponent className="w-3.5 h-3.5 shrink-0" />
+              <IconComponent className="size-3.5 shrink-0" />
               <span className="hidden sm:inline">Mode:</span>
-              <span>{badge.label}</span>
-              <span className="text-[10px] opacity-60">▼</span>
+              <span className="hidden sm:inline">{badge.label}</span>
+              <span className="hidden sm:inline text-[10px] opacity-60">▼</span>
             </button>
 
             {showRoleMenu && (
@@ -913,65 +913,66 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         )}
 
-        {/* Mail and Notifications Icons - Animated Slide-Out to Right on Search Focus */}
+        {/* Mail and Notifications Icons - Hidden on small mobile screens to prevent pushing Profile off-screen */}
         <AnimatePresence mode="popLayout">
           {!isSearchFocused && (
             <motion.div
               key="mail-notif-icons-group"
-              initial={{ opacity: 0, x: 30, width: 0 }}
+              initial={{ opacity: 0, x: 20, width: 0 }}
               animate={{ opacity: 1, x: 0, width: 'auto' }}
-              exit={{ opacity: 0, x: 50, width: 0 }}
-              transition={{ duration: 0.24, ease: [0.23, 1, 0.32, 1] }}
-              className="flex items-center gap-2 sm:gap-3 overflow-hidden shrink-0"
+              exit={{ opacity: 0, x: 20, width: 0 }}
+              transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+              className="hidden sm:flex items-center gap-1.5 sm:gap-2 overflow-hidden shrink-0"
             >
               {/* Mail Icon Button */}
               <button
                 onClick={onOpenMail}
                 aria-label="Pesan Masuk"
-                className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-md bg-white border border-slate-200/90 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:border-slate-300 shadow-xs transition-all cursor-pointer shrink-0"
+                className="relative size-8.5 sm:size-9 rounded-md bg-white border border-slate-200/90 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:border-slate-300 shadow-xs transition-all cursor-pointer shrink-0"
               >
-                <Mail className="w-4 h-4" />
-                <span className="absolute top-2 right-2 w-2 h-2 bg-[#00B884] rounded-full ring-2 ring-white"></span>
+                <Mail className="size-4" />
+                <span className="absolute top-1.5 right-1.5 size-2 bg-[#00B884] rounded-full ring-2 ring-white"></span>
               </button>
 
               {/* Bell / Notification Icon Button */}
               <button
                 onClick={onOpenNotifications}
                 aria-label="Pemberitahuan"
-                className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-md bg-white border border-slate-200/90 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:border-slate-300 shadow-xs transition-all cursor-pointer shrink-0"
+                className="relative size-8.5 sm:size-9 rounded-md bg-white border border-slate-200/90 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:border-slate-300 shadow-xs transition-all cursor-pointer shrink-0"
               >
-                <Bell className="w-4 h-4" />
-                <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white animate-pulse"></span>
+                <Bell className="size-4" />
+                <span className="absolute top-1.5 right-1.5 size-2 bg-rose-500 rounded-full ring-2 ring-white animate-pulse"></span>
               </button>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Profile Area with Dropdown */}
-        <div className="relative">
+        {/* Profile Area with Dropdown - ALWAYS VISIBLE, NEVER SQUEEZED */}
+        <div className="relative shrink-0">
           <button
             onClick={() => setShowProfileMenu(!showProfileMenu)}
-            className="flex items-center gap-2 sm:gap-3 pl-1 sm:pl-2 cursor-pointer group text-left focus:outline-none"
+            aria-label="Menu Profil Pengguna"
+            className="flex items-center gap-1.5 sm:gap-2.5 p-0.5 sm:px-2 sm:py-1 rounded-full sm:rounded-md hover:bg-white/80 active:scale-95 transition-all cursor-pointer group text-left focus:outline-none shrink-0"
           >
-            <div className="relative">
+            <div className="relative shrink-0">
               <UserAvatar
                 name={currentUser?.namaLengkap || 'User'}
-                className="w-8 h-8 sm:w-10 sm:h-10 ring-2 ring-[#00B884] shadow-xs group-hover:ring-[#00B884]/80 text-xs sm:text-sm"
+                className="size-8 sm:size-9 ring-2 ring-[#00B884] shadow-xs group-hover:ring-[#00B884]/80 text-xs sm:text-sm shrink-0"
               />
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#00B884] border-2 border-white rounded-full"></span>
+              <span className="absolute bottom-0 right-0 size-2.5 bg-[#00B884] border-2 border-white rounded-full"></span>
             </div>
             <div className="hidden md:flex flex-col text-left">
-              <span className="text-xs sm:text-sm font-bold text-slate-800 leading-snug group-hover:text-[#00B884] transition-colors truncate max-w-[130px]">
+              <span className="text-xs sm:text-sm font-bold text-slate-800 leading-snug group-hover:text-[#00B884] transition-colors truncate max-w-[120px]">
                 {currentUser?.namaLengkap || 'Administrator'}
               </span>
-              <span className="text-[10px] sm:text-[11px] font-normal text-slate-500 leading-none truncate max-w-[130px]">
+              <span className="text-[10px] sm:text-[11px] font-normal text-slate-500 leading-none truncate max-w-[120px]">
                 {currentUser?.spesialisasi || (currentRole === 'ADMIN' ? 'Administrator Sistem' : 'Koordinator Eskul')}
               </span>
             </div>
           </button>
 
           {showProfileMenu && (
-            <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-xl border border-slate-200/80 p-3 z-50 animate-in fade-in zoom-in-95">
+            <div className="absolute right-0 mt-2 w-72 max-w-[calc(100vw-1.5rem)] bg-white rounded-lg shadow-xl border border-slate-200/80 p-3 z-50 animate-in fade-in zoom-in-95">
               {/* Header Info Card */}
               <div className="p-2 border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2.5">
@@ -996,6 +997,26 @@ export const Header: React.FC<HeaderProps> = ({
                       ID: {currentUser.nomorInduk}
                     </span>
                   )}
+                </div>
+
+                {/* Mobile Quick Action Buttons: Pesan & Notifikasi */}
+                <div className="flex sm:hidden items-center gap-2 mt-2.5 pt-2.5 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => { setShowProfileMenu(false); onOpenMail(); }}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200 cursor-pointer"
+                  >
+                    <Mail className="size-3.5 text-emerald-600" />
+                    <span>Pesan Masuk</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShowProfileMenu(false); onOpenNotifications(); }}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200 cursor-pointer"
+                  >
+                    <Bell className="size-3.5 text-rose-500" />
+                    <span>Notifikasi</span>
+                  </button>
                 </div>
               </div>
 

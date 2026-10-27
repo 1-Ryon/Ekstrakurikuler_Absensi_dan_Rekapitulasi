@@ -136,7 +136,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
           {/* Footer Motto */}
           <div className="pt-6 border-t border-border flex items-center justify-between text-[11px] text-muted-foreground">
-            <span>T.A. 2026/2027 Ganjil</span>
+            <span>Sistem Presensi Eskul</span>
             <span className="text-primary font-medium flex items-center gap-1.5">
               <span className="size-2 rounded-full bg-primary inline-block animate-pulse" />
               Sistem Aktif

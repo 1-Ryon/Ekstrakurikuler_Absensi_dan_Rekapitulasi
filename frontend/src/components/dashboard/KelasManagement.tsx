@@ -256,16 +256,15 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
       {/* 1. Header & Title Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <Badge variant="brand" className="text-[11px] font-bold uppercase tracking-wider">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
               SMK Al-Amanah
-            </Badge>
-            <span className="text-xs text-muted-foreground font-medium">T.A. 2026/2027</span>
+            </span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight mt-1">
-            Data Kelas & Rombel
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+            Data Kelas &amp; Rombel
           </h1>
-          <p className="text-muted-foreground text-xs sm:text-sm mt-0.5 max-w-2xl">
+          <p className="text-slate-500 text-xs sm:text-sm mt-1 max-w-2xl font-normal">
             Manajemen rombel kelas, struktur kejuruan, penugasan wali kelas, dan integrasi data presensi siswa.
           </p>
         </div>

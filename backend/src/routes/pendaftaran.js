@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { requireRoles } from '../middlewares/auth.js';
 import { prisma } from '../config/prisma.js';
 
 const router = Router();
@@ -119,7 +120,7 @@ router.get('/summary', async (req, res) => {
 });
 
 // 3. POST /api/pendaftaran: Siswa / Form mendaftar eskul baru
-router.post('/', async (req, res) => {
+router.post('/', requireRoles('SISWA', 'PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, res) => {
   try {
     const { eskulId, siswaId, alasanDaftar } = req.body;
 
@@ -197,7 +198,7 @@ router.post('/', async (req, res) => {
 });
 
 // 4. PATCH /api/pendaftaran/seleksi-pembina: Pembina memilih / menerima / menolak siswa pendaftar
-router.patch('/seleksi-pembina', async (req, res) => {
+router.patch('/seleksi-pembina', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, res) => {
   try {
     const { pendaftaranIds, status, catatanPembina } = req.body;
 
@@ -228,7 +229,7 @@ router.patch('/seleksi-pembina', async (req, res) => {
 });
 
 // 5. POST /api/pendaftaran/ajukan-koordinator: Pembina mengirim batch siswa terpilih ke Koordinator
-router.post('/ajukan-koordinator', async (req, res) => {
+router.post('/ajukan-koordinator', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, res) => {
   try {
     const { eskulId, pendaftaranIds, catatanPembina } = req.body;
 
@@ -289,7 +290,7 @@ router.post('/ajukan-koordinator', async (req, res) => {
 });
 
 // 6. POST /api/pendaftaran/validasi-koordinator: Koordinator memvalidasi & meresmikan siswa masuk eskul
-router.post('/validasi-koordinator', async (req, res) => {
+router.post('/validasi-koordinator', requireRoles('KOORDINATOR', 'ADMIN'), async (req, res) => {
   try {
     const { pendaftaranIds, aksi, status, catatanKoordinator, koordinatorId } = req.body;
 

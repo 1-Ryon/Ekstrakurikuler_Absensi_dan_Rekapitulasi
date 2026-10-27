@@ -32,10 +32,15 @@ export const SettingsPage: React.FC = () => {
     <div className="space-y-6 pb-8 max-w-4xl">
       {/* Title */}
       <div>
-        <h1 className="text-3xl font-extrabold text-[#00B884] tracking-tight">
-          Pengaturan Sistem & Keamanan
+        <div className="flex items-center gap-2 mb-1">
+          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
+            SMK Al-Amanah
+          </span>
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+          Pengaturan Sistem &amp; Keamanan
         </h1>
-        <p className="text-slate-500 text-sm mt-0.5">
+        <p className="text-slate-500 text-xs sm:text-sm mt-1 max-w-2xl font-normal">
           Konfigurasi parameter enkripsi QR dinamis, radius pembatasan wilayah (geofencing) presensi, dan formula bobot penilaian rapor.
         </p>
       </div>

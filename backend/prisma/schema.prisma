@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db"
+  url      = env("DATABASE_URL")
 }
 
 model Admin {
@@ -50,6 +50,9 @@ model Guru {
   pengajuanJadwalDibuat     PengajuanJadwal[] @relation("PengajuanPembina")
   pengajuanJadwalDivalidasi PengajuanJadwal[] @relation("VerifikatorKoordinator")
 
+  @@index([role])
+  @@index([isPembina])
+  @@index([isWaliKelas])
   @@map("guru")
 }
 
@@ -65,6 +68,7 @@ model Kelas {
   // Relations
   siswaList   Siswa[]
 
+  @@index([waliKelasId])
   @@map("kelas")
 }
 
@@ -93,6 +97,8 @@ model Siswa {
   penilaianList    Penilaian[]
   prestasiList     PrestasiLomba[]
 
+  @@index([kelasId])
+  @@index([statusAktif])
   @@map("siswa")
 }
 
@@ -120,6 +126,8 @@ model Eskul {
   prestasi            PrestasiLomba[]
   pengajuanJadwalList PengajuanJadwal[]
 
+  @@index([pembinaId])
+  @@index([kategori])
   @@map("eskul")
 }
 
@@ -136,6 +144,8 @@ model AnggotaEskul {
   siswa            Siswa    @relation(fields: [siswaId], references: [id], onDelete: Cascade)
 
   @@unique([eskulId, siswaId, tahunAjaran])
+  @@index([eskulId])
+  @@index([siswaId])
   @@map("anggota_eskul")
 }
 
@@ -188,6 +198,9 @@ model SesiPertemuan {
   pembuat        Guru?      @relation(fields: [pembuatId], references: [id], onDelete: SetNull)
   presensiList   Presensi[]
 
+  @@index([eskulId])
+  @@index([tanggal])
+  @@index([status])
   @@map("sesi_pertemuan")
 }
 
@@ -208,6 +221,9 @@ model Presensi {
   siswa           Siswa         @relation(fields: [siswaId], references: [id], onDelete: Cascade)
 
   @@unique([sesiId, siswaId])
+  @@index([sesiId])
+  @@index([siswaId])
+  @@index([status])
   @@map("presensi")
 }
 
@@ -234,6 +250,8 @@ model Penilaian {
   penilai           Guru?    @relation(fields: [penilaiId], references: [id], onDelete: SetNull)
 
   @@unique([eskulId, siswaId, semester, tahunAjaran])
+  @@index([eskulId])
+  @@index([siswaId])
   @@map("penilaian")
 }
 
@@ -293,4 +311,3 @@ model PengajuanJadwal {
   @@index([pembinaId])
   @@map("pengajuan_jadwal")
 }
-

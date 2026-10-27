@@ -1,9 +1,8 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { X, Printer, ShieldCheck, Smartphone, Award, User, CheckCircle2 } from 'lucide-react';
+import { X, Printer, Smartphone, Award } from 'lucide-react';
 import { StudentProfile, Eskul } from '../../types';
-import { SchoolLogo } from '../SchoolLogo';
-import { UserAvatar } from '../common/UserAvatar';
 
 interface StudentCardModalProps {
   isOpen: boolean;
@@ -30,16 +29,15 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({
 
   const studentsToRender = isBatchMode ? allStudents : (student ? [student] : []);
 
-  return (
+  return createPortal(
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+      className="student-card-modal-backdrop fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-lg max-w-4xl w-full p-5 sm:p-7 shadow-xl border border-slate-200/90 max-h-[94vh] flex flex-col animate-in fade-in zoom-in-95 duration-200"
+        className="student-card-modal-content bg-white rounded-lg w-[94vw] max-w-4xl p-4 sm:p-7 shadow-xl border border-slate-200/90 max-h-[92dvh] flex flex-col animate-in fade-in zoom-in-95 duration-200"
       >
-        
         {/* Modal Controls (Hidden on print) */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-200 shrink-0 print:hidden">
           <div className="flex items-center gap-2.5">
@@ -90,7 +88,7 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({
           </div>
 
           {/* Cards Grid */}
-          <div className={`grid gap-6 ${isBatchMode ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1 max-w-md mx-auto'}`}>
+          <div className={`${isBatchMode ? 'grid gap-6 grid-cols-1 md:grid-cols-2' : 'max-w-md mx-auto print-single-card'}`}>
             {studentsToRender.map((stu) => {
               const enrolledEskuls = eskulList.filter((e) => stu.enrolledEskulIds && stu.enrolledEskulIds.includes(e.id));
               const studentQrPayload = `SMK-AMANAH:STUDENT:${stu.nis || stu.nomorInduk || stu.id}:${stu.id}:2026`;
@@ -98,8 +96,8 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({
               return (
                 <div
                   key={stu.id}
-                  className="bg-white rounded-lg border-2 border-emerald-700/40 shadow-sm p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden break-inside-avoid print:border-emerald-700 print:shadow-none"
-                  style={{ minHeight: '300px' }}
+                  className="bg-white rounded-lg border-2 border-emerald-700/40 shadow-sm p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden break-inside-avoid print:border-emerald-700 print:shadow-none print-single-card"
+                  style={{ minHeight: '280px' }}
                 >
                   {/* Top Color Accent Stripe */}
                   <div className="absolute top-0 left-0 right-0 h-1.5 bg-[#00B884]" />
@@ -126,8 +124,8 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({
                     </div>
 
                     <div className="text-right">
-                      <span className="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 inline-block font-mono">
-                        TP 2026/2027
+                      <span className="text-[9px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 inline-block font-mono">
+                        KARTU SISWA
                       </span>
                     </div>
                   </div>
@@ -144,7 +142,7 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({
                           <span className="px-2 py-0.5 bg-slate-100 text-slate-800 font-mono text-[11px] font-bold rounded border border-slate-200">
                             {stu.kelas}
                           </span>
-                          <span className="text-[11px] text-emerald-700 font-semibold">
+                          <span className="text-[11px] text-slate-600 font-semibold">
                             {stu.statusAktif ? 'Siswa Aktif' : 'Non-Aktif'}
                           </span>
                         </div>
@@ -158,12 +156,12 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({
                           </strong>
                         </div>
 
-                        {/* Ekstrakurikuler yang Diikuti (Clean text without aggressive green badges) */}
-                        <div className="pt-1 border-t border-slate-100 mt-2">
+                        {/* Ekstrakurikuler yang Diikuti (Clean plain text without green badges) */}
+                        <div className="pt-1.5 border-t border-slate-100 mt-2">
                           <span className="text-[9px] text-slate-400 uppercase font-bold block mb-0.5">
                             Ekstrakurikuler Terdaftar:
                           </span>
-                          <p className="text-xs font-medium text-slate-700 leading-snug">
+                          <p className="text-xs font-medium text-slate-800 leading-snug">
                             {enrolledEskuls.length > 0 
                               ? enrolledEskuls.map((e) => e.namaEskul).join(', ')
                               : 'Siswa Terdaftar (Belum memilih cabang)'
@@ -213,6 +211,7 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

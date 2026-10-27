@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldAlert, ShieldCheck } from 'lucide-react';
 import { Sidebar, NavItemKey } from './components/Sidebar';
 import { Header } from './components/Header';
@@ -74,9 +75,11 @@ const ALLOWED_TABS_BY_ROLE: Record<Role, string[]> = {
 };
 
 export function App() {
-  // Session Authentication State (Default Administrator Sistem untuk kemudahan testing)
+  // Session Authentication State (Default Null: Wajib Login terlebih dahulu)
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('al_amanah_user_session');
+    const saved = typeof window !== 'undefined'
+      ? (sessionStorage.getItem('al_amanah_user_session') || localStorage.getItem('al_amanah_user_session'))
+      : null;
     if (saved) {
       try {
         const u = JSON.parse(saved);
@@ -90,7 +93,9 @@ export function App() {
   });
 
   const [currentRole, setCurrentRole] = useState<Role>(() => {
-    const saved = localStorage.getItem('al_amanah_user_session');
+    const saved = typeof window !== 'undefined'
+      ? (sessionStorage.getItem('al_amanah_user_session') || localStorage.getItem('al_amanah_user_session'))
+      : null;
     if (saved) {
       try {
         const u = JSON.parse(saved);
@@ -804,22 +809,20 @@ export function App() {
   const handleStudentScanned = async (studentName: string, eskulName: string, rawToken?: string) => {
     const student = currentStudentProfile || students[0];
 
-    // Attempt backend registration first if raw QR token is present
-    if (rawToken && student) {
-      try {
-        await api.scanPresensi(
-          rawToken,
-          student.nis || student.nomorInduk || student.id,
-          'Kamera Siswa (Live Web Scan)',
-          'DYNAMIC_QR'
-        );
-        await loadBackendData();
-        showToast(`Presensi Anda di ${eskulName || 'Ekstrakurikuler'} berhasil diverifikasi & tercatat di basis data!`);
-        return;
-      } catch (err: any) {
-        console.warn('Backend scan failed, using fallback:', err);
-      }
+    // Reload latest backend state since QrScannerModal has already verified and written to database
+    try {
+      await loadBackendData();
+      showToast(`Presensi Anda di ${eskulName || 'Ekstrakurikuler'} berhasil diverifikasi & tercatat di basis data!`);
+      return;
+    } catch (err: any) {
+      console.warn('Backend refresh notice:', err);
     }
+
+    const now = new Date();
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const hari = days[now.getDay()];
+    const tanggal = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    const jam = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
     const newRecord: PresensiRecord = {
       id: `log-${Date.now()}`,
@@ -830,7 +833,10 @@ export function App() {
       namaSiswa: studentName || student?.namaLengkap || 'Siswa',
       nisn: student?.nis || student?.nomorInduk || '241011400049',
       kelas: student?.kelas || 'X RPL 1',
-      waktuScan: new Date().toTimeString().slice(0, 8),
+      waktuScan: `${hari}, ${tanggal} • ${jam} WIB`,
+      hari,
+      tanggal,
+      jamScan: jam,
       status: 'HADIR',
       metode: 'DYNAMIC_QR',
       deviceInfo: 'Perangkat Siswa (GPS Valid)',
@@ -846,6 +852,12 @@ export function App() {
       showToast('Tidak ada sesi aktif untuk mencatat kehadiran.');
       return;
     }
+    const now = new Date();
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const hari = days[now.getDay()];
+    const tanggal = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    const jam = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
     const newRecord: PresensiRecord = {
       id: `log-${Date.now()}`,
       sesiId: targetSession.id,
@@ -855,7 +867,10 @@ export function App() {
       namaSiswa: student.namaLengkap,
       nisn: student.nis || student.nomorInduk,
       kelas: student.kelas,
-      waktuScan: new Date().toTimeString().slice(0, 8),
+      waktuScan: `${hari}, ${tanggal} • ${jam} WIB`,
+      hari,
+      tanggal,
+      jamScan: jam,
       status: 'HADIR',
       metode: 'SCAN_KARTU_GURU',
       deviceInfo: 'Kamera Scanner Pembina (ID Card QR)',
@@ -906,6 +921,9 @@ export function App() {
     localStorage.removeItem('al_amanah_user_session');
     localStorage.removeItem('al_amanah_auth_token');
     localStorage.removeItem('al_amanah_is_admin');
+    sessionStorage.removeItem('al_amanah_user_session');
+    sessionStorage.removeItem('al_amanah_auth_token');
+    sessionStorage.removeItem('al_amanah_is_admin');
     setCurrentUser(null);
     setCurrentRole('ADMIN');
     setIsMobileMenuOpen(false);
@@ -934,18 +952,26 @@ export function App() {
     return (
       <div className="min-h-screen bg-[#EEF1F5] font-sans selection:bg-[#00B884]/20 selection:text-[#00B884]">
         <LoginPage onLoginSuccess={handleLoginSuccess} />
-        {toastMessage && (
-          <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-md shadow-xl flex items-center gap-2.5 text-xs font-semibold animate-in slide-in-from-bottom-5 border border-slate-800">
-            <span className="w-2 h-2 rounded-full bg-[#00B884] animate-ping"></span>
-            <span>{toastMessage}</span>
-          </div>
-        )}
+        <AnimatePresence>
+          {toastMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: 16, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.95 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+              className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 sm:max-w-md z-50 bg-slate-900 text-white px-4 py-3 rounded-lg shadow-xl flex items-center gap-2.5 text-xs font-semibold border border-slate-800"
+            >
+              <span className="w-2 h-2 rounded-full bg-[#00B884] animate-ping shrink-0" />
+              <span className="truncate">{toastMessage}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#EEF1F5] flex flex-row font-sans relative">
+    <div className="h-dvh w-full overflow-hidden bg-[#EEF1F5] flex flex-row font-sans relative">
       {/* Sidebar with strict Role Filtering, Desktop Collapse & Mobile Drawer Support */}
       <Sidebar
         activeTab={activeTab}
@@ -967,8 +993,8 @@ export function App() {
         }}
       />
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+      {/* Main Content Area: Dedicated Independent Vertical Scroll Viewport */}
+      <div className="flex-1 flex flex-col min-w-0 h-dvh overflow-y-auto overflow-x-hidden">
         {/* Top Header */}
         <Header
           currentUser={currentUser}
@@ -1030,8 +1056,17 @@ export function App() {
         )}
 
         {/* Content Views */}
-        <main className="flex-1 px-4 sm:px-6 lg:px-8 pt-2 pb-8">
-          {(() => {
+        <main className="flex-1 px-3 sm:px-6 lg:px-8 pt-2 pb-8 max-w-full overflow-x-hidden">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              className="w-full"
+            >
+              {(() => {
             const isKoordinator = currentRole === 'ADMIN' || currentRole === 'KOORDINATOR';
             const isPembina = currentRole === 'PEMBINA';
             const isWaliKelas = currentRole === 'WALI_KELAS';
@@ -1392,6 +1427,8 @@ export function App() {
               </>
             );
           })()}
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
 
@@ -1543,12 +1580,20 @@ export function App() {
       />
 
       {/* Floating Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-md shadow-xl flex items-center gap-2.5 text-xs font-semibold animate-in slide-in-from-bottom-5 border border-slate-800">
-          <span className="w-2 h-2 rounded-full bg-[#00B884] animate-ping"></span>
-          <span>{toastMessage}</span>
-        </div>
-      )}
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: 16, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.95 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 sm:max-w-md z-50 bg-slate-900 text-white px-4 py-3 rounded-lg shadow-xl flex items-center gap-2.5 text-xs font-semibold border border-slate-800"
+          >
+            <span className="w-2 h-2 rounded-full bg-[#00B884] animate-ping shrink-0" />
+            <span className="truncate">{toastMessage}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

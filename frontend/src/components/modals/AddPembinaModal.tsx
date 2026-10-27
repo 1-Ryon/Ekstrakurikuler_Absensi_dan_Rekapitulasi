@@ -82,7 +82,7 @@ export const AddPembinaModal: React.FC<AddPembinaModalProps> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-lg max-w-xl w-full p-6 shadow-xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150 max-h-[92vh] flex flex-col"
+        className="bg-white rounded-lg w-[92vw] max-w-xl p-4 sm:p-6 shadow-xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150 max-h-[92dvh] flex flex-col"
       >
         {/* Header */}
         <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-100 shrink-0">

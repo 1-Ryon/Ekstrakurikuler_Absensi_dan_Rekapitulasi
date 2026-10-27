@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { requireRoles } from '../middlewares/auth.js';
 import crypto from 'crypto';
 import { prisma } from '../config/prisma.js';
 
@@ -53,7 +54,7 @@ router.get('/today', async (req, res) => {
 });
 
 // POST /api/sessions
-router.post('/', async (req, res) => {
+router.post('/', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, res) => {
   try {
     const { eskulId, pembuatId, tanggal, jamMulai, jamSelesai, lokasi, judul, deskripsi, materi } = req.body;
     
@@ -157,7 +158,7 @@ router.post('/', async (req, res) => {
 });
 
 // POST /api/sessions/:id/token
-router.post('/:id/token', async (req, res) => {
+router.post('/:id/token', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, res) => {
   try {
     const { id } = req.params;
     const timestampWindow = Math.floor(Date.now() / 15000);
@@ -186,7 +187,7 @@ router.post('/:id/token', async (req, res) => {
 });
 
 // PATCH /api/sessions/:id/status
-router.patch('/:id/status', async (req, res) => {
+router.patch('/:id/status', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, res) => {
   try {
     const { id } = req.params;
     const { status, judul, deskripsi, materi } = req.body;
@@ -259,7 +260,7 @@ router.post('/:id/libur', async (req, res) => {
 });
 
 // POST /api/sessions/mark-holiday
-router.post('/mark-holiday', async (req, res) => {
+router.post('/mark-holiday', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, res) => {
   try {
     const { eskulId, pembuatId, tanggal, alasanLibur } = req.body;
 
@@ -410,7 +411,7 @@ router.get('/:id/attendance-sheet', async (req, res) => {
 });
 
 // POST /api/sessions/:id/finalize
-router.post('/:id/finalize', async (req, res) => {
+router.post('/:id/finalize', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, res) => {
   try {
     const { id } = req.params;
     const { judul, deskripsi, materi, pembuatId } = req.body;

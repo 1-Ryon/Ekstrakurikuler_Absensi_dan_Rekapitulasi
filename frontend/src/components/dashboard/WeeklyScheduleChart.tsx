@@ -465,19 +465,18 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
 
                     return (
                       <g key={`point-${pt.index}`} className="transition-all">
-                        {/* Outer Glow Halo on Active/Hovered Node */}
+                        {/* Focus Ring on Active/Hovered Node */}
                         {(isSelected || isHovered) && (
                           <motion.circle
                             cx={pt.x}
                             cy={pt.y}
-                            r={isSelected ? 13 : 10}
-                            fill="#00B884"
-                            fillOpacity={isSelected ? 0.20 : 0.12}
+                            r={isSelected ? 11 : 9}
+                            fill="none"
                             stroke="#00B884"
-                            strokeWidth={1.2}
-                            initial={{ scale: 0.8 }}
+                            strokeWidth={1.5}
+                            initial={{ scale: 0.85 }}
                             animate={{ scale: 1 }}
-                            transition={{ duration: 0.2 }}
+                            transition={{ duration: 0.15 }}
                           />
                         )}
 
@@ -659,7 +658,7 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
                           </g>
                         )}
 
-                        {/* Glowing Outline on Active/Hovered Capsule */}
+                        {/* Clean Outline on Active/Hovered Capsule */}
                         {(isSelected || isHovered) && (
                           <rect
                             x={col.barX - 2}
@@ -669,8 +668,8 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
                             rx={(col.barWidth + 4) / 2}
                             fill="none"
                             stroke="#00B884"
-                            strokeWidth="2"
-                            strokeOpacity={isSelected ? 0.85 : 0.45}
+                            strokeWidth="1.5"
+                            strokeOpacity={isSelected ? 0.7 : 0.3}
                           />
                         )}
 
