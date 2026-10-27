@@ -38,7 +38,7 @@ app.get('/api/health', (req, res) => {
     status: 'ok',
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
-    system: 'SMK Al Amanah Attendance API (Modular Architecture)',
+    system: 'Absensi Estrakurikuler SMK Al-Amanah API',
   });
 });
 

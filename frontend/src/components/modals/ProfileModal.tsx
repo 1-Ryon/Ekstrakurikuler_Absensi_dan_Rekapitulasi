@@ -113,7 +113,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 Detail Profil Akun Pengguna
               </h3>
               <p className="text-[11px] text-slate-500">
-                Sistem Informasi Ekstrakurikuler SMK Al Amanah
+                Absensi Estrakurikuler SMK Al-Amanah
               </p>
             </div>
           </div>

@@ -93,7 +93,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             {/* Title & Description */}
             <div className="space-y-2 mt-8">
               <h2 className="text-xl font-bold text-foreground tracking-tight leading-snug">
-                Sistem Presensi & Manajemen Ekstrakurikuler
+                Absensi Estrakurikuler SMK Al-Amanah
               </h2>
               <p className="text-xs text-muted-foreground leading-relaxed font-normal">
                 Portal resmi pemantauan kehadiran eskul real-time berbasis Dynamic QR Code, pembinaan karakter, dan pencatatan nilai rapor siswa.
@@ -155,9 +155,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             />
             <div>
               <Badge variant="outline" className="text-[10px] text-primary border-primary/30 uppercase py-0 font-bold">
-                SMK AL AMANAH
+                SMK AL-AMANAH
               </Badge>
-              <h2 className="text-base font-bold text-foreground mt-0.5">Sistem Presensi Eskul</h2>
+              <h2 className="text-base font-bold text-foreground mt-0.5">Absensi Estrakurikuler</h2>
             </div>
           </div>
 
