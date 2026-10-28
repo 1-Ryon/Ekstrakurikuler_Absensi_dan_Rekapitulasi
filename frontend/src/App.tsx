@@ -75,10 +75,24 @@ const ALLOWED_TABS_BY_ROLE: Record<Role, string[]> = {
 };
 
 export function App() {
+  // Bersihkan sisa sesi lama dari localStorage agar kunjungan awal selalu mewajibkan Login
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('al_amanah_user_session');
+        localStorage.removeItem('al_amanah_is_admin');
+        localStorage.removeItem('al_amanah_auth_token');
+      } catch {
+        // no-op
+      }
+    }
+  }, []);
+
   // Session Authentication State (Default Null: Wajib Login terlebih dahulu)
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    // Sesi hanya valid per-tab (sessionStorage), tidak pernah otomatis bypass login dari localStorage
     const saved = typeof window !== 'undefined'
-      ? (sessionStorage.getItem('al_amanah_user_session') || localStorage.getItem('al_amanah_user_session'))
+      ? sessionStorage.getItem('al_amanah_user_session')
       : null;
     if (saved) {
       try {
@@ -88,23 +102,23 @@ export function App() {
         // fallback
       }
     }
-    // Sesi baru wajib login terlebih dahulu
+    // Kunjungan awal atau tab baru wajib login terlebih dahulu
     return null;
   });
 
   const [currentRole, setCurrentRole] = useState<Role>(() => {
     const saved = typeof window !== 'undefined'
-      ? (sessionStorage.getItem('al_amanah_user_session') || localStorage.getItem('al_amanah_user_session'))
+      ? sessionStorage.getItem('al_amanah_user_session')
       : null;
     if (saved) {
       try {
         const u = JSON.parse(saved);
-        return u.role || 'ADMIN';
+        return u.role || 'SISWA';
       } catch {
-        return 'ADMIN';
+        return 'SISWA';
       }
     }
-    return 'ADMIN';
+    return 'SISWA';
   });
 
   const [activeTab, setActiveTab] = useState<NavItemKey>('beranda');
@@ -115,7 +129,7 @@ export function App() {
       currentUser.role === 'ADMIN' || 
       currentUser.username === 'admin' || 
       currentUser.username === 'admin.it' ||
-      localStorage.getItem('al_amanah_is_admin') === 'true'
+      sessionStorage.getItem('al_amanah_is_admin') === 'true'
     ) : false;
 
   // Master Data State
@@ -904,11 +918,15 @@ export function App() {
     setCurrentUser(user);
     setCurrentRole(user.role);
     if (user.role === 'ADMIN' || user.username === 'admin' || user.username === 'admin.it') {
-      localStorage.setItem('al_amanah_is_admin', 'true');
+      sessionStorage.setItem('al_amanah_is_admin', 'true');
     } else {
-      localStorage.removeItem('al_amanah_is_admin');
+      sessionStorage.removeItem('al_amanah_is_admin');
     }
-    localStorage.setItem('al_amanah_user_session', JSON.stringify(user));
+    sessionStorage.setItem('al_amanah_user_session', JSON.stringify(user));
+    // Bersihkan sesi lama dari localStorage demi keamanan
+    localStorage.removeItem('al_amanah_user_session');
+    localStorage.removeItem('al_amanah_is_admin');
+    localStorage.removeItem('al_amanah_auth_token');
     setActiveTab('beranda');
     showToast(`Selamat datang kembali, ${user.namaLengkap}!`);
   };
@@ -925,7 +943,7 @@ export function App() {
     sessionStorage.removeItem('al_amanah_auth_token');
     sessionStorage.removeItem('al_amanah_is_admin');
     setCurrentUser(null);
-    setCurrentRole('ADMIN');
+    setCurrentRole('SISWA');
     setIsMobileMenuOpen(false);
     setIsLogoutModalOpen(false);
     showToast('Sesi Anda telah berhasil diakhiri. Sampai jumpa kembali!');

@@ -20,10 +20,18 @@ interface LoginPageProps {
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState(() => {
+    return typeof window !== 'undefined'
+      ? (localStorage.getItem('al_amanah_remembered_username') || '')
+      : '';
+  });
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
+  const [rememberMe, setRememberMe] = useState(() => {
+    return typeof window !== 'undefined'
+      ? !!localStorage.getItem('al_amanah_remembered_username')
+      : false;
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [shakeKey, setShakeKey] = useState(0);
@@ -42,12 +50,23 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     try {
       const response = await api.login(username.trim(), password.trim());
       if (response && response.user) {
+        // Ingat username jika opsi diaktifkan
         if (rememberMe) {
-          localStorage.setItem('al_amanah_user_session', JSON.stringify(response.user));
-          if (response.token) {
-            localStorage.setItem('al_amanah_auth_token', response.token);
-          }
+          localStorage.setItem('al_amanah_remembered_username', username.trim());
+        } else {
+          localStorage.removeItem('al_amanah_remembered_username');
         }
+        
+        // Simpan sesi aktif ke sessionStorage (berlaku hanya selama browser/tab dibuka)
+        sessionStorage.setItem('al_amanah_user_session', JSON.stringify(response.user));
+        if (response.token) {
+          sessionStorage.setItem('al_amanah_auth_token', response.token);
+        }
+
+        // Hapus residu credential dari localStorage
+        localStorage.removeItem('al_amanah_user_session');
+        localStorage.removeItem('al_amanah_auth_token');
+
         onLoginSuccess(response.user);
       } else {
         throw new Error('Respons autentikasi dari server tidak valid.');
@@ -253,7 +272,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="size-4 rounded border-input text-primary focus:ring-0 focus:ring-offset-0 transition-colors accent-[#00B884]"
                 />
-                <span className="text-xs text-muted-foreground">Ingat sesi saya di peramban ini</span>
+                <span className="text-xs text-muted-foreground">Ingat nama pengguna di peramban ini</span>
               </label>
             </div>
 
