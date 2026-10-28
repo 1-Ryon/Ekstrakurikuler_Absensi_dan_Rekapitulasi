@@ -2,6 +2,17 @@
  * Entry point for SMK Al Amanah Backend Server
  * Modular Architecture with Separation of Concerns
  */
+import dotenv from 'dotenv';
+dotenv.config();
+
+// Auto-fallback jika teman kelompok clone tanpa file .env sama sekali (Zero-config)
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = 'file:./dev.db';
+}
+if (!process.env.JWT_SECRET) {
+  process.env.JWT_SECRET = 'smk-al-amanah-super-secret-key-2026';
+}
+
 import app from './app.js';
 import { prisma } from './config/prisma.js';
 import {
