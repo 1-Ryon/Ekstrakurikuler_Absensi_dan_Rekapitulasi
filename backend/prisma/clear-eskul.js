@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function clearEskulData() {
-  console.log('🧹 [BERSIHKAN DATA ESKUL] Menghapus seluruh data ekstrakurikuler dan transaksi terkait...');
+  console.log('🧹 [Bersihkan Data Eskul] Menghapus seluruh data ekstrakurikuler dan transaksi terkait...');
 
   // 1. Hapus transaksi & relasi eskul secara berurutan untuk menjaga integritas data
   const presensi = await prisma.presensi.deleteMany({});
@@ -41,7 +41,7 @@ async function clearEskulData() {
   const totalSiswa = await prisma.siswa.count();
   const totalEskul = await prisma.eskul.count();
 
-  console.log('\n📊 Ringkasan Data Master yang Dipertahankan:');
+  console.log('\nRingkasan Data Master yang Dipertahankan:');
   console.log(`  ✓ Data Admin        : ${totalAdmin} akun`);
   console.log(`  ✓ Data Guru         : ${totalGuru} guru`);
   console.log(`  ✓ Data Pembina      : ${totalPembina} pembina`);
@@ -54,6 +54,6 @@ async function clearEskulData() {
 }
 
 clearEskulData().catch((err) => {
-  console.error('❌ Gagal membersihkan data eskul:', err);
+  console.error(' GAGAL MEMBERSIHKAN DATA ESKUL:', err);
   process.exit(1);
 });

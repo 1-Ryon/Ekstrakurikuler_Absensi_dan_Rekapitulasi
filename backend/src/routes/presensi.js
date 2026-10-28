@@ -1,6 +1,21 @@
 import { Router } from 'express';
 import { requireRoles } from '../middlewares/auth.js';
 import { prisma } from '../config/prisma.js';
+import { getSystemSettings } from './settings.js';
+
+function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371e3; // meters
+  const phi1 = (lat1 * Math.PI) / 180;
+  const phi2 = (lat2 * Math.PI) / 180;
+  const deltaPhi = ((lat2 - lat1) * Math.PI) / 180;
+  const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+    Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // distance in meters
+}
 
 const router = Router();
 
@@ -70,13 +85,33 @@ router.get('/', async (req, res) => {
 // 2. POST /api/presensi/scan: Presensi Scan (Anti-Fraud Window Check & Universal Tolerance)
 router.post('/scan', requireRoles('SISWA', 'PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, res) => {
   try {
-    const { qrToken, siswaId, deviceInfo, metode } = req.body;
+    const { qrToken, siswaId, deviceInfo, metode, lat, lng } = req.body;
 
     if (!qrToken || !siswaId) {
       return res.status(400).json({
         success: false,
         message: 'QR Token dan identitas siswa wajib disertakan.',
       });
+    }
+
+    const settings = getSystemSettings();
+    if (settings.isGeofenceActive && lat !== undefined && lng !== undefined) {
+      const parsedLat = Number(lat);
+      const parsedLng = Number(lng);
+      if (!isNaN(parsedLat) && !isNaN(parsedLng)) {
+        const distance = calculateHaversineDistance(
+          parsedLat,
+          parsedLng,
+          settings.schoolLatitude,
+          settings.schoolLongitude
+        );
+        if (distance > settings.geofenceRadius) {
+          return res.status(403).json({
+            success: false,
+            message: `Presensi ditolak: Anda terdeteksi berada di luar area SMK Al Amanah (Jarak: ${Math.round(distance)}m, Maksimal: ${settings.geofenceRadius}m).`,
+          });
+        }
+      }
     }
 
     const cleanToken = String(qrToken).trim();

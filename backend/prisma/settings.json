@@ -1,0 +1,12 @@
+{
+  "schoolName": "SMK AL AMANAH KOTA TANGERANG SELATAN",
+  "npsn": "20614829",
+  "schoolLatitude": -6.34215,
+  "schoolLongitude": 106.71124,
+  "geofenceRadius": 200,
+  "isGeofenceActive": true,
+  "qrExpirySeconds": 15,
+  "kehadiranWeight": 40,
+  "keaktifanWeight": 30,
+  "kinerjaWeight": 30
+}

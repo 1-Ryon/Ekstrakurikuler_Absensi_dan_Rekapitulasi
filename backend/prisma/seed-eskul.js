@@ -314,7 +314,7 @@ async function seedEskulOnly() {
         // ignore unique duplicate
       }
     }
-    console.log(`✅ Keanggotaan siswa terpetakan (${anggotaCreated} data).`);
+    console.log(` Keanggotaan siswa terpetakan (${anggotaCreated} data).`);
   }
 
   // 4. Buat sesi pertemuan hari ini untuk setiap eskul (agar siap dicoba absensi QR)
@@ -357,13 +357,13 @@ async function seedEskulOnly() {
     }
   }
 
-  console.log(`✅ ${sessionCreated} Sesi Latihan Hari Ini siap digunakan.`);
+  console.log(` ${sessionCreated} Sesi Latihan Hari Ini siap digunakan.`);
   console.log('\n🎉 Pengisian data eskul ke database selesai dengan sukses!');
   await prisma.$disconnect();
 }
 
 seedEskulOnly().catch(async (err) => {
-  console.error('❌ Gagal mengisi data eskul:', err);
+  console.error('GAGAL MENGISI DATA ESKUL:', err);
   await prisma.$disconnect();
   process.exit(1);
 });

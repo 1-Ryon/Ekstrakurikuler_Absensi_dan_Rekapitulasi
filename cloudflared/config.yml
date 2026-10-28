@@ -1,0 +1,28 @@
+# ==============================================================================
+# CLOUDFLARE ZERO TRUST / CLOUDFLARED TUNNEL CONFIGURATION
+# SMK AL AMANAH - SISTEM PRESENSI & PENILAIAN EKSTRAKURIKULER
+# ==============================================================================
+#
+# Panduan Cara Mengisi:
+# 1. Buka Cloudflare Zero Trust Dashboard -> Networks -> Tunnels
+# 2. Buat Tunnel baru (misal: "smk-amanah-tunnel")
+# 3. Salin Tunnel ID dan letakkan pada `tunnel:` di bawah ini.
+# 4. Buat file credentials.json atau gunakan Tunnel Token langsung.
+# ==============================================================================
+
+# Ganti dengan Tunnel ID dari Cloudflare Zero Trust Dashboard
+tunnel: YOUR_TUNNEL_UUID_HERE
+credentials-file: C:\Users\Ryon\.cloudflared\YOUR_TUNNEL_UUID_HERE.json
+
+# Ingress Rules: Mengarahkan Domain ke Aplikasi SMK Al Amanah (Port 5000)
+# Port 5000 melayani API dan Frontend Single Page Application secara bersamaan.
+ingress:
+  # Ganti dengan subdomain / domain milikmu di Cloudflare (contoh: absensi.sekolahkamu.sch.id)
+  - hostname: absensi.domainkamu.com
+    service: http://localhost:5000
+    originRequest:
+      connectTimeout: 30s
+      noTLSVerify: false
+
+  # Aturan penutup wajib (Catch-all 404)
+  - service: http_status:404

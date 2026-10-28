@@ -319,7 +319,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
               <span>Status Eskul &amp; Sesi Jam</span>
               {currentlyRunningCount > 0 && (
                 <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.2 rounded-full">
-                  <span className="size-1.5 rounded-full bg-emerald-500 animate-ping" />
                   Berjalan
                 </span>
               )}

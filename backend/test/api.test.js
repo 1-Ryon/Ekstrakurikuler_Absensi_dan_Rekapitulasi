@@ -778,3 +778,56 @@ test('27. Prestasi: View competition records, add new achievement, and delete wi
 
 
 
+
+test('28. Settings & Geofencing: GET returns configuration and PUT updates coordinates/radius', async () => {
+  const getRes = await fetch(`${BASE_URL}/settings`);
+  assert.equal(getRes.status, 200);
+  const getData = await getRes.json();
+  assert.equal(getData.success, true);
+  assert.ok(getData.data.schoolLatitude);
+
+  const putRes = await fetch(`${BASE_URL}/settings`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${ADMIN_TOKEN}`,
+    },
+    body: JSON.stringify({
+      geofenceRadius: 200,
+      isGeofenceActive: true,
+    }),
+  });
+  assert.equal(putRes.status, 200);
+  const putData = await putRes.json();
+  assert.equal(putData.success, true);
+  assert.equal(putData.data.geofenceRadius, 200);
+});
+
+test('29. Eskul Membership: Pembina kicks student out of eskul', async () => {
+  const eskulRes = await fetch(`${BASE_URL}/eskul`);
+  const eskulData = await eskulRes.json();
+  const eskul = eskulData.data?.[0];
+  assert.ok(eskul);
+
+  const membersRes = await fetch(`${BASE_URL}/eskul/${eskul.id}/members`);
+  const membersData = await membersRes.json();
+  
+  if (membersData.data && membersData.data.length > 0) {
+    const studentToKick = membersData.data[0];
+    const kickRes = await fetch(`${BASE_URL}/eskul/${eskul.id}/kick-member`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${PEMBINA_TOKEN}`,
+      },
+      body: JSON.stringify({
+        siswaId: studentToKick.siswaId,
+        alasan: 'Indisipliner / Jarang Hadir',
+      }),
+    });
+    assert.equal(kickRes.status, 200);
+    const kickData = await kickRes.json();
+    assert.equal(kickData.success, true);
+    assert.equal(kickData.data.status, 'KELUAR');
+  }
+});

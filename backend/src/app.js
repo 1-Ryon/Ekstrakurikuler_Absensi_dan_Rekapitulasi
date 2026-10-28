@@ -1,5 +1,8 @@
 import express from 'express';
 import cors from 'cors';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { securityHeaders } from './middlewares/security.js';
 
 // Route Modules
@@ -15,17 +18,18 @@ import pendaftaranRoutes from './routes/pendaftaran.js';
 import presensiRoutes from './routes/presensi.js';
 import penilaianRoutes from './routes/penilaian.js';
 import prestasiRoutes from './routes/prestasi.js';
+import settingsRoutes from './routes/settings.js';
 
 const app = express();
 
 // 1. CORS Configuration (Defensive whitelist, safe in development and production)
 const allowedOrigins = process.env.ALLOWED_ORIGINS 
   ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim()) 
-  : ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:3000', 'http://127.0.0.1:5173'];
+  : ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:3000', 'http://127.0.0.1:5173', 'https://absensieskulsmkalamanah.arionoputra.net'];
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.arionoputra.net') || process.env.NODE_ENV !== 'production') {
       callback(null, true);
     } else {
       callback(new Error('Akses diblokir oleh kebijakan CORS.'));
@@ -65,6 +69,7 @@ app.use('/api/pendaftaran', pendaftaranRoutes);
 app.use('/api/presensi', presensiRoutes);
 app.use('/api/penilaian', penilaianRoutes);
 app.use('/api/prestasi', prestasiRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // 6. 404 Handler for Unmatched API Routes
 app.use('/api', (req, res) => {
@@ -73,6 +78,19 @@ app.use('/api', (req, res) => {
     message: `Endpoint ${req.method} ${req.originalUrl} tidak ditemukan pada server API.`,
   });
 });
+
+// 6b. Serve Production Frontend Static Build (if exists)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const frontendDistPath = path.join(__dirname, '../../frontend/dist');
+
+if (fs.existsSync(frontendDistPath)) {
+  app.use(express.static(frontendDistPath));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(frontendDistPath, 'index.html'));
+  });
+}
 
 // 7. Global Error Handler
 app.use((err, req, res, next) => {

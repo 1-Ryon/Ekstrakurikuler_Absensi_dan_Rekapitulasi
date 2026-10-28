@@ -1,29 +1,105 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  Settings, 
   ShieldCheck, 
   Clock, 
   MapPin, 
   Sliders, 
   Save, 
   CheckCircle2, 
-  Database,
   Building,
-  Lock
+  Crosshair,
+  AlertCircle,
+  ToggleLeft,
+  ToggleRight
 } from 'lucide-react';
+import { api } from '../../services/api';
 
 export const SettingsPage: React.FC = () => {
   const [qrExpiry, setQrExpiry] = useState<number>(15);
-  const [geofenceRadius, setGeofenceRadius] = useState<number>(100);
+  const [geofenceRadius, setGeofenceRadius] = useState<number>(150);
+  const [isGeofenceActive, setIsGeofenceActive] = useState<boolean>(true);
+  const [schoolLatitude, setSchoolLatitude] = useState<number>(-6.34215);
+  const [schoolLongitude, setSchoolLongitude] = useState<number>(106.71124);
+  const [schoolName, setSchoolName] = useState<string>('SMK AL AMANAH KOTA TANGERANG SELATAN');
+  const [npsn, setNpsn] = useState<string>('20614829');
+  
   const [kehadiranWeight, setKehadiranWeight] = useState<number>(40);
   const [keaktifanWeight, setKeaktifanWeight] = useState<number>(30);
   const [kinerjaWeight, setKinerjaWeight] = useState<number>(30);
+  
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
+  const [locateMsg, setLocateMsg] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleSave = (e: React.FormEvent) => {
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const data = await api.getSettings();
+        if (data) {
+          if (data.qrExpirySeconds !== undefined) setQrExpiry(data.qrExpirySeconds);
+          if (data.geofenceRadius !== undefined) setGeofenceRadius(data.geofenceRadius);
+          if (data.isGeofenceActive !== undefined) setIsGeofenceActive(data.isGeofenceActive);
+          if (data.schoolLatitude !== undefined) setSchoolLatitude(data.schoolLatitude);
+          if (data.schoolLongitude !== undefined) setSchoolLongitude(data.schoolLongitude);
+          if (data.kehadiranWeight !== undefined) setKehadiranWeight(data.kehadiranWeight);
+          if (data.keaktifanWeight !== undefined) setKeaktifanWeight(data.keaktifanWeight);
+          if (data.kinerjaWeight !== undefined) setKinerjaWeight(data.kinerjaWeight);
+          if (data.schoolName) setSchoolName(data.schoolName);
+        }
+      } catch (err) {
+        console.warn('Gagal memuat settings dari server, menggunakan local cache:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  const handleGetCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setLocateMsg('Browser Anda tidak mendukung deteksi Geolocation.');
+      return;
+    }
+    setIsLocating(true);
+    setLocateMsg('Mendeteksi koordinat GPS perangkat Anda saat ini...');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = parseFloat(pos.coords.latitude.toFixed(6));
+        const lng = parseFloat(pos.coords.longitude.toFixed(6));
+        setSchoolLatitude(lat);
+        setSchoolLongitude(lng);
+        setIsLocating(false);
+        setLocateMsg(`Titik koordinat berhasil diperbarui ke posisi Anda: ${lat}, ${lng} (Akurasi: ±${Math.round(pos.coords.accuracy)}m)`);
+      },
+      (err) => {
+        setIsLocating(false);
+        setLocateMsg(`Gagal mendeteksi lokasi: ${err.message}. Pastikan izin lokasi aktif di browser.`);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 3000);
+    try {
+      await api.updateSettings({
+        schoolName,
+        npsn,
+        qrExpirySeconds: qrExpiry,
+        geofenceRadius,
+        isGeofenceActive,
+        schoolLatitude,
+        schoolLongitude,
+        kehadiranWeight,
+        keaktifanWeight,
+        kinerjaWeight,
+      });
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 4000);
+    } catch (err: any) {
+      alert(`Gagal menyimpan pengaturan: ${err.message}`);
+    }
   };
 
   const totalWeight = kehadiranWeight + keaktifanWeight + kinerjaWeight;
@@ -48,7 +124,7 @@ export const SettingsPage: React.FC = () => {
       {savedSuccess && (
         <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-md flex items-center gap-2 text-emerald-800 text-xs font-semibold animate-in fade-in duration-200">
           <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>Konfigurasi sistem berhasil diperbarui secara permanen!</span>
+          <span>Konfigurasi sistem &amp; geofencing berhasil disimpan secara permanen di server!</span>
         </div>
       )}
 
@@ -61,7 +137,7 @@ export const SettingsPage: React.FC = () => {
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-800">
-                Keamanan QR Dinamis & Anti-Kecurangan
+                Keamanan QR Dinamis &amp; Anti-Kecurangan
               </h2>
               <p className="text-xs text-slate-400">
                 Pencegahan kecurangan titip absen dan tangkapan layar (screenshot sharing).
@@ -86,29 +162,99 @@ export const SettingsPage: React.FC = () => {
                 <option value={30}>30 Detik (Jaringan Lambat)</option>
               </select>
               <span className="text-[11px] text-slate-400 mt-1 block">
-                QR Code payload otomatis diperbarui dengan timestamp & salt baru.
+                QR Code payload otomatis diperbarui dengan timestamp &amp; salt baru.
               </span>
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1.5 flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                <span>Radius Geofencing GPS Sekolah (Meter)</span>
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Pembatasan Lokasi Presensi (Geofencing)</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsGeofenceActive(!isGeofenceActive)}
+                  className="flex items-center gap-1 text-[11px] font-bold text-slate-600 hover:text-slate-900 cursor-pointer"
+                >
+                  {isGeofenceActive ? (
+                    <span className="text-emerald-600 flex items-center gap-1">
+                      <ToggleRight className="w-4 h-4 text-emerald-600" /> Aktif
+                    </span>
+                  ) : (
+                    <span className="text-slate-400 flex items-center gap-1">
+                      <ToggleLeft className="w-4 h-4" /> Nonaktif (Bypass)
+                    </span>
+                  )}
+                </button>
+              </div>
+
               <select
                 value={geofenceRadius}
                 onChange={(e) => setGeofenceRadius(Number(e.target.value))}
-                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20"
+                disabled={!isGeofenceActive}
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 disabled:opacity-50"
               >
                 <option value={50}>50 Meter (Area Inti Gedung)</option>
-                <option value={100}>100 Meter (Seluruh Kompleks SMK Al Amanah)</option>
-                <option value={200}>200 Meter (Toleransi Area Lapangan Luar)</option>
-                <option value={0}>Nonaktifkan Geofencing</option>
+                <option value={100}>100 Meter (Area Kompleks SMK Al Amanah)</option>
+                <option value={150}>150 Meter (Rekomendasi - Gedung &amp; Lapangan)</option>
+                <option value={250}>250 Meter (Toleransi Area Luar Gerbang)</option>
+                <option value={500}>500 Meter (Radius Luas)</option>
               </select>
               <span className="text-[11px] text-slate-400 mt-1 block">
-                Koordinat Sekolah: -6.34215, 106.71124 (Puspiptek Serpong)
+                {isGeofenceActive 
+                  ? `Siswa wajib berada dalam radius ${geofenceRadius} meter dari titik koordinat sekolah.`
+                  : 'Geofencing dinonaktifkan: Siswa dapat absen tanpa verifikasi GPS (berguna untuk simulasi demo).'}
               </span>
             </div>
+          </div>
+
+          {/* Coordinate settings */}
+          <div className="pt-2 border-t border-slate-100">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+              <span className="text-xs font-bold text-slate-700">
+                Titik Koordinat Pusat SMK Al Amanah:
+              </span>
+              <button
+                type="button"
+                onClick={handleGetCurrentLocation}
+                disabled={isLocating}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md cursor-pointer transition-colors"
+              >
+                <Crosshair className="w-3 h-3 text-emerald-600" />
+                <span>{isLocating ? 'Mendeteksi GPS...' : 'Gunakan Lokasi Saya Saat Ini'}</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label className="text-[11px] font-medium text-slate-500 block mb-1">Latitude</label>
+                <input
+                  type="number"
+                  step="0.000001"
+                  value={schoolLatitude}
+                  onChange={(e) => setSchoolLatitude(parseFloat(e.target.value) || 0)}
+                  className="w-full p-2 bg-slate-50 border border-slate-200 rounded-md font-mono text-xs text-slate-800"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-medium text-slate-500 block mb-1">Longitude</label>
+                <input
+                  type="number"
+                  step="0.000001"
+                  value={schoolLongitude}
+                  onChange={(e) => setSchoolLongitude(parseFloat(e.target.value) || 0)}
+                  className="w-full p-2 bg-slate-50 border border-slate-200 rounded-md font-mono text-xs text-slate-800"
+                />
+              </div>
+            </div>
+
+            {locateMsg && (
+              <p className="text-[11px] text-emerald-700 bg-emerald-50/70 p-2 rounded-md border border-emerald-100 mt-2 flex items-center gap-1.5">
+                <AlertCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>{locateMsg}</span>
+              </p>
+            )}
           </div>
         </div>
 
@@ -201,18 +347,18 @@ export const SettingsPage: React.FC = () => {
               <label className="font-bold text-slate-700 block mb-1">Nama Lembaga</label>
               <input
                 type="text"
-                readOnly
-                defaultValue="SMK AL AMANAH KOTA TANGERANG SELATAN"
-                className="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-md font-semibold text-slate-700 cursor-not-allowed"
+                value={schoolName}
+                onChange={(e) => setSchoolName(e.target.value)}
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md font-semibold text-slate-800"
               />
             </div>
             <div>
               <label className="font-bold text-slate-700 block mb-1">NPSN</label>
               <input
                 type="text"
-                readOnly
-                defaultValue="20614829"
-                className="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-md font-semibold text-slate-700 cursor-not-allowed"
+                value={npsn}
+                onChange={(e) => setNpsn(e.target.value)}
+                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md font-semibold text-slate-800"
               />
             </div>
           </div>

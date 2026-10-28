@@ -12,7 +12,7 @@ export default defineConfig({
   },
   server: {
     host: true, // Buka akses port 5173 untuk jaringan Wi-Fi lokal
-    port: 5173,
+    port: 3000,
     allowedHosts: true,
     proxy: {
       '/api': {

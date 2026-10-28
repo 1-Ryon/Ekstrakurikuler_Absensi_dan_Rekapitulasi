@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
           select: { id: true, namaLengkap: true, avatarUrl: true, spesialisasi: true, nip: true },
         },
         _count: {
-          select: { anggota: true },
+          select: { anggota: { where: { status: 'AKTIF' } } },
         },
       },
       orderBy: { namaEskul: 'asc' },
@@ -134,6 +134,60 @@ router.get('/:id/members', async (req, res) => {
     });
 
     res.json({ success: true, data: members });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// POST /api/eskul/:id/kick-member: Pembina/Koordinator/Admin mengeluarkan siswa dari eskul
+router.post('/:id/kick-member', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, res) => {
+  try {
+    const { id: eskulId } = req.params;
+    const { siswaId, alasan } = req.body;
+
+    if (!siswaId) {
+      return res.status(400).json({ success: false, message: 'ID Siswa wajib disertakan.' });
+    }
+
+    // 1. Periksa keanggotaan aktif
+    const membership = await prisma.anggotaEskul.findFirst({
+      where: { eskulId, siswaId, status: 'AKTIF' },
+      include: { siswa: true, eskul: true },
+    });
+
+    if (!membership) {
+      return res.status(404).json({
+        success: false,
+        message: 'Data keanggotaan aktif siswa di eskul ini tidak ditemukan.',
+      });
+    }
+
+    // 2. Ubah status keanggotaan menjadi KELUAR
+    await prisma.anggotaEskul.update({
+      where: { id: membership.id },
+      data: { status: 'KELUAR' },
+    });
+
+    // 3. Update juga status pendaftaran jika ada
+    await prisma.pendaftaranEskul.updateMany({
+      where: { eskulId, siswaId },
+      data: {
+        status: 'DITOLAK',
+        catatanPembina: `Dikeluarkan dari eskul: ${alasan || 'Keputusan Pembina/Indisipliner'}.`,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: `Siswa ${membership.siswa.namaLengkap} berhasil dikeluarkan dari ekstrakurikuler ${membership.eskul.namaEskul}.`,
+      data: {
+        siswaId,
+        namaSiswa: membership.siswa.namaLengkap,
+        eskulId,
+        status: 'KELUAR',
+        alasan: alasan || 'Keputusan Pembina',
+      },
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

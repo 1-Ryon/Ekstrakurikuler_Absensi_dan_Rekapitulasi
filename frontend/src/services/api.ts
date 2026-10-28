@@ -280,10 +280,10 @@ export const api = {
 
   // Presensi & Scan
   getPresensiLogs: () => fetchWithFallback<PresensiRecord[]>('/presensi', undefined, INITIAL_PRESENSI_LOG),
-  scanPresensi: (qrToken: string, siswaId: string, deviceInfo?: string, metode?: string) =>
+  scanPresensi: (qrToken: string, siswaId: string, deviceInfo?: string, metode?: string, lat?: number, lng?: number) =>
     fetchWithFallback<{ success: boolean; message: string; data: { namaSiswa: string; namaEskul: string } }>('/presensi/scan', {
       method: 'POST',
-      body: JSON.stringify({ qrToken, siswaId, deviceInfo, metode }),
+      body: JSON.stringify({ qrToken, siswaId, deviceInfo, metode, lat, lng }),
     }),
   updatePresensiStatus: (id: string, status: string) =>
     fetchWithFallback<PresensiRecord>(`/presensi/${id}/status`, {
@@ -403,5 +403,40 @@ export const api = {
   deletePrestasi: (id: string) =>
     fetchWithFallback<{ success: boolean; message: string; data?: any }>(`/prestasi/${id}`, {
       method: 'DELETE',
+    }),
+  // Kelola Keanggotaan & Kick Member (Pembina)
+  kickMember: (eskulId: string, siswaId: string, alasan?: string) =>
+    fetchWithFallback<{ success: boolean; message: string; data?: any }>(`/eskul/${eskulId}/kick-member`, {
+      method: 'POST',
+      body: JSON.stringify({ siswaId, alasan }),
+    }),
+
+  // Pengaturan Sistem & Geofencing GPS
+  getSettings: () =>
+    fetchWithFallback<{
+      schoolName: string;
+      schoolLatitude: number;
+      schoolLongitude: number;
+      geofenceRadius: number;
+      isGeofenceActive: boolean;
+      qrExpirySeconds: number;
+      kehadiranWeight: number;
+      keaktifanWeight: number;
+      kinerjaWeight: number;
+    }>('/settings', undefined, {
+      schoolName: 'SMK AL AMANAH KOTA TANGERANG SELATAN',
+      schoolLatitude: -6.34215,
+      schoolLongitude: 106.71124,
+      geofenceRadius: 150,
+      isGeofenceActive: true,
+      qrExpirySeconds: 15,
+      kehadiranWeight: 40,
+      keaktifanWeight: 30,
+      kinerjaWeight: 30,
+    }),
+  updateSettings: (settings: any) =>
+    fetchWithFallback<{ success: boolean; message: string; data: any }>('/settings', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
     }),
 };

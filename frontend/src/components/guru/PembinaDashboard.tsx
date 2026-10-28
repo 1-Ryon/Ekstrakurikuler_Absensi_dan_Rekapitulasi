@@ -23,12 +23,14 @@ import {
   Clock4,
   CheckCircle,
   AlertCircle,
-  FileText
+  FileText,
+  UserMinus,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Eskul, SesiPertemuan, StudentProfile, PresensiRecord, PenilaianRecord, PengajuanJadwal } from '../../types';
 import { NavItemKey } from '../Sidebar';
 import { UserAvatar } from '../common/UserAvatar';
+import { api } from '../../services/api';
 import {
   Card,
   Button,
@@ -55,6 +57,7 @@ interface PembinaDashboardProps {
   onOpenBukaAbsensiModal?: (eskul: Eskul) => void;
   onOpenAjukanJadwalModal?: (eskul: Eskul) => void;
   onOpenRiwayatJadwalModal?: () => void;
+  onRefreshData?: () => void;
 }
 
 const DAYS_OF_WEEK = [
@@ -92,6 +95,7 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
   onOpenBukaAbsensiModal,
   onOpenAjukanJadwalModal,
   onOpenRiwayatJadwalModal,
+  onRefreshData,
 }) => {
   // Find all eskuls coached by this pembina (support multi-eskul)
   const coachedEskuls = useMemo(() => {
@@ -105,6 +109,28 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
   // Selected Active Eskul Tab (for multi-eskul coaches)
   const [selectedEskulId, setSelectedEskulId] = useState<string>(() => coachedEskuls[0]?.id || '');
   const activeCoachedEskul = coachedEskuls.find(e => e.id === selectedEskulId) || coachedEskuls[0] || null;
+  const [excludedStudentIds, setExcludedStudentIds] = useState<string[]>([]);
+  const [kickingStudent, setKickingStudent] = useState<StudentProfile | null>(null);
+  const [kickReason, setKickReason] = useState<string>('Indisipliner / Jarang Hadir');
+  const [isSubmittingKick, setIsSubmittingKick] = useState<boolean>(false);
+  const [kickSuccessMsg, setKickSuccessMsg] = useState<string>('');
+  
+  const handleConfirmKick = async () => {
+    if (!kickingStudent || !activeCoachedEskul) return;
+    setIsSubmittingKick(true);
+    try {
+      await api.kickMember(activeCoachedEskul.id, kickingStudent.id, kickReason);
+      setExcludedStudentIds(prev => [...prev, kickingStudent.id]);
+      setKickSuccessMsg(`Siswa ${kickingStudent.namaLengkap} berhasil dikeluarkan dari ${activeCoachedEskul.namaEskul}.`);
+      setKickingStudent(null);
+      if (onRefreshData) onRefreshData();
+      setTimeout(() => setKickSuccessMsg(''), 4000);
+    } catch (err: any) {
+      alert(`Gagal mengeluarkan siswa: ${err.message}`);
+    } finally {
+      setIsSubmittingKick(false);
+    }
+  };
 
   // Current Day Information
   const todayDate = useMemo(() => new Date(), []);
@@ -128,7 +154,7 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
     if (!activeCoachedEskul) return [];
     return students.filter(
       (s) => s.enrolledEskulIds && s.enrolledEskulIds.includes(activeCoachedEskul.id)
-    );
+    ).filter((s) => !excludedStudentIds.includes(s.id));
   }, [students, activeCoachedEskul]);
 
   // Active Session for this eskul
@@ -778,12 +804,13 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
                     <TableHead className="text-xs font-semibold text-slate-600 whitespace-nowrap">Kelas</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-600 text-center whitespace-nowrap">Kehadiran</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-600 text-right whitespace-nowrap">Nilai Rapor</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-600 text-center whitespace-nowrap">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredStudents.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="py-6 text-center text-slate-400 text-xs">
+                      <TableCell colSpan={5} className="py-6 text-center text-slate-400 text-xs">
                         Tidak ada siswa yang cocok dengan pencarian.
                       </TableCell>
                     </TableRow>
@@ -830,6 +857,19 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
                                 + Beri Nilai
                               </button>
                             )}
+                          </TableCell>
+                          <TableCell className="py-2.5 text-center whitespace-nowrap text-xs">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setKickingStudent(student);
+                                setKickReason('Indisipliner / Jarang Hadir');
+                              }}
+                              className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
+                              title="Keluarkan Siswa dari Eskul"
+                            >
+                              <UserMinus className="w-3.5 h-3.5" />
+                            </button>
                           </TableCell>
                         </TableRow>
                       );

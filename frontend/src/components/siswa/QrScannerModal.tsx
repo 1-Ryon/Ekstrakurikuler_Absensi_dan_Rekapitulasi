@@ -15,6 +15,19 @@ import confetti from 'canvas-confetti';
 import { Html5Qrcode } from 'html5-qrcode';
 import { api } from '../../services/api';
 
+function calculateHaversine(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371e3;
+  const phi1 = (lat1 * Math.PI) / 180;
+  const phi2 = (lat2 * Math.PI) / 180;
+  const deltaPhi = ((lat2 - lat1) * Math.PI) / 180;
+  const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+    Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c);
+}
+
 interface QrScannerModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -36,7 +49,75 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [scannedResult, setScannedResult] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
-  const [simulatedDistance] = useState<number>(14);
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [distanceToSchool, setDistanceToSchool] = useState<number | null>(null);
+  const [geofenceActive, setGeofenceActive] = useState<boolean>(true);
+  const [geofenceRadius, setGeofenceRadius] = useState<number>(150);
+  const [isInsideGeofence, setIsInsideGeofence] = useState<boolean>(true);
+  const [locationNotice, setLocationNotice] = useState<string>('Memeriksa posisi GPS...');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let isMounted = true;
+
+    const checkLocation = async () => {
+      try {
+        const settings = await api.getSettings();
+        if (!isMounted) return;
+        const isActive = settings?.isGeofenceActive ?? true;
+        const radius = settings?.geofenceRadius ?? 150;
+        const schoolLat = settings?.schoolLatitude ?? -6.34215;
+        const schoolLng = settings?.schoolLongitude ?? 106.71124;
+
+        setGeofenceActive(isActive);
+        setGeofenceRadius(radius);
+
+        if (!isActive) {
+          setIsInsideGeofence(true);
+          setLocationNotice('Mode Bebas (Geofencing GPS dinonaktifkan di pengaturan)');
+          return;
+        }
+
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              if (!isMounted) return;
+              const lat = pos.coords.latitude;
+              const lng = pos.coords.longitude;
+              setUserCoords({ lat, lng });
+              const dist = calculateHaversine(lat, lng, schoolLat, schoolLng);
+              setDistanceToSchool(dist);
+              if (dist <= radius) {
+                setIsInsideGeofence(true);
+                setLocationNotice(`Terverifikasi di Area Sekolah (Jarak: ${dist}m, Maks: ${radius}m)`);
+              } else {
+                setIsInsideGeofence(false);
+                setLocationNotice(`Di Luar Radius Sekolah (${dist}m > ${radius}m)`);
+              }
+            },
+            (err) => {
+              if (!isMounted) return;
+              // Fallback jika GPS browser ditolak atau demo lokal tanpa HTTPS
+              console.warn('Geolocation warning:', err.message);
+              setIsInsideGeofence(true); // toleransi ramah jika browser blokir izin
+              setLocationNotice('GPS Lokal Toleransi (Izin lokasi dibatasi browser)');
+            },
+            { enableHighAccuracy: true, timeout: 8000 }
+          );
+        } else {
+          setIsInsideGeofence(true);
+          setLocationNotice('Geolocation tidak didukung pada browser ini');
+        }
+      } catch (e) {
+        console.warn('Settings load error:', e);
+      }
+    };
+
+    checkLocation();
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen]);
 
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
   const scannerContainerId = 'interactive-qr-reader';
@@ -101,7 +182,20 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
 
       // Send to backend API
       let resolvedEskul = 'Ekstrakurikuler SMK Al Amanah';
-      const res = await api.scanPresensi(decodedText, studentId, 'Kamera Siswa (PWA Valid)');
+      if (!isInsideGeofence && geofenceActive) {
+        setScanState('ERROR');
+        setErrorMessage(`Presensi ditolak: Anda berada ${distanceToSchool}m di luar batas area SMK Al Amanah (${geofenceRadius}m).`);
+        return;
+      }
+
+      const res = await api.scanPresensi(
+        decodedText,
+        studentId,
+        `Kamera Siswa (PWA - ${distanceToSchool ? distanceToSchool + 'm' : 'GPS OK'})`,
+        'DYNAMIC_QR',
+        userCoords?.lat,
+        userCoords?.lng
+      );
       if (res) {
         resolvedEskul = (res as any).namaEskul || (res as any).data?.namaEskul || resolvedEskul;
       }
@@ -287,7 +381,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
 
               <div className="absolute bottom-2.5 text-[10px] text-slate-300 flex items-center gap-1.5 bg-slate-900/90 px-2.5 py-1 rounded-md border border-slate-700/80">
                 <MapPin className="size-3 text-[#00B884]" />
-                <span>Geofencing: {simulatedDistance}m di area sekolah (Valid)</span>
+                <span>Geofencing: {distanceToSchool ?? 14}m di area sekolah ({isInsideGeofence ? 'Valid' : 'Luar Radius'})</span>
               </div>
             </div>
           )}
@@ -371,7 +465,9 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
               <ShieldCheck className="size-3.5 text-emerald-400" />
               <span>Validitas Geofence & Waktu:</span>
             </span>
-            <span className="font-mono text-emerald-400 font-semibold text-[11px]">Tervalidasi Aktif</span>
+            <span className={`font-mono font-semibold text-[11px] truncate max-w-[180px] ${isInsideGeofence ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {locationNotice}
+            </span>
           </div>
         </div>
 
