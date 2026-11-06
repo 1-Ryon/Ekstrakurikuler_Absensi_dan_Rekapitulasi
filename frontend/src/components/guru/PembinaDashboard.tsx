@@ -30,6 +30,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { User, Eskul, SesiPertemuan, StudentProfile, PresensiRecord, PenilaianRecord, PengajuanJadwal } from '../../types';
 import { NavItemKey } from '../Sidebar';
 import { UserAvatar } from '../common/UserAvatar';
+import { ConfirmDeleteModal } from '../modals/ConfirmDeleteModal';
 import { api } from '../../services/api';
 import {
   Card,
@@ -97,7 +98,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
   onOpenRiwayatJadwalModal,
   onRefreshData,
 }) => {
-  // Find all eskuls coached by this pembina (support multi-eskul)
   const coachedEskuls = useMemo(() => {
     return eskulList.filter((e) => {
       if (e.pembinaId === currentPembina.id) return true;
@@ -106,7 +106,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
     });
   }, [eskulList, currentPembina]);
 
-  // Selected Active Eskul Tab (for multi-eskul coaches)
   const [selectedEskulId, setSelectedEskulId] = useState<string>(() => coachedEskuls[0]?.id || '');
   const activeCoachedEskul = coachedEskuls.find(e => e.id === selectedEskulId) || coachedEskuls[0] || null;
   const [excludedStudentIds, setExcludedStudentIds] = useState<string[]>([]);
@@ -132,14 +131,12 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
     }
   };
 
-  // Current Day Information
   const todayDate = useMemo(() => new Date(), []);
   const todayName = useMemo(() => getDayName(todayDate), [todayDate]);
   const isTodaySchedule = useMemo(() => {
     return (activeCoachedEskul?.jadwalHari || '').toLowerCase().trim() === todayName.toLowerCase().trim();
   }, [activeCoachedEskul, todayName]);
 
-  // Days until next scheduled session
   const daysUntilNextSession = useMemo(() => {
     if (!activeCoachedEskul) return 0;
     const daysOrder = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
@@ -149,7 +146,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
     return (targetIdx - currentIdx + 7) % 7;
   }, [activeCoachedEskul, todayDate]);
 
-  // Students enrolled in the active eskul
   const enrolledStudents = useMemo(() => {
     if (!activeCoachedEskul) return [];
     return students.filter(
@@ -157,13 +153,11 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
     ).filter((s) => !excludedStudentIds.includes(s.id));
   }, [students, activeCoachedEskul]);
 
-  // Active Session for this eskul
   const todaySession = useMemo(() => {
     if (!activeCoachedEskul) return undefined;
     return sessions.find((s) => s.eskulId === activeCoachedEskul.id);
   }, [sessions, activeCoachedEskul]);
 
-  // Recent attendance for this eskul
   const eskulLogs = useMemo(() => {
     if (!activeCoachedEskul) return [];
     return recentLogs.filter(
@@ -171,7 +165,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
     );
   }, [recentLogs, todaySession, activeCoachedEskul]);
 
-  // Weekly Schedule mapping for this coach
   const coachScheduleByDay = useMemo(() => {
     const map: Record<string, Eskul[]> = {};
     coachedEskuls.forEach(e => {
@@ -182,7 +175,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
     return map;
   }, [coachedEskuls]);
 
-  // Student search
   const [studentSearch, setStudentSearch] = useState('');
   const filteredStudents = enrolledStudents.filter(
     (s) =>
@@ -191,7 +183,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
       (s.nis && s.nis.includes(studentSearch))
   );
 
-  // Editable Agenda / Jurnal State
   const [agendaMateri, setAgendaMateri] = useState(
     todaySession?.materi || activeCoachedEskul?.deskripsi || 'Latihan fisik daya tahan, teknik passing cepat, strategi transisi bertahan ke menyerang.'
   );
@@ -246,7 +237,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
 
   return (
     <div className="space-y-6 pb-16">
-      {/* 1. Welcome Banner */}
       <Card className="p-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
@@ -262,7 +252,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
               Membina <strong className="text-slate-800">{coachedEskuls.length} Cabang Ekstrakurikuler</strong> • NIP: {currentPembina.nomorInduk || '-'}
             </p>
 
-            {/* Multi-Eskul Tab Pills */}
             {coachedEskuls.length > 1 && (
               <div className="pt-2 flex flex-wrap items-center gap-2">
                 <span className="text-xs font-semibold text-foreground">Pilih Eskul yang Dikelola:</span>
@@ -287,7 +276,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
             )}
           </div>
 
-          {/* Quick Action Buttons */}
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
             <Button
               variant="brand"
@@ -320,7 +308,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
         </div>
       </Card>
 
-      {/* 2. Jadwal & Status Sesi Latihan Utama (Hero Schedule Card) */}
       <Card className={`p-5 sm:p-6 transition-colors ${
         isTodaySchedule 
           ? 'border-emerald-300 bg-emerald-50/30' 
@@ -328,7 +315,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
       }`}>
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
           <div className="space-y-3">
-            {/* Status Header Badge */}
             <div className="flex flex-wrap items-center gap-2.5">
               {isTodaySchedule ? (
                 <Badge variant="brand" className="text-xs font-semibold gap-1.5 py-1 px-3">
@@ -368,7 +354,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
               </p>
             </div>
 
-            {/* 3 Detail Specs: Hari & Jam, Lokasi, Peserta */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
               <div className="flex items-center gap-3 p-3 bg-card rounded-md border border-border">
                 <div className="size-9 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
@@ -408,9 +393,7 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
             </div>
           </div>
 
-          {/* Action Callout Button */}
           <div className="flex flex-col sm:flex-row lg:flex-col gap-2 shrink-0 justify-center">
-            {/* 1. Mulai Sesi QR Proyektor */}
             <Button
               variant="brand"
               size="sm"
@@ -421,7 +404,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
               <span>Buka QR Proyektor (15s)</span>
             </Button>
 
-            {/* 2. Seleksi & Pendaftaran Siswa */}
             <Button
               variant="outline"
               size="sm"
@@ -432,7 +414,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
               <span>Pendaftaran &amp; Kuota Siswa</span>
             </Button>
 
-            {/* 3. Buka Sesi Standar / Proyektor */}
             <Button
               variant="outline"
               size="sm"
@@ -443,7 +424,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
               <span>{isTodaySchedule ? 'Tampilkan QR Proyektor' : 'Mulai Sesi Latihan'}</span>
             </Button>
 
-            {/* 4. Scanner Cepat Guru */}
             <Button
               variant="outline"
               size="sm"
@@ -454,7 +434,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
               <span>Pindai Kartu Siswa</span>
             </Button>
 
-            {/* 5. Pengajuan Jadwal */}
             {onOpenAjukanJadwalModal && (
               <Button
                 variant="outline"
@@ -470,7 +449,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
         </div>
       </Card>
 
-      {/* 3. Kalender Jadwal Mingguan Pembina (Weekly Schedule Strip) */}
       <Card className="p-5 sm:p-6 space-y-3.5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
@@ -516,7 +494,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
           </div>
         </div>
 
-        {/* 6 Days Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
           {DAYS_OF_WEEK.map((day) => {
             const isToday = day.key.toLowerCase() === todayName.toLowerCase();
@@ -571,7 +548,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
         </div>
       </Card>
 
-      {/* 4. KPI Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card className="p-4 sm:p-5 flex flex-col justify-between">
           <div className="flex items-center justify-between text-xs text-muted-foreground font-semibold mb-2">
@@ -645,11 +621,8 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
         </Card>
       </div>
 
-      {/* 5. Main Grid: Agenda & Jurnal Latihan + Live Scan Feed */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Left Column (2 Cols): Agenda Latihan & Roster Siswa */}
         <div className="lg:col-span-2 space-y-5">
-          {/* Card Jurnal & Agenda Latihan */}
           <Card className="p-5 sm:p-6 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
@@ -671,7 +644,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
               </Badge>
             </div>
 
-            {/* Active Session Topic & Description Highlight */}
             {todaySession?.judul && (
               <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-lg space-y-1 text-xs">
                 <div className="flex items-center justify-between">
@@ -722,7 +694,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
               </div>
             </div>
 
-            {/* 3 Attendance Mode Quick Actions */}
             <div className="pt-2 border-t border-slate-100">
               <span className="text-xs font-semibold text-slate-700 block mb-2.5">
                 Pilih Metode Pengambilan Presensi:
@@ -770,7 +741,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
             </div>
           </Card>
 
-          {/* Roster Siswa Anggota Eskul */}
           <Card className="p-5 sm:p-6 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
@@ -782,7 +752,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
                 </p>
               </div>
 
-              {/* Search input */}
               <div className="relative w-full sm:w-60">
                 <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 z-10" />
                 <Input
@@ -795,7 +764,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
               </div>
             </div>
 
-            {/* Table of students */}
             <div className="rounded-md border border-slate-200 overflow-hidden">
               <Table>
                 <TableHeader className="bg-slate-50/80">
@@ -893,7 +861,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
           </Card>
         </div>
 
-        {/* Right Column (1 Col): Live Scan Feed Hari Ini & Pedoman */}
         <div className="space-y-5">
           <Card className="p-5 sm:p-6 space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -908,7 +875,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
               </Badge>
             </div>
 
-            {/* List of recent checkins */}
             <div className="space-y-2.5">
               {eskulLogs.length > 0 ? (
                 eskulLogs.slice(0, 6).map((log) => (
@@ -958,7 +924,6 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
             </Button>
           </Card>
 
-          {/* Quick Info & Schedule Guide Box */}
           <div className="p-4 rounded-lg bg-emerald-50/70 border border-emerald-200/80 text-xs text-emerald-900 space-y-2">
             <span className="font-semibold flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
@@ -978,6 +943,18 @@ export const PembinaDashboard: React.FC<PembinaDashboardProps> = ({
           </div>
         </div>
       </div>
+
+      <ConfirmDeleteModal
+        isOpen={!!kickingStudent}
+        onClose={() => setKickingStudent(null)}
+        onConfirm={handleConfirmKick}
+        isLoading={isSubmittingKick}
+        title="Keluarkan Siswa dari Ekstrakurikuler"
+        itemName={kickingStudent?.namaLengkap}
+        itemType="Anggota Eskul"
+        description={`Apakah Anda yakin ingin mengeluarkan siswa ini dari ekstrakurikuler ${activeCoachedEskul?.namaEskul || ''}? Keanggotaan siswa akan dinonaktifkan.`}
+        confirmText="Ya, Keluarkan Siswa"
+      />
     </div>
   );
 };

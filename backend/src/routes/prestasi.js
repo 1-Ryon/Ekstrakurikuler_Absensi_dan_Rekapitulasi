@@ -1,14 +1,10 @@
 import { Router } from 'express';
 import { requireRoles } from '../middlewares/auth.js';
 import { prisma } from '../config/prisma.js';
+import { calculatePrestasiPoints, computeFinalScore } from '../utils/scoring.js';
 
 const router = Router();
 
-// ==========================================
-// PRESTASI & PERLOMBAAN EKSTERNAL
-// ==========================================
-
-// 1. GET /api/prestasi: Daftar prestasi lomba dengan filter eskulId & siswaId
 router.get('/', async (req, res) => {
   try {
     const { eskulId, siswaId } = req.query;
@@ -31,7 +27,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 2. POST /api/prestasi: Tambah capaian prestasi & sinkronisasi nilai akhir
 router.post('/', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN', 'SISWA'), async (req, res) => {
   try {
     const { eskulId, siswaId, namaLomba, penyelenggara, tingkat, peringkat, tanggal, buktiSertifikat, keterangan } = req.body;
@@ -40,17 +35,21 @@ router.post('/', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN', 'SISWA'), async
       return res.status(400).json({ success: false, message: 'Data lomba tidak lengkap.' });
     }
 
-    // Hitung bobot poin bonus otomatis berdasarkan tingkat & juara
-    let poinTambahan = 5.0; // default partisipan
-    if (peringkat === 'JUARA_1') {
-      poinTambahan = tingkat === 'INTERNASIONAL' ? 25 : tingkat === 'NASIONAL' ? 20 : tingkat === 'PROVINSI' ? 15 : 10;
-    } else if (peringkat === 'JUARA_2') {
-      poinTambahan = tingkat === 'INTERNASIONAL' ? 20 : tingkat === 'NASIONAL' ? 15 : tingkat === 'PROVINSI' ? 12 : 8;
-    } else if (peringkat === 'JUARA_3') {
-      poinTambahan = tingkat === 'INTERNASIONAL' ? 15 : tingkat === 'NASIONAL' ? 12 : tingkat === 'PROVINSI' ? 10 : 6;
-    } else if (peringkat === 'HARAPAN_1' || peringkat === 'FINALIS') {
-      poinTambahan = 5;
+    const eskul = await prisma.eskul.findUnique({ where: { id: eskulId } });
+    if (!eskul) {
+      return res.status(404).json({ success: false, message: 'Data eskul tidak ditemukan.' });
     }
+
+    if (req.user?.role === 'PEMBINA' && eskul.pembinaId !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: `Akses ditolak: Anda bukan pembina resmi ekstrakurikuler ${eskul.namaEskul}.`,
+      });
+    }
+
+    const targetTingkat = tingkat || 'KOTA';
+    const targetPeringkat = peringkat || 'JUARA_1';
+    const poinTambahan = calculatePrestasiPoints(targetTingkat, targetPeringkat);
 
     const prestasi = await prisma.prestasiLomba.create({
       data: {
@@ -58,8 +57,8 @@ router.post('/', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN', 'SISWA'), async
         siswaId,
         namaLomba,
         penyelenggara: penyelenggara || 'Kemenpora / Dinas Pendidikan',
-        tingkat: tingkat || 'KOTA',
-        peringkat: peringkat || 'JUARA_1',
+        tingkat: targetTingkat,
+        peringkat: targetPeringkat,
         tanggal: tanggal ? new Date(tanggal) : new Date(),
         poinTambahan,
         buktiSertifikat: buktiSertifikat || null,
@@ -72,36 +71,32 @@ router.post('/', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN', 'SISWA'), async
       },
     });
 
-    // Otomatis akumulasi poin ke tabel Penilaian siswa semester ini
     const existingPenilaian = await prisma.penilaian.findFirst({
       where: { eskulId, siswaId, semester: 1, tahunAjaran: '2026/2027' },
     });
 
     if (existingPenilaian) {
-      const newPoinPrestasi = Math.min(15, (existingPenilaian.poinPrestasi || 0) + poinTambahan);
-      // Formula: 40% Kehadiran + 25% Keaktifan + 25% Kinerja + 10% Prestasi Lomba
-      const newFinalScore = Math.min(
-        100,
-        existingPenilaian.nilaiKehadiran * 0.4 +
-        existingPenilaian.nilaiKeaktifan * 0.25 +
-        existingPenilaian.nilaiKinerja * 0.25 +
-        newPoinPrestasi
-      );
-      const newPredikat = newFinalScore >= 90 ? 'A' : newFinalScore >= 80 ? 'B' : newFinalScore >= 70 ? 'C' : 'D';
+      const newPoinPrestasi = (existingPenilaian.poinPrestasi || 0) + poinTambahan;
+      const scored = computeFinalScore({
+        nilaiKehadiran: existingPenilaian.nilaiKehadiran,
+        nilaiKeaktifan: existingPenilaian.nilaiKeaktifan,
+        nilaiKinerja: existingPenilaian.nilaiKinerja,
+        poinPrestasi: newPoinPrestasi,
+      });
 
       await prisma.penilaian.update({
         where: { id: existingPenilaian.id },
         data: {
           poinPrestasi: newPoinPrestasi,
-          nilaiAkhir: Math.round(newFinalScore * 10) / 10,
-          predikat: newPredikat,
+          nilaiAkhir: scored.nilaiAkhir,
+          predikat: scored.predikat,
         },
       });
     }
 
     res.status(201).json({
       success: true,
-      message: `Prestasi ${namaLomba} (${peringkat}) berhasil dicatat. Bonus +${poinTambahan} poin ditambahkan ke nilai akhir.`,
+      message: `Prestasi ${namaLomba} (${targetPeringkat}) berhasil dicatat. Bonus +${poinTambahan} poin ditambahkan ke nilai akhir.`,
       data: prestasi,
     });
   } catch (error) {
@@ -109,18 +104,26 @@ router.post('/', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN', 'SISWA'), async
   }
 });
 
-// 3. DELETE /api/prestasi/:id: Hapus data prestasi & kalkulasi ulang nilai akhir
 router.delete('/:id', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, res) => {
   try {
     const { id } = req.params;
-    const target = await prisma.prestasiLomba.findUnique({ where: { id } });
+    const target = await prisma.prestasiLomba.findUnique({
+      where: { id },
+      include: { eskul: true },
+    });
     if (!target) {
       return res.status(404).json({ success: false, message: 'Data prestasi tidak ditemukan.' });
     }
 
+    if (req.user?.role === 'PEMBINA' && target.eskul.pembinaId !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Akses ditolak: Anda bukan pembina resmi ekstrakurikuler ini.',
+      });
+    }
+
     await prisma.prestasiLomba.delete({ where: { id } });
 
-    // Hitung ulang akumulasi poin prestasi di penilaian
     const remainingPrestasi = await prisma.prestasiLomba.findMany({
       where: {
         eskulId: target.eskulId,
@@ -140,21 +143,19 @@ router.delete('/:id', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (re
     });
 
     if (existingPenilaian) {
-      const newBonus = Math.min(15, totalBonus);
-      const newScore = Math.min(
-        100,
-        existingPenilaian.nilaiKehadiran * 0.4 +
-        existingPenilaian.nilaiKeaktifan * 0.25 +
-        existingPenilaian.nilaiKinerja * 0.25 +
-        newBonus
-      );
-      const newPredikat = newScore >= 90 ? 'A' : newScore >= 80 ? 'B' : newScore >= 70 ? 'C' : 'D';
+      const scored = computeFinalScore({
+        nilaiKehadiran: existingPenilaian.nilaiKehadiran,
+        nilaiKeaktifan: existingPenilaian.nilaiKeaktifan,
+        nilaiKinerja: existingPenilaian.nilaiKinerja,
+        poinPrestasi: totalBonus,
+      });
+
       await prisma.penilaian.update({
         where: { id: existingPenilaian.id },
         data: {
-          poinPrestasi: newBonus,
-          nilaiAkhir: Math.round(newScore * 10) / 10,
-          predikat: newPredikat,
+          poinPrestasi: totalBonus,
+          nilaiAkhir: scored.nilaiAkhir,
+          predikat: scored.predikat,
         },
       });
     }

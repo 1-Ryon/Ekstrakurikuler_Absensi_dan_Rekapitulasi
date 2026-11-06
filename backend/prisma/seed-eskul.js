@@ -248,7 +248,6 @@ const eskulMasterList = [
 async function seedEskulOnly() {
   console.log('🚀 [SEED ESKUL] Memulai pengisian data ekstrakurikuler ke database...');
 
-  // 1. Pastikan pembina tersedia (jika belum, gunakan guru pertama yang ada)
   const defaultGuru = await prisma.guru.findFirst();
   if (!defaultGuru) {
     console.error('❌ Tidak ada data guru di database. Jalankan `npm run db:seed` terlebih dahulu.');
@@ -258,7 +257,6 @@ async function seedEskulOnly() {
   const existingPembinas = await prisma.guru.findMany({ select: { id: true } });
   const pembinaIdSet = new Set(existingPembinas.map((g) => g.id));
 
-  // 2. Insert atau Upsert 18 Cabang Eskul
   let createdCount = 0;
   let updatedCount = 0;
 
@@ -286,7 +284,6 @@ async function seedEskulOnly() {
 
   console.log(`✅ Sukses memproses 18 Ekstrakurikuler: ${createdCount} baru dibuat, ${updatedCount} diperbarui.`);
 
-  // 3. Daftarkan keanggotaan siswa (AnggotaEskul) jika siswa ada
   const allStudents = await prisma.siswa.findMany({ select: { id: true } });
   if (allStudents.length > 0) {
     console.log(`⏳ Memetakan keanggotaan eskul untuk ${allStudents.length} siswa...`);
@@ -317,13 +314,11 @@ async function seedEskulOnly() {
         });
         anggotaCreated++;
       } catch {
-        // ignore unique duplicate
       }
     }
     console.log(` Keanggotaan siswa terpetakan (${anggotaCreated} data).`);
   }
 
-  // 4. Buat sesi pertemuan hari ini untuk setiap eskul (agar siap dicoba absensi QR)
   const todayStr = new Date().toISOString().slice(0, 10);
   let sessionCreated = 0;
 
@@ -359,7 +354,6 @@ async function seedEskulOnly() {
         sessionCreated++;
       }
     } catch {
-      // ignore
     }
   }
 

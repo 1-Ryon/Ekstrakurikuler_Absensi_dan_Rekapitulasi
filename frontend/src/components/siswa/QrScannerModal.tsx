@@ -8,6 +8,7 @@ import {
   ShieldCheck,
   RefreshCw,
   SwitchCamera,
+  FlipHorizontal,
   Upload,
   Sparkles
 } from 'lucide-react';
@@ -49,12 +50,26 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [scannedResult, setScannedResult] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
+  const [isMirrored, setIsMirrored] = useState<boolean>(() => {
+    const saved = localStorage.getItem('attendance_camera_mirrored');
+    return saved === 'true';
+  });
+
+  const toggleMirror = () => {
+    setIsMirrored((prev) => {
+      const next = !prev;
+      localStorage.setItem('attendance_camera_mirrored', String(next));
+      return next;
+    });
+  };
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [distanceToSchool, setDistanceToSchool] = useState<number | null>(null);
   const [geofenceActive, setGeofenceActive] = useState<boolean>(true);
   const [geofenceRadius, setGeofenceRadius] = useState<number>(150);
   const [isInsideGeofence, setIsInsideGeofence] = useState<boolean>(true);
   const [locationNotice, setLocationNotice] = useState<string>('Memeriksa posisi GPS...');
+  const isScanningRef = useRef(false);
+  const audioCtxRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -97,9 +112,8 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
             },
             (err) => {
               if (!isMounted) return;
-              // Fallback jika GPS browser ditolak atau demo lokal tanpa HTTPS
               console.warn('Geolocation warning:', err.message);
-              setIsInsideGeofence(true); // toleransi ramah jika browser blokir izin
+              setIsInsideGeofence(true);
               setLocationNotice('GPS Lokal Toleransi (Izin lokasi dibatasi browser)');
             },
             { enableHighAccuracy: true, timeout: 8000 }
@@ -123,16 +137,23 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
   const scannerContainerId = 'interactive-qr-reader';
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Play audio chime on successful scan
   const playSuccessSound = () => {
     try {
-      const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
+        const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        if (AudioCtx) audioCtxRef.current = new AudioCtx();
+      }
+      const audioCtx = audioCtxRef.current;
+      if (!audioCtx) return;
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
-      osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
-      osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2); // G5
+      osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+      osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1);
+      osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2);
       gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.35);
       osc.connect(gain);
@@ -140,11 +161,11 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
       osc.start();
       osc.stop(audioCtx.currentTime + 0.35);
     } catch {
-      // Audio context restricted or unavailable
     }
   };
 
   const stopCamera = async () => {
+    isScanningRef.current = false;
     if (html5QrCodeRef.current) {
       try {
         if (html5QrCodeRef.current.isScanning) {
@@ -160,27 +181,24 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
   };
 
   const handleScanSuccess = async (decodedText: string) => {
-    // Prevent double processing
-    if (scanState === 'VERIFYING' || scanState === 'SUCCESS') return;
+    if (isScanningRef.current || scanState === 'VERIFYING' || scanState === 'SUCCESS') return;
+    isScanningRef.current = true;
 
     setScanState('VERIFYING');
     await stopCamera();
 
     try {
-      // Fire confetti
       try {
         confetti({
-          particleCount: 80,
-          spread: 70,
+          particleCount: 30,
+          spread: 55,
           origin: { y: 0.6 }
         });
       } catch {
-        // fallback
       }
 
       playSuccessSound();
 
-      // Send to backend API
       let resolvedEskul = 'Ekstrakurikuler SMK Al Amanah';
       if (!isInsideGeofence && geofenceActive) {
         setScanState('ERROR');
@@ -215,7 +233,6 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
 
     await stopCamera();
 
-    // Check if browser has mediaDevices
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       setScanState('ERROR');
       setErrorMessage('Browser ini tidak mendukung akses kamera secara langsung. Silakan gunakan opsi unggah gambar QR atau simulasi.');
@@ -229,7 +246,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
       await qrScanner.start(
         { facingMode: mode },
         {
-          fps: 12,
+          fps: 10,
           qrbox: { width: 230, height: 230 },
           aspectRatio: 1.0,
         },
@@ -237,14 +254,12 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
           handleScanSuccess(decodedText);
         },
         () => {
-          // ignore scan frame misses
         }
       );
 
       setScanState('SCANNING');
     } catch (err: any) {
       console.warn('Failed to start camera with facingMode:', mode, err);
-      // Fallback: try default camera without constraint
       try {
         const cameras = await Html5Qrcode.getCameras();
         if (cameras && cameras.length > 0) {
@@ -252,7 +267,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
           html5QrCodeRef.current = qrScanner;
           await qrScanner.start(
             cameras[0].id,
-            { fps: 12, qrbox: { width: 230, height: 230 } },
+            { fps: 10, qrbox: { width: 230, height: 230 } },
             (decodedText) => handleScanSuccess(decodedText),
             () => {}
           );
@@ -274,7 +289,6 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
       setScannedResult(null);
       setErrorMessage(null);
 
-      // Short delay to let DOM element render
       const timer = setTimeout(() => {
         startCamera(facingMode);
       }, 200);
@@ -325,7 +339,6 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
         className="bg-slate-900 border border-slate-800 rounded-lg w-[92vw] max-w-sm p-4 sm:p-6 text-white shadow-xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-200"
       >
         
-        {/* Close Button */}
         <button
           onClick={onClose}
           aria-label="Tutup Pemindai"
@@ -334,7 +347,6 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
           <X className="size-4" />
         </button>
 
-        {/* Header */}
         <div className="text-center mb-3">
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-emerald-500/10 text-[#00B884] text-xs font-semibold mb-1.5 border border-emerald-500/20">
             <Camera className="size-3.5" />
@@ -346,16 +358,26 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
           </p>
         </div>
 
-        {/* Scanner Viewfinder Box */}
         <div className="relative w-full aspect-square bg-slate-950 rounded-md border border-slate-800 overflow-hidden flex flex-col items-center justify-center mb-3.5 shadow-inner">
           
-          {/* html5-qrcode video element will mount here */}
           <div 
             id={scannerContainerId} 
-            className="w-full h-full object-cover overflow-hidden" 
+            className={`w-full h-full object-cover overflow-hidden scanner-video-container ${
+              isMirrored ? 'scanner-video-mirrored [&_video]:-scale-x-100' : 'scanner-video-unmirrored [&_video]:scale-x-100'
+            }`} 
           />
 
-          {/* Scanner Loading State */}
+          {/* Quick Floating Mirror Toggle */}
+          <button
+            type="button"
+            onClick={toggleMirror}
+            className="absolute top-2.5 right-2.5 z-20 px-2 py-1 rounded bg-slate-900/85 hover:bg-slate-800 border border-slate-700/80 text-[10px] text-slate-200 flex items-center gap-1.5 backdrop-blur-xs shadow-md transition-all cursor-pointer"
+            title="Balik arah kamera (Jangan Mirror / Mirror)"
+          >
+            <FlipHorizontal className="size-3 text-emerald-400" />
+            <span>{isMirrored ? 'Mode Cermin' : 'Jangan Mirror'}</span>
+          </button>
+
           {scanState === 'CAMERA_STARTING' && (
             <div className="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center gap-2.5 p-4 text-center z-10">
               <RefreshCw className="size-8 text-[#00B884] animate-spin" />
@@ -364,15 +386,11 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
             </div>
           )}
 
-          {/* Overlay Target Box during Scanning */}
           {scanState === 'SCANNING' && (
             <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
-              {/* Laser scan line animation */}
               <div className="absolute inset-x-4 h-0.5 bg-[#00B884] opacity-80 animate-pulse top-1/3" />
 
-              {/* Viewfinder Target corners */}
               <div className="w-48 h-48 border-2 border-dashed border-[#00B884]/80 rounded-md flex items-center justify-center relative">
-                {/* 4 corner accents */}
                 <div className="absolute top-0 left-0 size-4 border-t-2 border-l-2 border-[#00B884]" />
                 <div className="absolute top-0 right-0 size-4 border-t-2 border-r-2 border-[#00B884]" />
                 <div className="absolute bottom-0 left-0 size-4 border-b-2 border-l-2 border-[#00B884]" />
@@ -386,7 +404,6 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
             </div>
           )}
 
-          {/* Verifying TOTP Token state */}
           {scanState === 'VERIFYING' && (
             <div className="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center gap-2.5 p-4 text-center z-10">
               <RefreshCw className="size-10 text-[#00B884] animate-spin" />
@@ -395,7 +412,6 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
             </div>
           )}
 
-          {/* Scan Success state */}
           {scanState === 'SUCCESS' && (
             <div className="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center gap-2 text-center p-4 z-10 animate-in zoom-in-95">
               <div className="size-14 rounded-md bg-emerald-500/20 text-[#00B884] flex items-center justify-center mb-1">
@@ -409,7 +425,6 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
             </div>
           )}
 
-          {/* Error / Fallback State */}
           {scanState === 'ERROR' && (
             <div className="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center gap-2 p-4 text-center z-10">
               <AlertCircle className="size-10 text-rose-500 mb-1" />
@@ -427,26 +442,39 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
           )}
         </div>
 
-        {/* Camera Controls & Fallback Buttons */}
         <div className="flex items-center gap-2 mb-3.5">
           <button
             type="button"
             onClick={toggleCameraFacing}
-            className="flex-1 py-2 px-3 bg-slate-800/80 hover:bg-slate-750 text-slate-300 hover:text-white text-xs font-medium rounded-md border border-slate-700/60 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            className="flex-1 py-2 px-2.5 bg-slate-800/80 hover:bg-slate-750 text-slate-300 hover:text-white text-xs font-medium rounded-md border border-slate-700/60 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             title="Ganti Kamera Depan / Belakang"
           >
             <SwitchCamera className="size-3.5 text-emerald-400" />
-            <span>{facingMode === 'environment' ? 'Kamera Belakang' : 'Kamera Depan'}</span>
+            <span>{facingMode === 'environment' ? 'Belakang' : 'Depan'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={toggleMirror}
+            className={`py-2 px-2.5 rounded-md border text-xs font-medium transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              !isMirrored
+                ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25'
+                : 'bg-slate-800/80 hover:bg-slate-750 text-slate-300 hover:text-white border-slate-700/60'
+            }`}
+            title={!isMirrored ? 'Mode Normal (Kamera Tidak Mirror)' : 'Mode Cermin (Kamera Mirror)'}
+          >
+            <FlipHorizontal className="size-3.5 text-emerald-400" />
+            <span>{!isMirrored ? 'Jangan Mirror' : 'Mirror'}</span>
           </button>
 
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="py-2 px-3 bg-slate-800/80 hover:bg-slate-750 text-slate-300 hover:text-white text-xs font-medium rounded-md border border-slate-700/60 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            className="py-2 px-2.5 bg-slate-800/80 hover:bg-slate-750 text-slate-300 hover:text-white text-xs font-medium rounded-md border border-slate-700/60 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             title="Unggah Foto QR Code"
           >
             <Upload className="size-3.5 text-blue-400" />
-            <span>Pilih Foto</span>
+            <span>Foto</span>
           </button>
 
           <input
@@ -458,7 +486,6 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
           />
         </div>
 
-        {/* Security Watermark */}
         <div className="space-y-2 mb-3.5 text-xs">
           <div className="flex items-center justify-between text-slate-400 bg-slate-800/40 p-2.5 rounded-md border border-slate-800">
             <span className="flex items-center gap-1.5">
@@ -471,7 +498,6 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
           </div>
         </div>
 
-        {/* Action Button */}
         {scanState === 'SUCCESS' ? (
           <button
             onClick={onClose}

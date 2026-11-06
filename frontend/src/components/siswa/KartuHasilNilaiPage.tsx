@@ -14,14 +14,17 @@ import {
   Sparkles
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { StudentProfile, Eskul, PenilaianRecord, PrestasiLombaRecord } from '../../types';
+import { StudentProfile, Eskul, PenilaianRecord, PrestasiLombaRecord, SesiPertemuan, PresensiRecord } from '../../types';
 import { api } from '../../services/api';
+import { calculateEskulAttendance, calculateOverallAttendance } from '../../utils/attendance';
 
 interface KartuHasilNilaiPageProps {
   student: StudentProfile;
   enrolledEskuls?: Eskul[];
   penilaianRecords?: PenilaianRecord[];
   onBack: () => void;
+  sessions?: SesiPertemuan[];
+  attendanceHistory?: PresensiRecord[];
 }
 
 export const KartuHasilNilaiPage: React.FC<KartuHasilNilaiPageProps> = ({
@@ -29,6 +32,8 @@ export const KartuHasilNilaiPage: React.FC<KartuHasilNilaiPageProps> = ({
   enrolledEskuls = [],
   penilaianRecords = [],
   onBack,
+  sessions = [],
+  attendanceHistory = [],
 }) => {
   const [studentPrestasi, setStudentPrestasi] = useState<PrestasiLombaRecord[]>([]);
 
@@ -46,19 +51,18 @@ export const KartuHasilNilaiPage: React.FC<KartuHasilNilaiPageProps> = ({
     window.print();
   };
 
-  // Filter penilaian for this student
   const studentPenilaian = penilaianRecords.filter(
     (p) => p.siswaId === student.id || p.nisn === student.nis || p.nisn === student.nomorInduk
   );
 
-  // Construct display rows
   const displayRows = enrolledEskuls.length > 0
     ? enrolledEskuls.map((eskul, idx) => {
         const found = studentPenilaian.find((p) => p.eskulId === eskul.id || p.namaEskul === eskul.namaEskul);
+        const eskulAttendance = calculateEskulAttendance(eskul, student, sessions, attendanceHistory);
         return {
           no: idx + 1,
           namaEskul: eskul.namaEskul,
-          kehadiran: `${student.kehadiranRataRata || 95}%`,
+          kehadiran: `${eskulAttendance.percent}%`,
           nilaiAkhir: found?.nilaiAkhir ?? 92.5,
           predikat: found?.predikat || 'A',
           catatan: found?.catatan || found?.capaianKompetensi || 'Menunjukkan kedisiplinan dan partisipasi aktif dalam latihan rutin.',
@@ -96,9 +100,10 @@ export const KartuHasilNilaiPage: React.FC<KartuHasilNilaiPageProps> = ({
     ? (displayRows.reduce((acc, r) => acc + Number(r.nilaiAkhir), 0) / displayRows.length).toFixed(1)
     : '94.2';
 
+  const overallAttendance = calculateOverallAttendance(enrolledEskuls, student, sessions, attendanceHistory);
+
   return (
-    <div className="space-y-6 pb-12 animate-in fade-in duration-200">
-      {/* Top Document Ribbon / Toolbar (Hidden on Print) */}
+    <div className="space-y-6 pb-12 animate-in fade-in duration-200 print:p-0 print:m-0 print:space-y-0">
       <div className="bg-white rounded-lg border border-slate-200/90 p-4 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 print:hidden">
         <div className="flex items-center gap-3">
           <button
@@ -132,16 +137,10 @@ export const KartuHasilNilaiPage: React.FC<KartuHasilNilaiPageProps> = ({
         </div>
       </div>
 
-      {/* Word-like Document Container (A4 Page View) */}
-      <div className="max-w-4xl mx-auto bg-white rounded-lg border border-slate-200 shadow-sm p-5 sm:p-10 md:p-12 relative print:shadow-none print:border-none print:p-0">
+      <div className="max-w-4xl mx-auto bg-white rounded-lg border border-slate-200 shadow-sm p-5 sm:p-10 md:p-12 relative print:shadow-none print:border-none print:p-0 print:max-w-none print:w-full print:m-0">
         
-        {/* KOP SURAT / DOKUMEN HEADER
-            Screen: Logo di atas (centered)
-            Print: Logo di kiri, teks di kanan
-        */}
         <div className="border-b-2 border-slate-900 pb-4 mb-6">
           <div className="flex flex-col items-center justify-center text-center print:flex-row print:items-center print:text-left print:justify-start print:gap-5">
-            {/* Logo SMK Al Amanah */}
             <div className="mb-2 print:mb-0 shrink-0">
               <img 
                 src="/logo-smk.png" 
@@ -150,7 +149,6 @@ export const KartuHasilNilaiPage: React.FC<KartuHasilNilaiPageProps> = ({
               />
             </div>
 
-            {/* School & Document Text */}
             <div className="flex-1">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block">
                 YAYASAN AL AMANAH AL BANTANI
@@ -168,7 +166,6 @@ export const KartuHasilNilaiPage: React.FC<KartuHasilNilaiPageProps> = ({
           </div>
         </div>
 
-        {/* Identitas Peserta Didik */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200 print:bg-transparent print:border-none print:p-0">
           <div className="space-y-1.5">
             <div className="flex">
@@ -193,7 +190,6 @@ export const KartuHasilNilaiPage: React.FC<KartuHasilNilaiPageProps> = ({
           </div>
         </div>
 
-        {/* Tabel Nilai Capaian Ekstrakurikuler (Bisa Digeser Horizontal di Ponsel) */}
         <div className="space-y-2 mb-6">
           <div className="flex items-center justify-between text-xs text-slate-500">
             <span className="font-bold text-slate-800 text-xs sm:text-sm">Tabel Capaian Nilai & Kompetensi:</span>
@@ -239,7 +235,7 @@ export const KartuHasilNilaiPage: React.FC<KartuHasilNilaiPageProps> = ({
                   <td colSpan={2} className="py-3 px-4 text-left">
                     Rata-rata Capaian Ekstrakurikuler
                   </td>
-                  <td className="py-3 px-3 text-center font-mono">{student.kehadiranRataRata || 95}%</td>
+                  <td className="py-3 px-3 text-center font-mono">{overallAttendance}%</td>
                   <td className="py-3 px-3 text-center font-mono text-emerald-700 text-sm font-extrabold">{avgScore}</td>
                   <td className="py-3 px-3 text-center">
                     <span className="px-2.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 text-xs">
@@ -255,7 +251,6 @@ export const KartuHasilNilaiPage: React.FC<KartuHasilNilaiPageProps> = ({
           </div>
         </div>
 
-        {/* Predikat Acuan Kriteria */}
         <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-[10px] text-slate-600 mb-6 flex flex-wrap items-center justify-between gap-2 print:border-none print:p-0">
           <div>
             <strong>Keterangan Predikat:</strong> A = Sangat Baik (86-100) • B = Baik (75-85) • C = Cukup (60-74) • D = Kurang (&lt;60)
@@ -265,7 +260,6 @@ export const KartuHasilNilaiPage: React.FC<KartuHasilNilaiPageProps> = ({
           </div>
         </div>
 
-        {/* Catatan Prestasi & Rekam Jejak Kejuaraan (Jika Ada) */}
         {studentPrestasi.length > 0 && (
           <div className="space-y-2 mb-6">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
@@ -309,11 +303,9 @@ export const KartuHasilNilaiPage: React.FC<KartuHasilNilaiPageProps> = ({
           </div>
         )}
 
-        {/* Tanda Tangan & Pengesahan Digital */}
         <div className="pt-4 border-t border-slate-200 text-xs">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 items-end">
             
-            {/* QR Code Verifikasi */}
             <div className="flex items-center gap-3">
               <div className="bg-white p-2 rounded-md border border-slate-200 shadow-2xs shrink-0">
                 <QRCodeSVG
@@ -333,15 +325,13 @@ export const KartuHasilNilaiPage: React.FC<KartuHasilNilaiPageProps> = ({
               </div>
             </div>
 
-            {/* Orang Tua / Wali */}
-            <div className="text-center hidden sm:block">
+            <div className="text-center hidden sm:block print:block">
               <p className="text-slate-500 mb-12">Mengetahui,<br/>Orang Tua / Wali Murid</p>
               <p className="font-bold text-slate-800 border-b border-slate-300 pb-1 mx-4">
                 ( ..................................... )
               </p>
             </div>
 
-            {/* Koordinator Ekstrakurikuler */}
             <div className="text-right sm:text-center">
               <p className="text-slate-500 mb-1">
                 Tangerang Selatan, 2 Oktober 2026

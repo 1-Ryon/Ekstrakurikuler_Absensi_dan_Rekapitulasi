@@ -48,6 +48,7 @@ import {
   getIndonesianDayName,
   EskulRealtimeStatusInfo
 } from '../../utils/scheduleStatus';
+import { ConfirmDeleteModal } from '../modals/ConfirmDeleteModal';
 
 interface EskulManagementProps {
   eskulList: Eskul[];
@@ -85,12 +86,11 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [deletingEskul, setDeletingEskul] = useState<Eskul | null>(null);
   
-  // Real-time tick & holiday state
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [isHolidaySimulated, setIsHolidaySimulated] = useState<boolean>(false);
 
-  // Update clock every 30 seconds for accurate real-time schedule tracking
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentDate(new Date());
@@ -107,7 +107,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
     { key: 'LIBUR', label: 'Libur (Tgl Merah)' },
   ];
 
-  // Holiday Information
   const holidayCheck = useMemo(() => {
     return checkIsIndonesianHoliday(currentDate);
   }, [currentDate]);
@@ -117,7 +116,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
     ? 'Hari Libur Kegiatan Sekolah' 
     : (holidayCheck.holidayName || 'Hari Libur Nasional / Tanggal Merah');
 
-  // Compute status map for all eskuls with current time and holiday context
   const eskulStatusMap = useMemo(() => {
     const map = new Map<string, EskulRealtimeStatusInfo>();
     for (const eskul of eskulList) {
@@ -132,13 +130,11 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
     return map;
   }, [eskulList, currentDate, sessions, isTodayHoliday, activeHolidayName]);
 
-  // Metrics
   const totalEskul = eskulList.length;
   const activeEskul = eskulList.filter(e => e.status !== 'Non-Aktif').length;
   const totalKuota = eskulList.reduce((acc, e) => acc + (e.kuota || 0), 0);
   const totalTerisi = eskulList.reduce((acc, e) => acc + (e.jumlahSiswa || 0), 0);
 
-  // Real-time counts
   const currentlyRunningCount = useMemo(() => {
     let count = 0;
     eskulStatusMap.forEach((status) => {
@@ -160,7 +156,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
     );
   };
 
-  // Filtered List
   const filteredEskul = useMemo(() => {
     return eskulList.filter((item) => {
       const q = searchTerm.toLowerCase();
@@ -173,7 +168,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
       const matchesCategoryTab = 
         selectedCategoryTab === 'ALL' || item.kategori === selectedCategoryTab;
 
-      // Status filtering
       const statusInfo = eskulStatusMap.get(item.id);
       let matchesStatus = selectedStatuses.length === 0;
 
@@ -194,7 +188,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Top Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -211,8 +204,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
-          {/* Tanggal Merah Simulator / Indicator Toggle */}
-          {/* Penetapan Hari Libur Sekolah */}
           <button
             type="button"
             onClick={() => setIsHolidaySimulated(prev => !prev)}
@@ -258,7 +249,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
         </div>
       </div>
 
-      {/* Holiday Notification Banner if active */}
       <AnimatePresence>
         {isTodayHoliday && (
           <motion.div
@@ -297,7 +287,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Summary KPI Bento Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="p-5 border-border flex items-center justify-between">
           <div>
@@ -370,7 +359,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
         </Card>
       </div>
 
-      {/* Quick Category Selector Pills */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
         <Button
           type="button"
@@ -402,9 +390,7 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
         })}
       </div>
 
-      {/* Search, Filter, & View Mode Bar */}
       <Card className="p-4 border-border flex flex-col md:flex-row md:items-center justify-between gap-3">
-        {/* Search Input */}
         <div className="relative flex-1 max-w-md">
           <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -416,9 +402,7 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
           />
         </div>
 
-        {/* Action Controls */}
         <div className="flex items-center gap-2">
-          {/* Status Filter Trigger Button */}
           <Button
             type="button"
             variant={selectedStatuses.length > 0 ? "brand" : "outline"}
@@ -435,7 +419,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
             )}
           </Button>
 
-          {/* View Mode Switcher: Table vs Cards Grid */}
           <div className="flex items-center bg-muted p-1 rounded-md border border-border">
             <button
               onClick={() => setViewMode('table')}
@@ -459,7 +442,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
         </div>
       </Card>
 
-      {/* Active Filter Indicators */}
       {(selectedCategoryTab !== 'ALL' || selectedStatuses.length > 0) && (
         <div className="flex flex-wrap items-center gap-2 text-xs -mt-2">
           <span className="text-muted-foreground font-medium">Filter Aktif:</span>
@@ -489,7 +471,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
         </div>
       )}
 
-      {/* Filter Modal Dialog */}
       <AnimatePresence>
         {isFilterModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -524,7 +505,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
                 </button>
               </div>
 
-              {/* Status Field */}
               <div className="space-y-2">
                 <label className="text-xs font-bold text-foreground uppercase tracking-wider block">
                   Status Eskul &amp; Jadwal
@@ -557,7 +537,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
                 </div>
               </div>
 
-              {/* Modal Actions */}
               <div className="flex items-center justify-between pt-3 border-t border-border">
                 <Button
                   type="button"
@@ -586,7 +565,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Content: Table View vs Grid Cards View */}
       {filteredEskul.length === 0 ? (
         <Card className="p-12 text-center border-border space-y-3">
           <div className="size-12 rounded-md bg-muted text-muted-foreground flex items-center justify-center mx-auto">
@@ -614,10 +592,8 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
           </Button>
         </Card>
       ) : viewMode === 'table' ? (
-        /* ==================== VIEW 1: TABLE VIEW ==================== */
         <Card className="border-border overflow-hidden">
           <div className="overflow-x-auto">
-            {/* table-fixed locks all column widths so changing status never causes columns to shift */}
             <Table className="w-full table-fixed min-w-[980px]">
               <TableHeader>
                 <TableRow className="border-b border-slate-200 bg-slate-50/75 hover:bg-slate-50/75 text-slate-500 font-bold text-xs uppercase tracking-wider">
@@ -625,7 +601,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
                   <TableHead className="w-[18%] min-w-[170px] py-3 px-4 font-bold text-xs uppercase tracking-wider text-slate-500">Guru Pembina</TableHead>
                   <TableHead className="w-[21%] min-w-[190px] py-3 px-4 font-bold text-xs uppercase tracking-wider text-slate-500">Jadwal &amp; Lokasi</TableHead>
                   <TableHead className="w-[14%] min-w-[130px] py-3 px-4 font-bold text-xs uppercase tracking-wider text-slate-500">Kapasitas &amp; Kuota</TableHead>
-                  {/* Status header with locked width */}
                   <TableHead className="w-[14%] min-w-[140px] py-3 px-4 text-center font-bold text-xs uppercase tracking-wider text-slate-500">Status</TableHead>
                   <TableHead className="w-[10%] min-w-[100px] py-3 px-3 text-center font-bold text-xs uppercase tracking-wider text-slate-500 whitespace-nowrap">Aksi</TableHead>
                 </TableRow>
@@ -637,7 +612,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
 
                   return (
                     <TableRow key={eskul.id} className="hover:bg-muted/30 transition-colors border-b border-border/60">
-                      {/* Cabang Eskul */}
                       <TableCell className="py-3 px-4">
                         <div className="space-y-1">
                           <div className="font-bold text-foreground text-sm truncate">
@@ -656,7 +630,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
                         </div>
                       </TableCell>
 
-                      {/* Guru Pembina */}
                       <TableCell className="py-3 px-4">
                         <div className="flex items-center gap-2.5 min-w-0">
                           <UserAvatar
@@ -674,7 +647,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
                         </div>
                       </TableCell>
 
-                      {/* Jadwal & Lokasi */}
                       <TableCell className="py-3 px-4">
                         <div className="space-y-1 text-muted-foreground min-w-0">
                           <div className="flex items-center gap-1.5 font-medium text-foreground text-xs">
@@ -690,7 +662,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
                         </div>
                       </TableCell>
 
-                      {/* Kapasitas & Kuota */}
                       <TableCell className="py-3 px-4">
                         <div className="space-y-1.5">
                           <div className="flex items-center justify-between text-[11px]">
@@ -712,7 +683,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
                         </div>
                       </TableCell>
 
-                      {/* Status (Rigidly constrained container: ZERO TABLE SHIFTING) */}
                       <TableCell className="py-3 px-4 text-center">
                         <div className="flex flex-col items-center justify-center gap-1 mx-auto w-full max-w-[130px]">
                           <button
@@ -737,7 +707,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
                             </Badge>
                           </button>
                           
-                          {/* Master Status Subtitle (clickable toggle cue) */}
                           <button
                             type="button"
                             onClick={() => onToggleStatus(eskul.id)}
@@ -749,7 +718,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
                         </div>
                       </TableCell>
 
-                      {/* Aksi */}
                       <TableCell className="py-3 px-3 text-center whitespace-nowrap">
                         <div className="flex items-center justify-center gap-1.5">
                           <Button
@@ -767,7 +735,7 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
                             type="button"
                             variant="ghost"
                             size="icon"
-                            onClick={() => onDeleteEskul(eskul.id)}
+                            onClick={() => setDeletingEskul(eskul)}
                             className="size-8 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
                             title="Hapus Eskul"
                           >
@@ -783,7 +751,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
           </div>
         </Card>
       ) : (
-        /* ==================== VIEW 2: GRID CARDS VIEW ==================== */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredEskul.map((eskul) => {
             const quotaPercent = Math.round((eskul.jumlahSiswa / (eskul.kuota || 1)) * 100);
@@ -795,7 +762,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
                 className="p-5 border-border transition-all flex flex-col justify-between"
               >
                 <div>
-                  {/* Top Badge & Schedule-Aware Status */}
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <Badge variant="outline" className="text-xs font-semibold">
                       {eskul.kategori}
@@ -824,7 +790,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
                     </button>
                   </div>
 
-                  {/* Eskul Title & Description */}
                   <h3 className="text-base font-bold text-foreground leading-snug">
                     {eskul.namaEskul}
                   </h3>
@@ -832,7 +797,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
                     {eskul.deskripsi}
                   </p>
 
-                  {/* Pembina Profile Box */}
                   <div className="flex items-center gap-3 my-3.5 p-2.5 bg-muted/40 rounded-md border border-border">
                     <UserAvatar
                       name={eskul.pembinaNama}
@@ -848,7 +812,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
                     </div>
                   </div>
 
-                  {/* Schedule & Location */}
                   <div className="space-y-1.5 text-xs text-muted-foreground mb-3.5">
                     <div className="flex items-center gap-2">
                       <Calendar className="size-3.5 text-muted-foreground shrink-0" />
@@ -864,7 +827,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
                     </div>
                   </div>
 
-                  {/* Quota Progress Bar */}
                   <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden mb-3.5">
                     <div
                       className={`h-full rounded-full ${
@@ -875,7 +837,6 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
                   </div>
                 </div>
 
-                {/* Action Buttons */}
                 <div className="pt-3 border-t border-border flex items-center justify-between gap-2">
                   <Button
                     type="button"
@@ -902,7 +863,7 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
                       type="button"
                       variant="ghost"
                       size="icon"
-                      onClick={() => onDeleteEskul(eskul.id)}
+                      onClick={() => setDeletingEskul(eskul)}
                       className="size-7 text-muted-foreground hover:text-destructive cursor-pointer"
                       title="Hapus Eskul"
                     >
@@ -915,6 +876,21 @@ export const EskulManagement: React.FC<EskulManagementProps> = ({
           })}
         </div>
       )}
+
+      <ConfirmDeleteModal
+        isOpen={!!deletingEskul}
+        onClose={() => setDeletingEskul(null)}
+        onConfirm={() => {
+          if (deletingEskul) {
+            onDeleteEskul(deletingEskul.id);
+            setDeletingEskul(null);
+          }
+        }}
+        title="Hapus Ekstrakurikuler"
+        itemName={deletingEskul?.namaEskul}
+        itemType="Ekstrakurikuler"
+        description="Apakah Anda yakin ingin menghapus ekstrakurikuler ini? Seluruh data keanggotaan siswa dan jadwal latihan terkait akan dihapus secara permanen."
+      />
     </div>
   );
 };

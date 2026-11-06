@@ -64,7 +64,6 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
         setRegistrations(data);
       }
     } catch {
-      // Fallback
     } finally {
       setIsLoading(false);
     }
@@ -74,7 +73,6 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
     fetchRegistrations();
   }, [selectedEskulId]);
 
-  // Quota Metrics
   const maxQuota = activeEskul?.kuota || 40;
   const officialMembers = activeEskul?.jumlahSiswa || registrations.filter(r => r.status === 'RESMI_TERDAFTAR').length;
   const acceptedByPembina = registrations.filter(r => r.status === 'DITERIMA_PEMBINA');
@@ -84,7 +82,6 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
   const isOverQuota = totalApprovedAndPending > maxQuota;
   const remainingQuota = Math.max(0, maxQuota - totalApprovedAndPending);
 
-  // Tab Filtering
   const filteredList = registrations.filter((item) => {
     const matchSearch = 
       item.namaSiswa.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -161,7 +158,6 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
 
   return (
     <div className="space-y-6 pb-12 animate-in fade-in-50 duration-300">
-      {/* Toast Alert */}
       <AnimatePresence>
         {toastMessage && (
           <motion.div
@@ -184,7 +180,6 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
         )}
       </AnimatePresence>
 
-      {/* Header Banner */}
       <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-xs relative">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1.5">
@@ -213,7 +208,6 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
             </p>
           </div>
 
-          {/* Eskul Selector if Pembina coaches multiple */}
           {coachedEskuls.length > 1 && (
             <div className="bg-slate-50 p-2 rounded-md border border-slate-200 self-start md:self-auto">
               <label className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold block px-1 mb-1">
@@ -232,7 +226,6 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
           )}
         </div>
 
-        {/* Quota Progress Gauge */}
         <div className="mt-6 pt-5 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="bg-slate-50 rounded-md p-3.5 border border-slate-200">
             <div className="text-[11px] text-slate-500 font-medium">Batas Maksimal Kuota</div>
@@ -260,7 +253,6 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
           </div>
         </div>
 
-        {/* Progress Bar & Warning */}
         <div className="mt-4">
           <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
             <div 
@@ -279,9 +271,7 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
         </div>
       </div>
 
-      {/* Main Workflow Tabs & Send Button */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        {/* Step tabs */}
         <div className="flex items-center bg-slate-100 p-1 rounded-md overflow-x-auto self-start gap-1">
           <button
             onClick={() => setActiveTab('SELEKSI')}
@@ -320,7 +310,6 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
           </button>
         </div>
 
-        {/* Primary Action Button: Kirim Seluruh Siswa ke Koordinator */}
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsSubmitModalOpen(true)}
@@ -337,7 +326,6 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
         </div>
       </div>
 
-      {/* Search Input */}
       <div className="flex items-center justify-between gap-4">
         <div className="relative flex-1 sm:max-w-md">
           <Search className="size-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -351,7 +339,6 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
         </div>
       </div>
 
-      {/* Roster Cards */}
       <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden p-5">
         {isLoading ? (
           <div className="p-12 text-center text-slate-400 flex flex-col items-center justify-center gap-2">
@@ -398,7 +385,6 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
                     </div>
                   </div>
 
-                  {/* Status Badge */}
                   <div className="shrink-0">
                     {item.status === 'MENUNGGU_SELEKSI' && (
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
@@ -423,7 +409,6 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
                   </div>
                 </div>
 
-                {/* Actions per item for Pembina */}
                 {item.status === 'MENUNGGU_SELEKSI' && (
                   <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200/60">
                     <button
@@ -462,7 +447,6 @@ export const PendaftaranSiswaPembina: React.FC<PendaftaranSiswaPembinaProps> = (
         )}
       </div>
 
-      {/* Confirmation Modal to Submit Batch to Koordinator */}
       <AnimatePresence>
         {isSubmitModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Calendar, Clock, MapPin, Users, Award, Edit3, ShieldCheck } from 'lucide-react';
 import { Eskul } from '../../types';
 import { PEMBINA_LIST } from '../../data/mockData';
+import { SearchablePembinaSelect } from '../common/SearchablePembinaSelect';
 
 export interface PembinaOption {
   id: string;
@@ -124,7 +125,6 @@ export const EditEskulModal: React.FC<EditEskulModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3.5 text-xs max-h-[75vh] overflow-y-auto pr-1">
-          {/* Nama Eskul */}
           <div>
             <label className="font-semibold text-slate-700 block mb-1">
               Nama Ekstrakurikuler
@@ -139,7 +139,6 @@ export const EditEskulModal: React.FC<EditEskulModalProps> = ({
             />
           </div>
 
-          {/* Kategori & Status */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="font-semibold text-slate-700 block mb-1">Kategori</label>
@@ -169,25 +168,19 @@ export const EditEskulModal: React.FC<EditEskulModalProps> = ({
             </div>
           </div>
 
-          {/* Guru Pembina */}
           <div>
             <label className="font-semibold text-slate-700 block mb-1">
               Guru Pembina Bertugas
             </label>
-            <select
+            <SearchablePembinaSelect
               value={pembinaId}
-              onChange={(e) => setPembinaId(e.target.value)}
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
-            >
-              {allPembinaOptions.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.namaLengkap} {p.spesialisasi ? `(${p.spesialisasi})` : ''}
-                </option>
-              ))}
-            </select>
+              onChange={setPembinaId}
+              options={allPembinaOptions}
+              placeholder="Pilih atau cari guru pembina..."
+              searchPlaceholder="Ketik nama pembina / NIP untuk mencari..."
+            />
           </div>
 
-          {/* Jadwal Hari & Kuota */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="font-semibold text-slate-700 block mb-1">Jadwal Hari</label>
@@ -242,7 +235,6 @@ export const EditEskulModal: React.FC<EditEskulModalProps> = ({
             </div>
           </div>
 
-          {/* Jam Mulai & Selesai */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="font-semibold text-slate-700 block mb-1">Jam Mulai</label>
@@ -266,7 +258,6 @@ export const EditEskulModal: React.FC<EditEskulModalProps> = ({
             </div>
           </div>
 
-          {/* Lokasi Fasilitas */}
           <div>
             <label className="font-semibold text-slate-700 block mb-1">
               Lokasi / Fasilitas Sekolah
@@ -281,7 +272,6 @@ export const EditEskulModal: React.FC<EditEskulModalProps> = ({
             />
           </div>
 
-          {/* Deskripsi */}
           <div>
             <label className="font-semibold text-slate-700 block mb-1">
               Deskripsi & Agenda Kegiatan
@@ -295,7 +285,6 @@ export const EditEskulModal: React.FC<EditEskulModalProps> = ({
             />
           </div>
 
-          {/* Actions */}
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
             <button
               type="button"

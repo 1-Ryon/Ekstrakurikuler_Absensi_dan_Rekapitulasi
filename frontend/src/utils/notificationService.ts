@@ -1,10 +1,3 @@
-/**
- * Notification Service for SMK Al Amanah
- * Supports:
- * 1. Web Push / Desktop Notification (PWA Notification API)
- * 2. In-App Notification Center (Bell & unread badges)
- * 3. Audio Chime Alert
- */
 
 export interface SystemNotification {
   id: string;
@@ -12,14 +5,16 @@ export interface SystemNotification {
   desc: string;
   time: string;
   type: 'info' | 'success' | 'warning' | 'error';
-  targetRole?: string; // 'ALL' | 'SISWA' | 'PEMBINA' | 'ADMIN'
+  category?: 'JADWAL' | 'PENDAFTARAN' | 'PESAN' | 'SISTEM';
+  targetRoles?: ('ADMIN' | 'KOORDINATOR' | 'PEMBINA' | 'WALI_KELAS' | 'SISWA' | string)[];
+  targetUserId?: string;
+  senderName?: string;
   read: boolean;
   createdAt: number;
 }
 
 const STORAGE_KEY = 'al_amanah_notifications_v1';
 
-// Play gentle notification sound
 export function playNotificationSound() {
   try {
     const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
@@ -27,8 +22,8 @@ export function playNotificationSound() {
     const gain = audioCtx.createGain();
 
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
-    osc.frequency.setValueAtTime(880.00, audioCtx.currentTime + 0.08); // A5
+    osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+    osc.frequency.setValueAtTime(880.00, audioCtx.currentTime + 0.08);
     
     gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.35);
@@ -39,11 +34,9 @@ export function playNotificationSound() {
     osc.start();
     osc.stop(audioCtx.currentTime + 0.35);
   } catch {
-    // audio context restricted
   }
 }
 
-// Request permission for Web Push / Desktop notifications
 export async function requestPushPermission(): Promise<boolean> {
   if (typeof window === 'undefined' || !('Notification' in window)) {
     return false;
@@ -58,7 +51,6 @@ export async function requestPushPermission(): Promise<boolean> {
   return false;
 }
 
-// Send a desktop notification to device notification bar
 export function sendDesktopNotification(title: string, body: string, icon = '/logo-smk.png') {
   if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
     try {
@@ -73,21 +65,46 @@ export function sendDesktopNotification(title: string, body: string, icon = '/lo
   }
 }
 
-// Get saved notifications
-export function getSavedNotifications(): SystemNotification[] {
+export function getSavedNotifications(userRole?: string, userId?: string): SystemNotification[] {
   if (typeof window === 'undefined') return [];
+  let all: SystemNotification[] = [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      all = JSON.parse(raw);
+    } else {
+      all = getDefaultNotifications();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+    }
   } catch {
-    // parse error
+    all = getDefaultNotifications();
   }
-  return getDefaultNotifications();
+
+  if (!userRole && !userId) return all;
+
+  return all.filter((n) => {
+    // 1. Direct user match
+    if (n.targetUserId && userId) {
+      return n.targetUserId === userId;
+    }
+    // 2. Role match
+    if (n.targetRoles && n.targetRoles.length > 0 && userRole) {
+      return n.targetRoles.includes(userRole);
+    }
+    // 3. Fallback: if no specific target, it's global
+    return !n.targetUserId && (!n.targetRoles || n.targetRoles.length === 0);
+  });
 }
 
-// Add a new notification
 export function pushSystemNotification(notif: Omit<SystemNotification, 'id' | 'read' | 'createdAt'>) {
-  const list = getSavedNotifications();
+  let all: SystemNotification[] = [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    all = raw ? JSON.parse(raw) : getDefaultNotifications();
+  } catch {
+    all = getDefaultNotifications();
+  }
+
   const newItem: SystemNotification = {
     ...notif,
     id: `notif-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -95,18 +112,15 @@ export function pushSystemNotification(notif: Omit<SystemNotification, 'id' | 'r
     createdAt: Date.now(),
   };
 
-  const updated = [newItem, ...list].slice(0, 30); // keep last 30
+  const updated = [newItem, ...all].slice(0, 50);
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   } catch {
-    // storage full
   }
 
-  // Play sound & notify desktop
   playNotificationSound();
   sendDesktopNotification(notif.title, notif.desc);
 
-  // Dispatch custom event for real-time header badge updates
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('al_amanah_new_notification', { detail: newItem }));
   }
@@ -114,48 +128,76 @@ export function pushSystemNotification(notif: Omit<SystemNotification, 'id' | 'r
   return newItem;
 }
 
-// Mark all as read
-export function markAllNotificationsRead() {
-  const list = getSavedNotifications().map(n => ({ ...n, read: true }));
+export function markAllNotificationsRead(userRole?: string, userId?: string) {
+  if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const list: SystemNotification[] = raw ? JSON.parse(raw) : getDefaultNotifications();
+    const updated = list.map(n => {
+      const isForUser = !userRole && !userId
+        || (n.targetUserId && userId && n.targetUserId === userId)
+        || (n.targetRoles && userRole && n.targetRoles.includes(userRole))
+        || (!n.targetUserId && (!n.targetRoles || n.targetRoles.length === 0));
+      return isForUser ? { ...n, read: true } : n;
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   } catch {
-    // ignore
   }
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new Event('al_amanah_notifications_read'));
   }
 }
 
-// Initial default seed notifications
+export function markNotificationAsRead(id: string) {
+  if (typeof window === 'undefined') return;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const list: SystemNotification[] = raw ? JSON.parse(raw) : getDefaultNotifications();
+    const updated = list.map(n => n.id === id ? { ...n, read: true } : n);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  } catch {
+  }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('al_amanah_notifications_read'));
+  }
+}
+
 function getDefaultNotifications(): SystemNotification[] {
   return [
     {
-      id: 'init-1',
-      title: 'Pendaftaran Ekstrakurikuler Dibuka',
-      desc: 'Tahun Ajaran 2026/2027: Siswa dapat mendaftar hingga 3 pilihan eskul.',
-      time: 'Hari ini',
+      id: 'init-mail-1',
+      title: 'Dispensasi Siswa Lomba LKS',
+      desc: 'Mohon izin untuk siswa Muhammad Rizky Pratama karena sedang mempersiapkan modul LKS Wilayah Tangerang Selatan.',
+      senderName: 'Abdul Jabbar, S.Kom., M.Kom.',
+      category: 'PESAN',
+      time: '14:20 WIB',
       type: 'info',
+      targetRoles: ['ADMIN', 'KOORDINATOR', 'PEMBINA', 'WALI_KELAS'],
       read: false,
-      createdAt: Date.now() - 3600000,
+      createdAt: Date.now() - 1800000,
     },
     {
-      id: 'init-2',
-      title: 'Validasi Presensi Dynamic QR Siap Digunakan',
-      desc: 'Pembina eskul dapat membuka sesi dengan verifikasi lokasi sekolah (Geofencing 150m).',
-      time: 'Hari ini',
-      type: 'success',
+      id: 'init-mail-2',
+      title: 'Laporan Sesi Latihan Hari Ini',
+      desc: 'Sesi futsal telah selesai dengan kehadiran 38 dari 42 siswa. Siswa lainnya berhalangan izin resmi.',
+      senderName: 'Ahmad Syafii, S.Pd.',
+      category: 'PESAN',
+      time: '12:05 WIB',
+      type: 'info',
+      targetRoles: ['ADMIN', 'KOORDINATOR', 'PEMBINA', 'WALI_KELAS'],
       read: false,
       createdAt: Date.now() - 7200000,
     },
     {
-      id: 'init-3',
-      title: 'Notifikasi Status Pendaftaran & Jadwal',
-      desc: 'Status berkas diterima/ditolak akan otomatis muncul di notifikasi perangkat Anda.',
-      time: 'Kemarin',
-      type: 'info',
-      read: true,
-      createdAt: Date.now() - 86400000,
+      id: 'init-pendaftaran-info',
+      title: 'Pendaftaran Ekstrakurikuler Dibuka (Maksimal 2 Eskul)',
+      desc: 'Tahun Ajaran 2026/2027: Setiap siswa dapat memilih dan mendaftar maksimal 2 cabang ekstrakurikuler resmi.',
+      senderName: 'Koordinator Ekstrakurikuler',
+      category: 'PENDAFTARAN',
+      time: 'Hari ini',
+      type: 'success',
+      read: false,
+      createdAt: Date.now() - 14400000,
     },
   ];
 }

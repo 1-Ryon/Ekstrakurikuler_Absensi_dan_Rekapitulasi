@@ -13,6 +13,7 @@ import {
   ArrowLeft,
   ShieldCheck,
   SwitchCamera,
+  FlipHorizontal,
   Search,
   Lock,
   CalendarOff,
@@ -23,12 +24,15 @@ import {
   FileText,
   HeartPulse,
   UserCheck,
-  X
+  X,
+  Play,
+  ChevronDown
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Html5Qrcode } from 'html5-qrcode';
 import { SesiPertemuan, StudentProfile, PresensiRecord, User } from '../../types';
 import { UserAvatar } from '../common/UserAvatar';
+import { StartAttendanceModal } from '../modals/StartAttendanceModal';
 import { api } from '../../services/api';
 
 interface TeacherStudentScannerProps {
@@ -40,6 +44,7 @@ interface TeacherStudentScannerProps {
   recentLogs: PresensiRecord[];
   currentUser?: User;
   onRefreshData?: () => void;
+  onOpenBukaAbsensiModal?: () => void;
 }
 
 interface StudentAttendanceItem {
@@ -67,20 +72,37 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
   recentLogs,
   currentUser,
   onRefreshData,
+  onOpenBukaAbsensiModal,
 }) => {
   // Stepper State: 1 = Scan Siswa, 2 = Nilai Keaktifan, 3 = Izin/Sakit/Telat, 4 = Review & Kunci Sesi
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
 
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
+  const [isMirrored, setIsMirrored] = useState<boolean>(() => {
+    const saved = localStorage.getItem('attendance_camera_mirrored');
+    return saved === 'true';
+  });
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+
+  const handleToggleMirror = () => {
+    setIsMirrored((prev) => {
+      const next = !prev;
+      localStorage.setItem('attendance_camera_mirrored', String(next));
+      showToast(next ? 'Mode Kamera: Cermin (Mirror)' : 'Mode Kamera: Normal (Jangan Mirror)', 'success');
+      return next;
+    });
+  };
   const [lastScannedStudent, setLastScannedStudent] = useState<StudentProfile | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const isProcessingRef = useRef(false);
+  const audioCtxRef = useRef<AudioContext | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Modals
   const [isLockModalOpen, setIsLockModalOpen] = useState(false);
+  const [isStartAttendanceModalOpen, setIsStartAttendanceModalOpen] = useState(false);
   const [isHolidayModalOpen, setIsHolidayModalOpen] = useState(false);
   const [holidayReason, setHolidayReason] = useState('Hari Libur Nasional / Tanggal Merah');
   const [actionLoading, setActionLoading] = useState(false);
@@ -92,6 +114,24 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
   const showToast = (text: string, type: 'success' | 'error' = 'success') => {
     setToastMessage({ text, type });
     setTimeout(() => setToastMessage(null), 4000);
+  };
+
+  const handleReopenSession = async () => {
+    if (!currentSession) return;
+    if (!currentSession.fotoKegiatan) {
+      setIsStartAttendanceModalOpen(true);
+      return;
+    }
+    setActionLoading(true);
+    try {
+      await api.updateSessionStatus(currentSession.id, 'BERLANGSUNG', { isLocked: false });
+      if (onRefreshData) onRefreshData();
+      showToast('Sesi absensi berhasil dibuka kembali.', 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Gagal membuka kembali sesi absensi.', 'error');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   // Filter students enrolled in this eskul
@@ -147,7 +187,15 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
   const playBeep = () => {
     if (!soundEnabled) return;
     try {
-      const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
+        const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        if (AudioCtx) audioCtxRef.current = new AudioCtx();
+      }
+      const audioCtx = audioCtxRef.current;
+      if (!audioCtx) return;
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = 'triangle';
@@ -195,8 +243,8 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
       await qrScanner.start(
         { facingMode: mode },
         {
-          fps: 15,
-          qrbox: { width: 250, height: 250 },
+          fps: 10,
+          qrbox: { width: 240, height: 240 },
           aspectRatio: 1.0,
         },
         async (decodedText) => {
@@ -214,7 +262,18 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
 
   // QR Code Detected Callback
   const handleQrCodeDetected = async (rawCode: string) => {
-    if (isProcessing) return;
+    if (!currentSession) return;
+    if (currentSession.status === 'BELUM_DIMULAI') {
+      setIsStartAttendanceModalOpen(true);
+      showToast('Harap mulai sesi absensi dan unggah foto kegiatan terlebih dahulu.', 'error');
+      return;
+    }
+    if (isSessionLocked) {
+      showToast('Sesi ini sudah dikunci permanen.', 'error');
+      return;
+    }
+    if (isProcessingRef.current || isProcessing) return;
+    isProcessingRef.current = true;
     setIsProcessing(true);
 
     try {
@@ -257,12 +316,12 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
         }
       }));
 
-      // Audio and Confetti
+      // Audio and Confetti (ringan & non-blocking)
       playBeep();
       try {
         confetti({
-          particleCount: 50,
-          spread: 60,
+          particleCount: 25,
+          spread: 50,
           origin: { y: 0.6 }
         });
       } catch {}
@@ -289,8 +348,9 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
       showToast(`Presensi ${verifiedStudent.namaLengkap} tercatat HADIR!`, 'success');
     } finally {
       setTimeout(() => {
+        isProcessingRef.current = false;
         setIsProcessing(false);
-      }, 1200);
+      }, 1000);
     }
   };
 
@@ -301,7 +361,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
   };
 
   useEffect(() => {
-    if (currentStep === 1 && !isSessionLocked) {
+    if (currentStep === 1 && !isSessionLocked && currentSession?.status === 'BERLANGSUNG') {
       startCamera(facingMode);
     } else {
       stopCamera();
@@ -309,7 +369,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
     return () => {
       stopCamera();
     };
-  }, [currentStep, isSessionLocked]);
+  }, [currentStep, isSessionLocked, currentSession?.status]);
 
   // Tahap 2: Rating Keaktifan (Luar Biasa 98, Sangat Baik 92, Baik 85, Cukup 75)
   const ratingOptions = [
@@ -498,14 +558,71 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
 
           <button
             onClick={() => setIsHolidayModalOpen(true)}
-            className="px-3.5 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/80 rounded-md text-xs font-bold shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer"
+            disabled={!currentSession || isSessionLocked}
+            className="px-3.5 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/80 rounded-md text-xs font-bold shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
             <CalendarOff className="w-4 h-4 text-amber-600" />
             <span>Tandai Libur</span>
           </button>
+
+          {currentSession?.status === 'BELUM_DIMULAI' && (
+            <button
+              type="button"
+              onClick={() => setIsStartAttendanceModalOpen(true)}
+              className="px-4 py-2.5 bg-[#00B884] hover:bg-emerald-600 text-white rounded-md text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <Play className="w-4 h-4 fill-white text-white" />
+              <span>Mulai Sesi Absensi</span>
+            </button>
+          )}
+
+          {currentSession?.status === 'BERLANGSUNG' && (
+            <button
+              type="button"
+              onClick={() => setIsLockModalOpen(true)}
+              className="px-4 py-2.5 bg-[#00B884] hover:bg-[#009e70] text-white rounded-md text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <Lock className="w-4 h-4 text-white" />
+              <span>Kunci &amp; Selesaikan Sesi</span>
+            </button>
+          )}
+
+          {isSessionLocked && (
+            <button
+              type="button"
+              onClick={handleReopenSession}
+              disabled={actionLoading}
+              className="px-4 py-2.5 bg-white border border-emerald-500 text-emerald-600 hover:bg-emerald-50 rounded-md text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <RefreshCw className={`w-4 h-4 ${actionLoading ? 'animate-spin' : ''}`} />
+              <span>Buka Ulang Absensi</span>
+            </button>
+          )}
         </div>
       </div>
 
+      {!currentSession ? (
+        <div className="bg-white rounded-xl border border-slate-200 p-8 text-center flex flex-col items-center justify-center shadow-xs">
+          <div className="size-16 rounded-full bg-emerald-50 text-[#00B884] flex items-center justify-center mb-4">
+            <Camera className="size-8" />
+          </div>
+          <h3 className="text-base font-bold text-slate-800">Belum Ada Sesi Presensi Aktif Hari Ini</h3>
+          <p className="text-xs text-slate-500 mt-1 max-w-md">
+            Belum ada jadwal sesi yang aktif untuk ekstrakurikuler binaan Anda hari ini. Anda dapat membuka sesi presensi baru kapan saja.
+          </p>
+          {onOpenBukaAbsensiModal && (
+            <button
+              type="button"
+              onClick={onOpenBukaAbsensiModal}
+              className="mt-4 px-4 py-2 bg-[#00B884] hover:bg-emerald-600 text-white rounded-lg text-xs font-bold shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
+            >
+              <Play className="size-4 fill-white" />
+              <span>Buka Sesi Presensi Baru</span>
+            </button>
+          )}
+        </div>
+      ) : (
+        <>
       {/* Stepper Navigation: 4 Tahap Resmi */}
       <div className="bg-white border border-slate-200 p-2 sm:p-2.5 rounded-lg shadow-xs">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -593,15 +710,43 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
 
       {/* Sesi Selector Tabs */}
       {sessions.length > 1 && onSelectSession && (
-        <div className="bg-white p-3.5 rounded-lg border border-slate-200 flex items-center gap-3 overflow-x-auto">
-          <span className="text-xs font-bold text-slate-600 shrink-0">Pilih Sesi Latihan:</span>
-          <div className="flex items-center gap-2">
+        <div className="bg-white p-3.5 rounded-lg border border-slate-200 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-700 shrink-0">Pilih Sesi Latihan:</span>
+            <span className="text-[11px] font-semibold text-slate-500 md:hidden">
+              {sessions.length} Sesi Terjadwal
+            </span>
+          </div>
+
+          {/* Mobile / Android / iOS View: Dropdown Selector */}
+          <div className="block md:hidden w-full relative">
+            <select
+              value={currentSession?.id || ''}
+              onChange={(e) => {
+                const selected = sessions.find((s) => s.id === e.target.value);
+                if (selected) onSelectSession(selected);
+              }}
+              className="w-full appearance-none bg-slate-50 text-slate-800 text-xs font-semibold py-2.5 pl-3.5 pr-9 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00B884] focus:border-[#00B884] cursor-pointer"
+            >
+              {sessions.map((sess) => (
+                <option key={sess.id} value={sess.id}>
+                  {sess.namaEskul} ({sess.jamMulai} WIB) {sess.status === 'BERLANGSUNG' ? '• [Aktif]' : sess.status === 'BELUM_DIMULAI' ? '• [Belum Mulai]' : '• [Selesai]'}
+                </option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+              <ChevronDown className="size-4" />
+            </div>
+          </div>
+
+          {/* Desktop Horizontal Tabs */}
+          <div className="hidden md:flex items-center gap-2 overflow-x-auto pt-1">
             {sessions.map((sess) => (
               <button
                 key={sess.id}
                 onClick={() => onSelectSession(sess)}
                 className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all shrink-0 cursor-pointer ${
-                  currentSession.id === sess.id
+                  currentSession?.id === sess.id
                     ? 'bg-[#00B884] text-white shadow-xs'
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
@@ -619,108 +764,261 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
       {currentStep === 1 && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Left: Viewfinder Camera */}
-            <div className="lg:col-span-7 bg-slate-950 text-white rounded-lg p-6 shadow-xl border border-slate-800 flex flex-col items-center justify-between relative overflow-hidden">
+            {/* Left: Viewfinder Camera or Standby Card */}
+            <div className="lg:col-span-7 bg-slate-950 text-white rounded-lg p-6 shadow-xl border border-slate-800 flex flex-col items-center justify-between relative overflow-hidden min-h-[460px]">
               <div className="w-full flex items-center justify-between border-b border-slate-800/80 pb-3 mb-4">
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                  <span className={`w-2.5 h-2.5 rounded-full ${
+                    currentSession?.status === 'BERLANGSUNG'
+                      ? 'bg-emerald-400 animate-ping'
+                      : currentSession?.status === 'BELUM_DIMULAI'
+                      ? 'bg-amber-400'
+                      : 'bg-slate-500'
+                  }`} />
                   <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                    {currentSession.namaEskul} ({currentSession.jamMulai} - {currentSession.jamSelesai} WIB)
+                    {currentSession?.namaEskul || 'Ekstrakurikuler'} ({currentSession?.jamMulai || ''} - {currentSession?.jamSelesai || ''} WIB)
                   </span>
                 </div>
-                <button
-                  onClick={handleToggleCamera}
-                  className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <SwitchCamera className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>{facingMode === 'environment' ? 'Kamera Belakang' : 'Kamera Depan'}</span>
-                </button>
-              </div>
-
-              {/* Camera Frame */}
-              <div className="relative w-full max-w-sm aspect-square bg-black rounded-md border-2 border-slate-700 overflow-hidden flex flex-col items-center justify-center my-2 shadow-2xl">
-                <div
-                  id={scannerContainerId}
-                  className="w-full h-full overflow-hidden [&_video]:w-full [&_video]:h-full [&_video]:object-cover"
-                />
-
-                {isCameraActive && (
-                  <div className="absolute inset-x-0 h-0.5 bg-[#00B884] opacity-80 animate-pulse top-1/2 pointer-events-none" />
-                )}
-
-                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                  <div className="w-56 h-56 border-2 border-dashed border-[#00B884]/80 rounded-md relative">
-                    <div className="absolute -top-1 -left-1 w-6 h-6 border-t-3 border-l-3 border-[#00B884] rounded-tl" />
-                    <div className="absolute -top-1 -right-1 w-6 h-6 border-t-3 border-r-3 border-[#00B884] rounded-tr" />
-                    <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-3 border-l-3 border-[#00B884] rounded-bl" />
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-3 border-r-3 border-[#00B884] rounded-br" />
-                  </div>
-                </div>
-
-                <div className="absolute bottom-3 bg-slate-900/90 border border-slate-700 px-3.5 py-1 rounded-full text-[11px] text-emerald-400 font-semibold flex items-center gap-2 pointer-events-none backdrop-blur-xs">
-                  <Camera className="w-3.5 h-3.5 animate-pulse" />
-                  <span>{isProcessing ? 'Memproses Presensi...' : 'Arahkan Kamera ke Kartu QR Siswa'}</span>
-                </div>
-
-                {cameraError && (
-                  <div className="absolute inset-0 bg-slate-950/95 p-6 flex flex-col items-center justify-center text-center">
-                    <AlertCircle className="w-10 h-10 text-rose-500 mb-2" />
-                    <p className="text-xs text-slate-300 font-medium max-w-xs">{cameraError}</p>
+                {currentSession?.status === 'BERLANGSUNG' && (
+                  <div className="flex items-center gap-2">
                     <button
-                      onClick={() => startCamera(facingMode)}
-                      className="mt-3 px-3 py-1.5 bg-[#00B884] hover:bg-[#009e70] text-white text-xs font-bold rounded-md cursor-pointer"
+                      type="button"
+                      onClick={handleToggleMirror}
+                      className={`p-1.5 rounded-md text-xs flex items-center gap-1.5 transition-colors cursor-pointer border ${
+                        !isMirrored
+                          ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/25'
+                          : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                      }`}
+                      title={!isMirrored ? 'Mode Normal (Kamera Tidak Mirror)' : 'Mode Cermin (Kamera Mirror)'}
                     >
-                      Coba Akses Lagi
+                      <FlipHorizontal className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>{!isMirrored ? 'Jangan Mirror' : 'Mirror'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleToggleCamera}
+                      className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <SwitchCamera className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>{facingMode === 'environment' ? 'Kamera Belakang' : 'Kamera Depan'}</span>
                     </button>
                   </div>
                 )}
               </div>
 
-              {/* Pencarian Darurat Siswa */}
-              <div className="w-full mt-4 bg-slate-900/90 p-3 rounded-md border border-slate-800">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
-                    <Search className="w-3 h-3 text-[#00B884]" />
-                    <span>Pencarian Cepat Siswa (Jika Kartu Rusak/Hilang)</span>
-                  </span>
-                </div>
+              {currentSession?.status === 'BELUM_DIMULAI' ? (
+                <div className="w-full flex-1 flex flex-col items-center justify-center text-center p-4 sm:p-6 space-y-4 my-auto">
+                  <div className="size-16 sm:size-20 rounded-full bg-emerald-500/15 border-2 border-emerald-500/30 text-emerald-400 flex items-center justify-center shadow-lg">
+                    <Play className="size-8 sm:size-9 fill-emerald-400 text-emerald-400 ml-1" />
+                  </div>
+                  <div className="space-y-1.5 max-w-md">
+                    <span className="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      Presensi Belum Dimulai
+                    </span>
+                    <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
+                      Mulai Sesi Absensi Terlebih Dahulu
+                    </h3>
+                    <p className="text-xs text-slate-300 leading-relaxed max-w-sm mx-auto">
+                      Sebelum kamera pemindai kartu siswa dapat diaktifkan, pembina wajib mengisi judul topik kegiatan hari ini dan rincian materi latihan.
+                    </p>
+                  </div>
 
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Ketik nama siswa atau NIS..."
-                    className="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#00B884]"
-                  />
-                  {searchQuery && (
-                    <div className="absolute left-0 right-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-md max-h-40 overflow-y-auto z-20 shadow-xl">
-                      {filteredSearchStudents.length > 0 ? (
-                        filteredSearchStudents.slice(0, 5).map((stu) => (
-                          <div
-                            key={stu.id}
-                            onClick={() => {
-                              handleQrCodeDetected(stu.nis || stu.id);
-                              setSearchQuery('');
-                            }}
-                            className="p-2 hover:bg-slate-800 cursor-pointer flex items-center justify-between text-xs border-b border-slate-800 last:border-none"
-                          >
-                            <div>
-                              <div className="font-bold text-white">{stu.namaLengkap}</div>
-                              <div className="text-[10px] text-slate-400 font-mono">{stu.nomorInduk} • {stu.kelas}</div>
-                            </div>
-                            <span className="text-[10px] font-bold text-[#00B884] bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">
-                              Tandai Hadir
-                            </span>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="p-3 text-center text-xs text-slate-400">Tidak ada siswa ditemukan</div>
-                      )}
+                  <div className="bg-slate-900/90 border border-slate-800 rounded-lg p-3.5 w-full max-w-sm text-left space-y-2 text-xs text-slate-300 shadow-inner">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Ekstrakurikuler:</span>
+                      <span className="font-bold text-white">{currentSession?.namaEskul}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Jadwal:</span>
+                      <span className="font-semibold text-emerald-400">{currentSession?.jamMulai} - {currentSession?.jamSelesai} WIB</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Lokasi:</span>
+                      <span className="font-medium text-slate-200">{currentSession?.lokasi}</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsStartAttendanceModalOpen(true)}
+                    className="inline-flex items-center gap-2.5 px-6 py-3 bg-[#00B884] hover:bg-emerald-600 active:scale-[0.98] text-white rounded-lg text-xs sm:text-sm font-bold shadow-lg shadow-emerald-950/40 transition-all cursor-pointer"
+                  >
+                    <Play className="size-4 fill-white text-white" />
+                    <span>Mulai Sesi Absensi</span>
+                  </button>
+                </div>
+              ) : isSessionLocked ? (
+                <div className="w-full flex-1 flex flex-col items-center justify-center text-center p-6 space-y-4 my-auto">
+                  <div className="size-16 rounded-full bg-slate-800 border border-slate-700 text-slate-300 flex items-center justify-center">
+                    <Lock className="size-8 text-slate-300" />
+                  </div>
+                  <div className="space-y-1 max-w-sm">
+                    <h3 className="text-base font-bold text-white">Sesi Telah Selesai &amp; Terkunci</h3>
+                    <p className="text-xs text-slate-400">
+                      Seluruh hasil presensi telah difinalisasi dan tersimpan permanen di database rekapitulasi sekolah.
+                    </p>
+                  </div>
+                  {currentSession?.fotoKegiatan && (
+                    <div className="mt-1 text-center">
+                      <img
+                        src={currentSession.fotoKegiatan}
+                        alt="Dokumentasi Latihan"
+                        className="h-20 w-36 object-cover rounded-md border border-slate-700 mx-auto shadow-xs"
+                      />
+                      <span className="text-[10px] text-slate-400 mt-1 block">Foto Dokumentasi Tersimpan</span>
                     </div>
                   )}
+                  <div className="flex items-center gap-2 pt-2">
+                    {onOpenBukaAbsensiModal && (
+                      <button
+                        type="button"
+                        onClick={onOpenBukaAbsensiModal}
+                        className="px-4 py-2 bg-[#00B884] hover:bg-emerald-600 text-white rounded-md text-xs font-bold transition-all cursor-pointer"
+                      >
+                        Buka Sesi Baru Hari Ini
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleReopenSession}
+                      disabled={actionLoading}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-md text-xs font-bold transition-all cursor-pointer"
+                    >
+                      <RefreshCw className={`size-3.5 ${actionLoading ? 'animate-spin' : ''}`} />
+                      <span>Buka Ulang Absensi</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  {/* Banner Agenda Kegiatan Hari Ini */}
+                  <div className="w-full bg-slate-900/90 border border-slate-800 rounded-md p-3 mb-3 flex items-center gap-3">
+                    {currentSession?.fotoKegiatan ? (
+                      <img
+                        src={currentSession.fotoKegiatan}
+                        alt="Bukti Dokumentasi"
+                        className="w-12 h-12 rounded object-cover border border-emerald-500/40 shrink-0"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded bg-emerald-950/80 border border-emerald-800 text-emerald-400 flex items-center justify-center shrink-0">
+                        <CheckCircle2 className="w-5 h-5" />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[10px] uppercase font-bold text-emerald-400 tracking-wider">
+                        Sesi Aktif • Topik Kegiatan:
+                      </div>
+                      <div className="text-xs font-bold text-white truncate">
+                        {currentSession?.judul || currentSession?.materi || 'Latihan Rutin'}
+                      </div>
+                      <div className="text-[11px] text-slate-400 truncate">
+                        {currentSession?.deskripsi || currentSession?.materi || 'Pembinaan rutin ekstrakurikuler'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Camera Frame */}
+                  <div className="relative w-full max-w-sm aspect-square bg-black rounded-md border-2 border-slate-700 overflow-hidden flex flex-col items-center justify-center my-2 shadow-2xl">
+                    <div
+                      id={scannerContainerId}
+                      className={`w-full h-full overflow-hidden scanner-video-container ${
+                        isMirrored ? 'scanner-video-mirrored [&_video]:-scale-x-100' : 'scanner-video-unmirrored [&_video]:scale-x-100'
+                      }`}
+                    />
+
+                    {/* Quick Floating Mirror Toggle */}
+                    {isCameraActive && (
+                      <button
+                        type="button"
+                        onClick={handleToggleMirror}
+                        className="absolute top-2.5 right-2.5 z-20 px-2 py-1 rounded bg-slate-900/85 hover:bg-slate-800 border border-slate-700/80 text-[10px] text-slate-200 flex items-center gap-1.5 backdrop-blur-xs shadow-md transition-all cursor-pointer"
+                        title="Balik arah kamera (Jangan Mirror / Mirror)"
+                      >
+                        <FlipHorizontal className="size-3 text-emerald-400" />
+                        <span>{isMirrored ? 'Mode Cermin' : 'Jangan Mirror'}</span>
+                      </button>
+                    )}
+
+                    {isCameraActive && (
+                      <div className="absolute inset-x-0 h-0.5 bg-[#00B884] opacity-80 animate-pulse top-1/2 pointer-events-none" />
+                    )}
+
+                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                      <div className="w-56 h-56 border-2 border-dashed border-[#00B884]/80 rounded-md relative">
+                        <div className="absolute -top-1 -left-1 w-6 h-6 border-t-3 border-l-3 border-[#00B884] rounded-tl" />
+                        <div className="absolute -top-1 -right-1 w-6 h-6 border-t-3 border-r-3 border-[#00B884] rounded-tr" />
+                        <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-3 border-l-3 border-[#00B884] rounded-bl" />
+                        <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-3 border-r-3 border-[#00B884] rounded-br" />
+                      </div>
+                    </div>
+
+                    <div className="absolute bottom-3 bg-slate-900/90 border border-slate-700 px-3.5 py-1 rounded-full text-[11px] text-emerald-400 font-semibold flex items-center gap-2 pointer-events-none backdrop-blur-xs">
+                      <Camera className="w-3.5 h-3.5 animate-pulse" />
+                      <span>{isProcessing ? 'Memproses Presensi...' : 'Arahkan Kamera ke Kartu QR Siswa'}</span>
+                    </div>
+
+                    {cameraError && (
+                      <div className="absolute inset-0 bg-slate-950/95 p-6 flex flex-col items-center justify-center text-center">
+                        <AlertCircle className="w-10 h-10 text-rose-500 mb-2" />
+                        <p className="text-xs text-slate-300 font-medium max-w-xs">{cameraError}</p>
+                        <button
+                          onClick={() => startCamera(facingMode)}
+                          className="mt-3 px-3 py-1.5 bg-[#00B884] hover:bg-[#009e70] text-white text-xs font-bold rounded-md cursor-pointer"
+                        >
+                          Coba Akses Lagi
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Pencarian Darurat Siswa */}
+                  <div className="w-full mt-4 bg-slate-900/90 p-3 rounded-md border border-slate-800">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
+                        <Search className="w-3 h-3 text-[#00B884]" />
+                        <span>Pencarian Cepat Siswa (Jika Kartu Rusak/Hilang)</span>
+                      </span>
+                    </div>
+
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Ketik nama siswa atau NIS..."
+                        className="w-full bg-slate-950 border border-slate-700 rounded-md px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#00B884]"
+                      />
+                      {searchQuery && (
+                        <div className="absolute left-0 right-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-md max-h-40 overflow-y-auto z-20 shadow-xl">
+                          {filteredSearchStudents.length > 0 ? (
+                            filteredSearchStudents.slice(0, 5).map((stu) => (
+                              <div
+                                key={stu.id}
+                                onClick={() => {
+                                  handleQrCodeDetected(stu.nis || stu.id);
+                                  setSearchQuery('');
+                                }}
+                                className="p-2 hover:bg-slate-800 cursor-pointer flex items-center justify-between text-xs border-b border-slate-800 last:border-none"
+                              >
+                                <div>
+                                  <div className="font-bold text-white">{stu.namaLengkap}</div>
+                                  <div className="text-[10px] text-slate-400 font-mono">{stu.nomorInduk} • {stu.kelas}</div>
+                                </div>
+                                <span className="text-[10px] font-bold text-[#00B884] bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">
+                                  Tandai Hadir
+                                </span>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="p-3 text-center text-xs text-slate-400">Tidak ada siswa ditemukan</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Right: Last Scanned Confirmation & Live List */}
@@ -760,7 +1058,11 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
                 ) : (
                   <div className="p-8 bg-slate-50 rounded-md border border-dashed border-slate-200 text-center text-xs text-slate-400">
                     <QrCode className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                    <p>Kamera aktif. Arahkan ke kartu siswa untuk mencatat kehadiran.</p>
+                    <p>
+                      {currentSession?.status === 'BERLANGSUNG'
+                        ? 'Kamera aktif. Arahkan ke kartu siswa untuk mencatat kehadiran.'
+                        : 'Sesi presensi belum dimulai. Klik "Mulai Sesi Absensi" di sebelah kiri untuk mengaktifkan pemindai.'}
+                    </p>
                   </div>
                 )}
               </div>
@@ -1178,6 +1480,8 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
           </div>
         </div>
       )}
+        </>
+      )}
 
       {/* MODAL: Tandai Hari Libur */}
       {isHolidayModalOpen && (
@@ -1238,7 +1542,7 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
             </p>
 
             <div className="p-3.5 bg-emerald-50 rounded-md border border-emerald-200 mb-6 text-xs text-emerald-900 space-y-1">
-              <div>Ekstrakurikuler: <strong>{currentSession.namaEskul}</strong></div>
+              <div>Ekstrakurikuler: <strong>{currentSession?.namaEskul || 'Ekstrakurikuler'}</strong></div>
               <div>Total Hadir: <strong>{hadirStudents.length} Siswa</strong> (Rata2 Keaktifan: {avgKeaktifan})</div>
               <div>Izin &amp; Sakit: <strong>{attendanceList.filter(s => s.status === 'IZIN' || s.status === 'SAKIT').length} Siswa</strong></div>
               <div>Alpa: <strong>{attendanceList.filter(s => s.status === 'ALFA').length} Siswa</strong></div>
@@ -1264,6 +1568,17 @@ export const TeacherStudentScanner: React.FC<TeacherStudentScannerProps> = ({
           </div>
         </div>
       )}
+
+      <StartAttendanceModal
+        isOpen={isStartAttendanceModalOpen}
+        onClose={() => setIsStartAttendanceModalOpen(false)}
+        session={currentSession || null}
+        onStartSuccess={(updated: SesiPertemuan) => {
+          if (onSelectSession) onSelectSession(updated);
+          if (onRefreshData) onRefreshData();
+          showToast('Sesi absensi berhasil dimulai dan kamera scanner aktif!', 'success');
+        }}
+      />
     </div>
   );
 };

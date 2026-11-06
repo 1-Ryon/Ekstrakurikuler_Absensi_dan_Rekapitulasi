@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { Guru, Kelas } from '../../types';
 import { UserAvatar } from '../common/UserAvatar';
+import { ConfirmDeleteModal } from '../modals/ConfirmDeleteModal';
 import {
   Card,
   CardHeader,
@@ -69,21 +70,19 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
   const [assigningGuru, setAssigningGuru] = useState<Guru | null>(null);
   const [selectedKelasIdToAssign, setSelectedKelasIdToAssign] = useState<string>('');
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+  const [deletingGuru, setDeletingGuru] = useState<Guru | null>(null);
 
   const togglePasswordVisibility = (id: string) => {
     setVisiblePasswords((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // Statistics
   const totalGuru = guruList.length;
   const waliKelasCount = guruList.filter(g => g.isWaliKelas || (g.kelasWali && g.kelasWali.length > 0)).length;
   const totalKelas = kelasList.length;
   const unassignedKelasCount = kelasList.filter(k => !k.waliKelasId).length;
 
-  // Filtered List
   const filteredList = useMemo(() => {
     return guruList.filter((g) => {
-      // Search
       const matchesSearch =
         g.namaLengkap.toLowerCase().includes(searchTerm.toLowerCase()) ||
         g.nip.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -93,12 +92,10 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
 
       if (!matchesSearch) return false;
 
-      // Role Filter (Wali Kelas vs Guru)
       const isWali = g.isWaliKelas || (g.kelasWali && g.kelasWali.length > 0);
       if (selectedRoleFilter === 'WALI_KELAS' && !isWali) return false;
       if (selectedRoleFilter === 'NON_WALI' && isWali) return false;
 
-      // Status Filter
       if (selectedStatusFilter === 'AKTIF' && g.statusAktif === false) return false;
       if (selectedStatusFilter === 'NON_AKTIF' && g.statusAktif !== false) return false;
 
@@ -123,7 +120,6 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
 
   return (
     <div className="space-y-6 pb-12 animate-in fade-in-50 duration-300">
-      {/* Top Header Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -163,7 +159,6 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
         </div>
       </div>
 
-      {/* KPI Summary Bento */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4 sm:p-5 flex items-center justify-between">
@@ -230,10 +225,8 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
         </Card>
       </div>
 
-      {/* Search, Filter & Controls */}
       <Card>
         <CardContent className="p-3 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
-          {/* Search */}
           <div className="relative flex-1 max-w-md">
             <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -245,9 +238,7 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
             />
           </div>
 
-          {/* Action Controls */}
           <div className="flex items-center gap-2">
-            {/* Filter Trigger Button */}
             <Button
               variant={activeFiltersCount > 0 ? 'brand' : 'outline'}
               size="sm"
@@ -263,7 +254,6 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
               )}
             </Button>
 
-            {/* View Mode Toggle */}
             <div className="flex items-center bg-muted/60 p-0.5 rounded-md border border-border">
               <Button
                 variant={viewMode === 'table' ? 'secondary' : 'ghost'}
@@ -288,7 +278,6 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
         </CardContent>
       </Card>
 
-      {/* Filter Modal Dialog */}
       {isFilterModalOpen && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-xs flex items-center justify-center p-4">
           <Card className="max-w-md w-full p-6 shadow-xl space-y-4">
@@ -308,7 +297,6 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
             </div>
 
             <div className="space-y-4 text-xs">
-              {/* Role Penugasan Filter */}
               <div>
                 <label className="font-semibold text-foreground block mb-1.5">Penugasan Wali Kelas</label>
                 <select
@@ -322,7 +310,6 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
                 </select>
               </div>
 
-              {/* Status Akun Filter */}
               <div>
                 <label className="font-semibold text-foreground block mb-1.5">Status Akun Login</label>
                 <select
@@ -360,7 +347,6 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
         </div>
       )}
 
-      {/* Assign Wali Kelas Modal */}
       {assigningGuru && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-xs flex items-center justify-center p-4">
           <Card className="max-w-md w-full p-6 shadow-xl space-y-4">
@@ -420,7 +406,6 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
         </div>
       )}
 
-      {/* Main Content */}
       {filteredList.length === 0 ? (
         <Card className="p-12 text-center">
           <div className="w-12 h-12 rounded-full bg-muted text-muted-foreground flex items-center justify-center mx-auto mb-3">
@@ -432,7 +417,6 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
           </p>
         </Card>
       ) : viewMode === 'table' ? (
-        /* TABLE VIEW */
         <Card className="overflow-hidden">
           <Table>
             <TableHeader>
@@ -447,13 +431,11 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
             </TableHeader>
             <TableBody>
               {filteredList.map((guru) => {
-                // Resolve class assigned to this guru
                 const assignedClass = kelasList.find(k => k.waliKelasId === guru.id) || 
                   (guru.kelasWali && guru.kelasWali.length > 0 ? guru.kelasWali[0] : null);
 
                 return (
                   <TableRow key={guru.id} className="hover:bg-muted/40 transition-colors">
-                    {/* Name & Avatar */}
                     <TableCell className="py-3.5 px-4">
                       <div className="flex items-center gap-3">
                         <UserAvatar
@@ -476,7 +458,6 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
                       </div>
                     </TableCell>
 
-                    {/* Wali Kelas Binaan */}
                     <TableCell className="py-3.5 px-4">
                       {assignedClass ? (
                         <Badge variant="outline" className="inline-flex items-center gap-1.5 py-1 px-2.5 bg-purple-50 text-purple-700 border-purple-200 text-xs font-medium">
@@ -496,7 +477,6 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
                       )}
                     </TableCell>
 
-                    {/* Login Credentials */}
                     <TableCell className="py-3.5 px-4">
                       <div className="space-y-1">
                         <div className="flex items-center gap-1.5 font-mono text-xs">
@@ -526,7 +506,6 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
                       </div>
                     </TableCell>
 
-                    {/* Contacts */}
                     <TableCell className="py-3.5 px-4">
                       <div className="space-y-1 text-xs">
                         {guru.noHp && guru.noHp !== '-' ? (
@@ -551,7 +530,6 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
                       </div>
                     </TableCell>
 
-                    {/* Status */}
                     <TableCell className="py-3.5 px-4 text-center">
                       <Badge
                         variant={guru.statusAktif !== false ? 'success' : 'outline'}
@@ -566,7 +544,6 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
                       </Badge>
                     </TableCell>
 
-                    {/* Actions */}
                     <TableCell className="py-3.5 px-4 text-right whitespace-nowrap min-w-[120px]">
                       <div className="flex items-center justify-end gap-1">
                         <Button
@@ -590,11 +567,7 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => {
-                            if (confirm(`Yakin ingin menghapus data guru "${guru.namaLengkap}"?`)) {
-                              onDeleteGuru(guru.id);
-                            }
-                          }}
+                          onClick={() => setDeletingGuru(guru)}
                           className="size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                           title="Hapus Guru"
                         >
@@ -609,7 +582,6 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
           </Table>
         </Card>
       ) : (
-        /* BENTO GRID VIEW */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredList.map((guru) => {
             const assignedClass = kelasList.find(k => k.waliKelasId === guru.id) || 
@@ -651,7 +623,6 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
                     </div>
                   )}
 
-                  {/* Wali Kelas Badge */}
                   <div className="mt-3.5 space-y-1.5">
                     <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                       Penugasan Wali Kelas:
@@ -674,7 +645,6 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
                     )}
                   </div>
 
-                  {/* Credentials & Contact */}
                   <div className="mt-4 pt-3 border-t border-border space-y-2 text-xs text-muted-foreground">
                     <div className="flex items-center justify-between">
                       <span>Username:</span>
@@ -718,7 +688,6 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
                   </div>
                 </div>
 
-                {/* Footer Actions */}
                 <div className="mt-4 pt-3 border-t border-border flex items-center justify-end gap-2">
                   <Button
                     variant="outline"
@@ -742,11 +711,7 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => {
-                      if (confirm(`Yakin ingin menghapus data guru "${guru.namaLengkap}"?`)) {
-                        onDeleteGuru(guru.id);
-                      }
-                    }}
+                    onClick={() => setDeletingGuru(guru)}
                     className="size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                     title="Hapus"
                   >
@@ -758,6 +723,21 @@ export const GuruWaliManagement: React.FC<GuruWaliManagementProps> = ({
           })}
         </div>
       )}
+
+      <ConfirmDeleteModal
+        isOpen={!!deletingGuru}
+        onClose={() => setDeletingGuru(null)}
+        onConfirm={() => {
+          if (deletingGuru) {
+            onDeleteGuru(deletingGuru.id);
+            setDeletingGuru(null);
+          }
+        }}
+        title="Hapus Data Guru"
+        itemName={deletingGuru?.namaLengkap}
+        itemType="Guru / Wali Kelas"
+        description="Apakah Anda yakin ingin menghapus data guru ini? Akun guru dan relasi penugasan wali kelas yang bersangkutan akan dihapus dari sistem."
+      />
     </div>
   );
 };

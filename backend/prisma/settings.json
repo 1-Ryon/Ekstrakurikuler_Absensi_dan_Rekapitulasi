@@ -3,7 +3,7 @@
   "npsn": "20614829",
   "schoolLatitude": -6.34215,
   "schoolLongitude": 106.71124,
-  "geofenceRadius": 200,
+  "geofenceRadius": 150,
   "isGeofenceActive": true,
   "qrExpirySeconds": 15,
   "kehadiranWeight": 40,

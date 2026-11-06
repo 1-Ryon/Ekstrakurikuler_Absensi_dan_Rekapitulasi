@@ -1,7 +1,8 @@
-import React from 'react';
-import { X, Mail, Send, User } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Mail, Send, User, ExternalLink } from 'lucide-react';
 import { PEMBINA_LIST } from '../../data/mockData';
 import { UserAvatar } from '../common/UserAvatar';
+import { FullViewMessageModal, FullViewMessageData } from './FullViewMessageModal';
 
 interface MailModalProps {
   isOpen: boolean;
@@ -12,6 +13,8 @@ export const MailModal: React.FC<MailModalProps> = ({
   isOpen,
   onClose,
 }) => {
+  const [selectedFullView, setSelectedFullView] = useState<FullViewMessageData | null>(null);
+
   if (!isOpen) return null;
 
   const messages = [
@@ -20,7 +23,8 @@ export const MailModal: React.FC<MailModalProps> = ({
       sender: 'Abdul Jabbar, S.Kom., M.Kom.',
       role: 'Guru Computer Club',
       subject: 'Dispensasi Siswa Lomba LKS',
-      snippet: 'Mohon izin untuk siswa Muhammad Rizky Pratama karena sedang mempersiapkan modul LKS...',
+      snippet: 'Mohon izin untuk siswa Muhammad Rizky Pratama karena sedang mempersiapkan modul LKS Wilayah Tangerang Selatan.',
+      fullText: 'Dengan hormat,\n\nSehubungan dengan keikutsertaan sekolah kita dalam Lomba Kompetensi Siswa (LKS) Tingkat Kota Tangerang Selatan pada bidang Web Technologies, kami memohon dispensasi ketidakhadiran bagi ananda:\n\n• Nama: Muhammad Rizky Pratama\n• Kelas: XI RPL 1\n\nSiswa tersebut akan mengikuti bimbingan intensif dan simulasi praktikum modul server di Lab RPL mulai tanggal 5 s/d 8 November 2026. Seluruh materi pelajaran yang tertinggal akan diselesaikan secara mandiri.\n\nDemikian permohonan dispensasi ini kami sampaikan. Atas perhatian dan izin dari pihak sekolah serta wali kelas, kami ucapkan terima kasih.',
       time: '14:20 WIB',
       avatar: PEMBINA_LIST[0].avatarUrl,
     },
@@ -30,6 +34,7 @@ export const MailModal: React.FC<MailModalProps> = ({
       role: 'Guru Futsal',
       subject: 'Laporan Sesi Latihan Hari Ini',
       snippet: 'Sesi futsal telah selesai dengan kehadiran 38 dari 42 siswa. Siswa lainnya berhalangan izin.',
+      fullText: 'Yth. Koordinator Ekstrakurikuler & Kesiswaan,\n\nMelaporkan pelaksanaan sesi latihan rutin Futsal Prestasi pada hari ini:\n\n• Waktu Latihan: 15:30 - 17:30 WIB\n• Lokasi: Lapangan Futsal SMK Al Amanah\n• Kehadiran: 38 Siswa Hadir (Presensi Dynamic QR), 3 Izin Resmi, 1 Sakit.\n• Catatan Lapangan: Kondisi lapangan baik, seluruh siswa mengikuti materi taktik counter-attack dengan disiplin. Nilai keaktifan sesi telah dikunci dan disinkronkan ke rekapitulasi semester.\n\nTerima kasih atas dukungan fasilitas yang diberikan.',
       time: '12:05 WIB',
       avatar: PEMBINA_LIST[3].avatarUrl,
     },
@@ -64,7 +69,17 @@ export const MailModal: React.FC<MailModalProps> = ({
           {messages.map((m) => (
             <div
               key={m.id}
-              className="p-3.5 rounded-lg border border-slate-100 bg-slate-50/70 hover:bg-slate-50 transition-colors flex items-start gap-3"
+              onClick={() => setSelectedFullView({
+                id: m.id,
+                title: m.subject,
+                desc: m.fullText,
+                senderName: m.sender,
+                senderRole: m.role,
+                category: 'PESAN',
+                time: m.time,
+                read: true,
+              })}
+              className="p-3.5 rounded-lg border border-slate-200 bg-slate-50/70 hover:bg-emerald-50/40 hover:border-emerald-300 transition-all flex items-start gap-3 cursor-pointer group"
             >
               <UserAvatar
                 name={m.sender}
@@ -72,11 +87,15 @@ export const MailModal: React.FC<MailModalProps> = ({
               />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-xs text-slate-800 truncate">{m.sender}</h4>
+                  <h4 className="font-bold text-xs text-slate-800 truncate group-hover:text-[#00B884] transition-colors">{m.sender}</h4>
                   <span className="text-[10px] text-slate-400 shrink-0">{m.time}</span>
                 </div>
                 <div className="text-[11px] font-semibold text-[#00B884] truncate">{m.subject}</div>
                 <p className="text-xs text-slate-500 mt-1 line-clamp-2">{m.snippet}</p>
+                <div className="mt-2 pt-1.5 border-t border-slate-200/60 flex items-center justify-between text-[10px] text-[#00B884] font-semibold">
+                  <span>Klik untuk Full View</span>
+                  <ExternalLink className="size-3" />
+                </div>
               </div>
             </div>
           ))}
@@ -85,12 +104,18 @@ export const MailModal: React.FC<MailModalProps> = ({
         <div className="mt-5 pt-3 border-t border-slate-100 text-center">
           <button
             onClick={onClose}
-            className="text-xs font-semibold text-[#00B884] hover:underline"
+            className="text-xs font-semibold text-[#00B884] hover:underline cursor-pointer"
           >
             Tutup Pesan
           </button>
         </div>
       </div>
+
+      <FullViewMessageModal
+        isOpen={!!selectedFullView}
+        onClose={() => setSelectedFullView(null)}
+        message={selectedFullView}
+      />
     </div>
   );
 };

@@ -33,6 +33,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { Role, User, Eskul, StudentProfile, Guru, Kelas } from '../types';
 import { NavItemKey } from './Sidebar';
+import { getSavedNotifications } from '../utils/notificationService';
 import { UserAvatar } from './common/UserAvatar';
 import { ProfileModal } from './modals/ProfileModal';
 
@@ -43,12 +44,11 @@ interface HeaderProps {
   canSwitchRole?: boolean;
   onSearch: (query: string) => void;
   onOpenNotifications: () => void;
-  onOpenMail: () => void;
+  onOpenMail?: () => void;
   onToggleMobileMenu?: () => void;
   onToggleDesktopSidebar?: () => void;
   isDesktopSidebarOpen?: boolean;
   onLogout?: () => void;
-  // Global Search Data & Navigation Callbacks
   eskulList?: Eskul[];
   students?: StudentProfile[];
   guruList?: Guru[];
@@ -56,6 +56,7 @@ interface HeaderProps {
   onNavigateTab?: (tab: NavItemKey) => void;
   onSelectEskul?: (eskul: Eskul) => void;
   onSelectStudent?: (student: StudentProfile) => void;
+  onUpdateCurrentUser?: (user: User) => void;
 }
 
 interface SystemMenuItem {
@@ -203,7 +204,7 @@ function highlightMatch(text: string, query: string) {
   );
 }
 
-export const Header: React.FC<HeaderProps> = ({
+const HeaderComponent: React.FC<HeaderProps> = ({
   currentUser,
   currentRole,
   onRoleChange,
@@ -222,6 +223,7 @@ export const Header: React.FC<HeaderProps> = ({
   onNavigateTab,
   onSelectEskul,
   onSelectStudent,
+  onUpdateCurrentUser,
 }) => {
   const [searchVal, setSearchVal] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -240,18 +242,37 @@ export const Header: React.FC<HeaderProps> = ({
   const isWaliKelas = currentRole === 'WALI_KELAS';
   const isSiswa = currentRole === 'SISWA';
 
+  const [unreadNotifCount, setUnreadNotifCount] = useState<number>(0);
+
+  useEffect(() => {
+    const updateCount = () => {
+      const list = getSavedNotifications(currentRole, currentUser?.id);
+      setUnreadNotifCount(list.filter(n => !n.read).length);
+    };
+
+    updateCount();
+
+    window.addEventListener('al_amanah_new_notification', updateCount);
+    window.addEventListener('al_amanah_notifications_read', updateCount);
+    window.addEventListener('storage', updateCount);
+
+    return () => {
+      window.removeEventListener('al_amanah_new_notification', updateCount);
+      window.removeEventListener('al_amanah_notifications_read', updateCount);
+      window.removeEventListener('storage', updateCount);
+    };
+  }, [currentRole, currentUser?.id]);
+
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const query = searchVal.trim().toLowerCase();
 
-  // Search Results Calculation (Strictly Filtered by Current Role Access)
   const results = useMemo(() => {
     if (!query) {
       return { menus: [], eskuls: [], gurus: [], students: [], kelas: [], total: 0 };
     }
 
-    // 0. System Menus: ONLY match menus permitted for the current user's role!
     const matchedMenus = SYSTEM_MENUS.filter((m) => {
       if (!m.roles.includes(currentRole)) return false;
       return (
@@ -300,7 +321,6 @@ export const Header: React.FC<HeaderProps> = ({
     };
   }, [query, currentRole, eskulList, guruList, students, kelasList]);
 
-  // Keyboard shortcut Ctrl+K and Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
@@ -318,7 +338,6 @@ export const Header: React.FC<HeaderProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Click outside to close search dropdown
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
@@ -371,15 +390,13 @@ export const Header: React.FC<HeaderProps> = ({
   const IconComponent = badge.icon;
 
   return (
-    <header className="w-full bg-[#EEF1F5]/95 backdrop-blur-xs px-2.5 sm:px-6 py-2 sm:py-3 flex items-center justify-between gap-1.5 sm:gap-3 sticky top-0 z-30 border-b border-slate-200/60 shadow-2xs">
-      {/* Left: Mobile Hamburger & Interactive Global Search Input */}
+    <header role="banner" data-print-hidden="true" className="w-full bg-[#EEF1F5]/95 backdrop-blur-xs px-2.5 sm:px-6 py-2 sm:py-3 flex items-center justify-between gap-1.5 sm:gap-3 sticky top-0 z-30 border-b border-slate-200/60 shadow-2xs print:hidden">
       <div 
         className={`flex items-center gap-1.5 sm:gap-2.5 transition-all duration-300 ease-out relative min-w-0 ${
           isSearchFocused ? 'flex-1 max-w-full sm:max-w-2xl' : 'flex-1 max-w-[60%] sm:max-w-[45%] lg:max-w-[35%]'
         }`} 
         ref={searchContainerRef}
       >
-        {/* Mobile Hamburger Button */}
         {onToggleMobileMenu && (
           <button
             type="button"
@@ -393,7 +410,6 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        {/* Desktop Sidebar Toggle Button */}
         {onToggleDesktopSidebar && (
           <button
             type="button"
@@ -406,7 +422,6 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        {/* Interactive Global Search Input */}
         <div className="relative flex-1 min-w-0">
           <div className="absolute inset-y-0 left-0 pl-2.5 sm:pl-3.5 flex items-center pointer-events-none text-slate-400">
             <Search className="size-3.5 sm:size-4" />
@@ -424,7 +439,6 @@ export const Header: React.FC<HeaderProps> = ({
             className="w-full pl-8 sm:pl-10 pr-7 sm:pr-20 py-1.5 sm:py-2 bg-white border border-slate-200/90 rounded-full text-xs sm:text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00B884]/30 focus:border-[#00B884] shadow-xs transition-all"
           />
 
-          {/* Right Action within Search Input */}
           <div className="absolute inset-y-0 right-0 pr-2 sm:pr-2.5 flex items-center gap-1">
             {searchVal ? (
               <button
@@ -442,7 +456,6 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* Real-time Global Search Floating Dropdown */}
           <AnimatePresence>
             {isSearchOpen && searchVal.trim().length > 0 && (
               <motion.div
@@ -452,14 +465,12 @@ export const Header: React.FC<HeaderProps> = ({
                 transition={{ duration: 0.16, ease: 'easeOut' }}
                 className="absolute left-0 right-0 sm:-right-20 top-full mt-2 bg-white/98 backdrop-blur-md rounded-lg shadow-xl border border-slate-200/90 overflow-hidden z-50 flex flex-col max-h-[460px] animate-in"
               >
-                {/* Header Summary & Category Filters */}
                 <div className="p-3 bg-slate-50/90 border-b border-slate-100 flex items-center justify-between gap-2 shrink-0">
                   <div className="flex items-center gap-1.5 text-xs text-slate-600 font-medium">
                     <Sparkles className="w-3.5 h-3.5 text-[#00B884]" />
                     <span>Ditemukan <strong className="text-slate-900">{results.total}</strong> hasil</span>
                   </div>
 
-                  {/* Filter Pills */}
                   {results.total > 0 && (
                     <div className="flex items-center gap-1 overflow-x-auto text-[10px] font-semibold">
                       <button
@@ -542,7 +553,6 @@ export const Header: React.FC<HeaderProps> = ({
                   )}
                 </div>
 
-                {/* Results List */}
                 <div className="flex-1 overflow-y-auto p-2 space-y-3" style={{ scrollbarWidth: 'thin' }}>
                   {results.total === 0 ? (
                     <div className="py-8 px-4 text-center">
@@ -556,7 +566,6 @@ export const Header: React.FC<HeaderProps> = ({
                     </div>
                   ) : (
                     <>
-                      {/* 0. KATEGORI MENU SISTEM (Hanya menu yang diizinkan untuk role saat ini) */}
                       {(filterCategory === 'all' || filterCategory === 'menu') && results.menus.length > 0 && (
                         <div>
                           <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
@@ -598,7 +607,6 @@ export const Header: React.FC<HeaderProps> = ({
                         </div>
                       )}
 
-                      {/* 1. KATEGORI ESKUL */}
                       {(filterCategory === 'all' || filterCategory === 'eskul') && results.eskuls.length > 0 && (
                         <div>
                           <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
@@ -644,7 +652,6 @@ export const Header: React.FC<HeaderProps> = ({
                         </div>
                       )}
 
-                      {/* 2. KATEGORI GURU & PEMBINA */}
                       {(filterCategory === 'all' || filterCategory === 'guru') && results.gurus.length > 0 && (
                         <div>
                           <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
@@ -693,7 +700,6 @@ export const Header: React.FC<HeaderProps> = ({
                         </div>
                       )}
 
-                      {/* 3. KATEGORI SISWA */}
                       {(filterCategory === 'all' || filterCategory === 'siswa') && results.students.length > 0 && (
                         <div>
                           <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
@@ -716,7 +722,6 @@ export const Header: React.FC<HeaderProps> = ({
                                       setPreviewDetail({ type: 'siswa', item: student });
                                     }
                                   } else {
-                                    // Pembina & Wali Kelas: navigate to siswa (safe view) or preview
                                     onNavigateTab?.('siswa');
                                     onSelectStudent?.(student);
                                   }
@@ -751,7 +756,6 @@ export const Header: React.FC<HeaderProps> = ({
                         </div>
                       )}
 
-                      {/* 4. KATEGORI KELAS */}
                       {(filterCategory === 'all' || filterCategory === 'kelas') && results.kelas.length > 0 && (
                         <div>
                           <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
@@ -800,7 +804,6 @@ export const Header: React.FC<HeaderProps> = ({
                   )}
                 </div>
 
-                {/* Footer Tip */}
                 <div className="px-3 py-2 bg-slate-50 border-t border-slate-100 text-[10px] text-slate-400 flex items-center justify-between">
                   <span>Hasil disaring otomatis berdasarkan hak akses peran aktif</span>
                   <span>Esc untuk menutup</span>
@@ -811,9 +814,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Right controls: Role Selector, Action Buttons, and User Profile */}
       <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-        {/* Multi-Role Switcher Feature - Khusus Administrator */}
         {canSwitchRole && (
           <div className="relative shrink-0">
             <button
@@ -913,41 +914,35 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         )}
 
-        {/* Mail and Notifications Icons - Hidden on small mobile screens to prevent pushing Profile off-screen */}
         <AnimatePresence mode="popLayout">
           {!isSearchFocused && (
             <motion.div
-              key="mail-notif-icons-group"
-              initial={{ opacity: 0, x: 20, width: 0 }}
-              animate={{ opacity: 1, x: 0, width: 'auto' }}
-              exit={{ opacity: 0, x: 20, width: 0 }}
-              transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
-              className="hidden sm:flex items-center gap-1.5 sm:gap-2 overflow-hidden shrink-0"
+              key="notif-icons-group"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className="flex items-center gap-1.5 sm:gap-2 overflow-visible py-1 px-1 shrink-0"
+              style={{ overflow: 'visible' }}
             >
-              {/* Mail Icon Button */}
               <button
-                onClick={onOpenMail}
-                aria-label="Pesan Masuk"
-                className="relative size-8.5 sm:size-9 rounded-md bg-white border border-slate-200/90 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:border-slate-300 shadow-xs transition-all cursor-pointer shrink-0"
-              >
-                <Mail className="size-4" />
-                <span className="absolute top-1.5 right-1.5 size-2 bg-[#00B884] rounded-full ring-2 ring-white"></span>
-              </button>
-
-              {/* Bell / Notification Icon Button */}
-              <button
+                type="button"
                 onClick={onOpenNotifications}
-                aria-label="Pemberitahuan"
+                aria-label="Pemberitahuan & Pesan"
+                title="Pusat Notifikasi & Pesan Sistem"
                 className="relative size-8.5 sm:size-9 rounded-md bg-white border border-slate-200/90 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:border-slate-300 shadow-xs transition-all cursor-pointer shrink-0"
               >
                 <Bell className="size-4" />
-                <span className="absolute top-1.5 right-1.5 size-2 bg-rose-500 rounded-full ring-2 ring-white animate-pulse"></span>
+                {unreadNotifCount > 0 && (
+                  <span className="absolute -top-1 -right-1 z-20 min-w-[19px] h-[19px] px-1 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none ring-2 ring-white shadow-xs select-none pointer-events-none tabular-nums">
+                    {unreadNotifCount > 9 ? '9+' : unreadNotifCount}
+                  </span>
+                )}
               </button>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Profile Area with Dropdown - ALWAYS VISIBLE, NEVER SQUEEZED */}
         <div className="relative shrink-0">
           <button
             onClick={() => setShowProfileMenu(!showProfileMenu)}
@@ -973,7 +968,6 @@ export const Header: React.FC<HeaderProps> = ({
 
           {showProfileMenu && (
             <div className="absolute right-0 mt-2 w-72 max-w-[calc(100vw-1.5rem)] bg-white rounded-lg shadow-xl border border-slate-200/80 p-3 z-50 animate-in fade-in zoom-in-95">
-              {/* Header Info Card */}
               <div className="p-2 border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2.5">
                   <UserAvatar
@@ -999,28 +993,23 @@ export const Header: React.FC<HeaderProps> = ({
                   )}
                 </div>
 
-                {/* Mobile Quick Action Buttons: Pesan & Notifikasi */}
-                <div className="flex sm:hidden items-center gap-2 mt-2.5 pt-2.5 border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={() => { setShowProfileMenu(false); onOpenMail(); }}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200 cursor-pointer"
-                  >
-                    <Mail className="size-3.5 text-emerald-600" />
-                    <span>Pesan Masuk</span>
-                  </button>
+                <div className="flex sm:hidden items-center mt-2.5 pt-2.5 border-t border-slate-100">
                   <button
                     type="button"
                     onClick={() => { setShowProfileMenu(false); onOpenNotifications(); }}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200 cursor-pointer"
+                    className="w-full flex items-center justify-center gap-2 py-1.5 px-2 rounded-md bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-200 cursor-pointer"
                   >
                     <Bell className="size-3.5 text-rose-500" />
-                    <span>Notifikasi</span>
+                    <span>Notifikasi & Pesan</span>
+                    {unreadNotifCount > 0 && (
+                      <span className="px-1.5 py-0.5 bg-rose-500 text-white text-[10px] rounded-full font-bold leading-none flex items-center justify-center">
+                        {unreadNotifCount}
+                      </span>
+                    )}
                   </button>
                 </div>
               </div>
 
-              {/* Data Summary Rows */}
               <div className="py-2.5 px-1 space-y-1.5 text-[11px] text-slate-600 border-b border-slate-100">
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400">Jabatan:</span>
@@ -1040,7 +1029,6 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div className="pt-2 space-y-1">
                 <button
                   onClick={() => {
@@ -1071,16 +1059,15 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Full Detail Profile Modal */}
       <ProfileModal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
         currentUser={currentUser}
         currentRole={currentRole}
         onLogout={onLogout}
+        onUpdateCurrentUser={onUpdateCurrentUser}
       />
 
-      {/* Read-Only Search Detail Preview Modal for Non-Admin */}
       {previewDetail && (
         <SearchDetailModal
           preview={previewDetail}
@@ -1091,10 +1078,6 @@ export const Header: React.FC<HeaderProps> = ({
   );
 };
 
-// ==========================================
-// Read-Only Search Detail Preview Modal
-// Strictly prevents unauthorized navigation to Admin modules
-// ==========================================
 interface SearchDetailModalProps {
   preview: {
     type: 'eskul' | 'guru' | 'siswa' | 'kelas';
@@ -1113,7 +1096,6 @@ const SearchDetailModal: React.FC<SearchDetailModalProps> = ({ preview, onClose 
         role="dialog"
         aria-modal="true"
       >
-        {/* Modal Top Bar */}
         <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
           <div className="flex items-center gap-2.5">
             <span className="p-2 rounded-md bg-[#00B884]/10 text-[#00B884]">
@@ -1144,7 +1126,6 @@ const SearchDetailModal: React.FC<SearchDetailModalProps> = ({ preview, onClose 
           </button>
         </div>
 
-        {/* Modal Content */}
         <div className="p-5 overflow-y-auto space-y-4 text-xs">
           {type === 'eskul' && (
             <div className="space-y-4">
@@ -1291,7 +1272,6 @@ const SearchDetailModal: React.FC<SearchDetailModalProps> = ({ preview, onClose 
           )}
         </div>
 
-        {/* Modal Footer */}
         <div className="p-4 border-t border-slate-100 bg-slate-50/70 flex justify-end">
           <button
             type="button"
@@ -1305,4 +1285,6 @@ const SearchDetailModal: React.FC<SearchDetailModalProps> = ({ preview, onClose 
     </div>
   );
 };
+
+export const Header = React.memo(HeaderComponent);
 

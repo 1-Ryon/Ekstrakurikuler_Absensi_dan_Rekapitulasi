@@ -50,20 +50,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     try {
       const response = await api.login(username.trim(), password.trim());
       if (response && response.user) {
-        // Ingat username jika opsi diaktifkan
         if (rememberMe) {
           localStorage.setItem('al_amanah_remembered_username', username.trim());
         } else {
           localStorage.removeItem('al_amanah_remembered_username');
         }
         
-        // Simpan sesi aktif ke sessionStorage (berlaku hanya selama browser/tab dibuka)
         sessionStorage.setItem('al_amanah_user_session', JSON.stringify(response.user));
         if (response.token) {
           sessionStorage.setItem('al_amanah_auth_token', response.token);
         }
 
-        // Hapus residu credential dari localStorage
         localStorage.removeItem('al_amanah_user_session');
         localStorage.removeItem('al_amanah_auth_token');
 
@@ -81,17 +78,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
   return (
     <div className="min-h-screen w-full bg-background flex items-center justify-center p-4 sm:p-6 lg:p-8 font-sans">
-      {/* Main Unified Card */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 28 }}
         className="w-full max-w-4xl bg-card rounded-lg border border-border shadow-md relative z-10 overflow-hidden grid grid-cols-1 lg:grid-cols-12"
       >
-        {/* Left Column: Authentic School Branding & Features (Desktop) */}
         <div className="hidden lg:flex lg:col-span-5 flex-col justify-between p-8 xl:p-10 bg-muted/30 border-r border-border relative">
           <div>
-            {/* School Emblem & Header */}
             <div className="flex items-center gap-3.5 mb-6">
               <img
                 src="/logo-smk.png"
@@ -109,7 +103,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               </div>
             </div>
 
-            {/* Title & Description */}
             <div className="space-y-2 mt-8">
               <h2 className="text-xl font-bold text-foreground tracking-tight leading-snug">
                 Absensi Estrakurikuler SMK Al-Amanah
@@ -119,7 +112,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               </p>
             </div>
 
-            {/* School Feature Points */}
             <div className="space-y-2.5 mt-8">
               <div className="flex items-center gap-3 p-3 rounded-md bg-card border border-border">
                 <div className="size-8 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
@@ -153,19 +145,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             </div>
           </div>
 
-          {/* Footer Motto */}
           <div className="pt-6 border-t border-border flex items-center justify-between text-[11px] text-muted-foreground">
             <span>Sistem Presensi Eskul</span>
-            <span className="text-primary font-medium flex items-center gap-1.5">
-              <span className="size-2 rounded-full bg-primary inline-block animate-pulse" />
-              Sistem Aktif
-            </span>
           </div>
         </div>
 
-        {/* Right Column: Clean Form Matching Website Styles */}
         <div className="col-span-1 lg:col-span-7 p-6 sm:p-8 xl:p-10 flex flex-col justify-center">
-          {/* Mobile Header (Shown on small screens) */}
           <div className="flex lg:hidden items-center gap-3 mb-6 pb-4 border-b border-border">
             <img
               src="/logo-smk.png"
@@ -179,8 +164,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               <h2 className="text-base font-bold text-foreground mt-0.5">Absensi Estrakurikuler</h2>
             </div>
           </div>
-
-          {/* Heading */}
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-foreground tracking-tight">
               Selamat Datang
@@ -190,7 +173,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             </p>
           </div>
 
-          {/* Error Message Alert */}
           <AnimatePresence mode="wait">
             {errorMessage && (
               <motion.div
@@ -211,9 +193,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             )}
           </AnimatePresence>
 
-          {/* Form */}
           <form onSubmit={handleFormSubmit} className="space-y-4">
-            {/* Username Input */}
             <div>
               <label className="block text-xs font-semibold text-foreground mb-1.5">
                 Nama Pengguna / NIP / NIS
@@ -233,7 +213,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               </div>
             </div>
 
-            {/* Password Input */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-xs font-semibold text-foreground">
@@ -263,7 +242,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               </div>
             </div>
 
-            {/* Remember Me */}
             <div className="flex items-center justify-between pt-0.5">
               <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input
@@ -276,7 +254,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               </label>
             </div>
 
-            {/* Submit Button */}
             <Button
               type="submit"
               variant="brand"

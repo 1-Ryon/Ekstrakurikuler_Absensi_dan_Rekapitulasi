@@ -4,9 +4,6 @@ import { requireRoles, hashPassword } from '../middlewares/auth.js';
 
 const router = Router();
 
-// ==========================================
-// 1. MASTER DATA PEMBINA
-// ==========================================
 router.get('/pembina', async (req, res) => {
   try {
     const pembinas = await prisma.guru.findMany({
@@ -24,7 +21,8 @@ router.get('/pembina', async (req, res) => {
       namaLengkap: p.namaLengkap,
       nip: p.nip || '-',
       username: p.username || '-',
-            noHp: p.noHp || '-',
+      defaultPassword: p.username ? `pembina_${p.username}` : 'pembina123',
+      noHp: p.noHp || '-',
       email: p.email || '-',
       spesialisasi: p.spesialisasi || 'Pembina Eskul',
       avatarUrl: p.avatarUrl,
@@ -92,9 +90,6 @@ router.post('/pembina', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) =
   }
 });
 
-// ==========================================
-// 2. MASTER DATA GURU & WALI KELAS
-// ==========================================
 router.get('/guru', async (req, res) => {
   try {
     const { isWaliKelas, isPembina } = req.query;
@@ -132,7 +127,10 @@ router.get('/guru', async (req, res) => {
       isWaliKelas: g.isWaliKelas,
       role: g.role,
       username: g.username || '-',
-            statusAktif: g.statusAktif,
+      defaultPassword: g.isWaliKelas
+        ? (g.username ? `guru_${g.username}` : 'walikelas123')
+        : (g.username ? `pembina_${g.username}` : 'pembina123'),
+      statusAktif: g.statusAktif,
       eskulDiampu: g.eskulDiampu || [],
       kelasWali: g.kelasWali || [],
     }));
@@ -471,9 +469,6 @@ router.post('/guru/import', requireRoles('ADMIN', 'KOORDINATOR'), async (req, re
   }
 });
 
-// ==========================================
-// 3. MASTER DATA WALI KELAS
-// ==========================================
 router.get('/walikelas', async (req, res) => {
   try {
     const waliKelasList = await prisma.guru.findMany({

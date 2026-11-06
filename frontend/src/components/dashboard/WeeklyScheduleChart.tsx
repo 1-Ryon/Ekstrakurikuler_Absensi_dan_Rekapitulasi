@@ -56,17 +56,14 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
   todayDayName,
   onOpenAddEskul,
 }) => {
-  // Chart visual display mode: 'line' (Tren Garis Spline) | 'bar' (Diagram Batang Modern)
   const [chartMode, setChartMode] = useState<'line' | 'bar'>('line');
   const [hoveredDayIndex, setHoveredDayIndex] = useState<number | null>(null);
 
-  // Selected Day
   const selectedDay = weeklySchedule[selectedDayIndex] || weeklySchedule[0];
   const activeDayForTooltip = hoveredDayIndex !== null 
     ? weeklySchedule[hoveredDayIndex] 
     : selectedDay;
 
-  // Chart Dimensions & Math (SVG Viewport: 760 x 225)
   const svgWidth = 760;
   const svgHeight = 225;
   const paddingLeft = 58;
@@ -78,28 +75,23 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
   const plotHeight = svgHeight - paddingTop - paddingBottom;
   const baselineY = paddingTop + plotHeight;
 
-  // Dynamic Y-axis scale calculation:
-  // Dynamically adapts to actual eskul load with breathing room, anticipating busier days
   const maxEskulCount = Math.max(...weeklySchedule.map(d => d.jumlahEskul), 0);
   const chartMaxVal = useMemo(() => {
-    if (maxEskulCount <= 1) return 2; // When 1 eskul, scale ceiling is 2 -> 1 reaches 50% height
-    if (maxEskulCount <= 3) return 4; // Up to 3 eskul, scale to 4
-    if (maxEskulCount <= 5) return 6; // Up to 5 eskul, scale to 6
-    if (maxEskulCount <= 8) return 10; // Up to 8 eskul, scale to 10
-    return Math.ceil((maxEskulCount + 2) / 2) * 2; // Always headroom + even steps for larger loads
+    if (maxEskulCount <= 1) return 2;
+    if (maxEskulCount <= 3) return 4;
+    if (maxEskulCount <= 5) return 6;
+    if (maxEskulCount <= 8) return 10;
+    return Math.ceil((maxEskulCount + 2) / 2) * 2;
   }, [maxEskulCount]);
 
-  // Generous horizontal breathing room so SEN is well separated from left Y-axis numbers (68px gap)
   const plotInnerLeft = 104;
   const plotInnerRight = 704;
 
-  // X Coordinates for 7 days (index 0..6) - exact 100px steps
   const xCoords = useMemo(() => {
     const span = plotInnerRight - plotInnerLeft;
     return [0, 1, 2, 3, 4, 5, 6].map(i => plotInnerLeft + (i / 6) * span);
   }, [plotInnerLeft, plotInnerRight]);
 
-  // Points for each day
   const points = useMemo(() => {
     return weeklySchedule.map((d, i) => {
       const x = xCoords[i];
@@ -108,20 +100,17 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
     });
   }, [weeklySchedule, xCoords, paddingTop, plotHeight, chartMaxVal]);
 
-  // Straight Polyline Path connecting nodes (matching reference Image 1)
   const straightLinePath = useMemo(() => {
     if (points.length === 0) return '';
     return points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
   }, [points]);
 
-  // Pre-calculated Capsule Bar Columns for Mode 2 (matching reference Image 2)
   const barColumns = useMemo(() => {
     const slotWidth = plotWidth / 7;
     const barWidth = 44;
     return weeklySchedule.map((day, i) => {
       const colCenter = paddingLeft + (i + 0.5) * slotWidth;
       const barX = colCenter - barWidth / 2;
-      // When day has eskul, fill proportionally to chartMaxVal with minimum 32px
       const fillHeight = day.jumlahEskul > 0 
         ? Math.max(32, Math.round((day.jumlahEskul / chartMaxVal) * plotHeight))
         : 0;
@@ -138,38 +127,35 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
     });
   }, [weeklySchedule, plotWidth, paddingLeft, chartMaxVal, plotHeight, baselineY]);
 
-  // Palette mapper for Bar Chart reflecting reference Image 2 with project brand theme
   const getBarColor = (day: DayScheduleItem, isSelected: boolean, isHovered: boolean) => {
     if (isSelected || isHovered) {
-      return '#00B884'; // Brand Emerald highlight on active/hover
+      return '#00B884';
     }
     if (day.isToday) {
-      return '#00B884'; // Brand Emerald for Today
+      return '#00B884';
     }
     if (day.jumlahEskul === 0) {
-      return '#cbd5e1'; // Soft slate gray
+      return '#cbd5e1';
     }
-    // High-contrast modern palette matching Image 2 (Charcoal, Brand Emerald, Deep Slate, Teal)
     const palette = [
-      '#334155', // Senin: Charcoal
-      '#00B884', // Selasa: Brand Emerald
-      '#1e293b', // Rabu: Deep Charcoal
-      '#0d9488', // Kamis: Teal Accent
-      '#00B884', // Jumat: Brand Emerald
-      '#334155', // Sabtu: Charcoal
-      '#94a3b8', // Minggu: Muted Slate
+      '#334155',
+      '#00B884',
+      '#1e293b',
+      '#0d9488',
+      '#00B884',
+      '#334155',
+      '#94a3b8',
     ];
     return palette[day.dayIndex % palette.length];
   };
 
   const getTimelineDotColor = (day: DayScheduleItem, barColor: string, isSelected: boolean, isHovered: boolean) => {
     if (isSelected || isHovered) return '#00B884';
-    if (day.isToday) return '#f59e0b'; // Amber/Gold dot (directly matches Image 2's highlighted dots!)
+    if (day.isToday) return '#f59e0b';
     if (day.jumlahEskul === 0) return '#cbd5e1';
     return barColor;
   };
 
-  // Y-axis grid ticks (e.g. 0, 1, 2... dynamically stepped)
   const yTicks = useMemo(() => {
     const ticks = [];
     const step = chartMaxVal <= 4 ? 1 : chartMaxVal <= 8 ? 2 : Math.ceil(chartMaxVal / 5);
@@ -184,7 +170,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* 1. Header Toolbar: Title, Info & Segmented Mode Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3">
         <div>
           <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -203,9 +188,7 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
           </p>
         </div>
 
-        {/* Action Controls & Mode Switcher */}
         <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
-          {/* Segmented Switcher for 2 Chart Modes */}
           <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-lg border border-border flex items-center gap-1 shadow-2xs">
             <button
               type="button"
@@ -258,7 +241,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
         </div>
       </div>
 
-      {/* 2. Micro KPI Stats Strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
         <div className="p-3 rounded-lg bg-slate-50/80 dark:bg-slate-800/40 border border-border flex items-center justify-between">
           <div>
@@ -305,7 +287,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
         </div>
       </div>
 
-      {/* 3. Interactive Floating Day Inspector / Tooltip Bar */}
       <div className="p-2.5 px-3.5 rounded-lg bg-gradient-to-r from-emerald-500/10 via-slate-50 to-emerald-500/5 border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-[#00B884] animate-pulse"></span>
@@ -330,9 +311,7 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
         </div>
       </div>
 
-      {/* 4. The Graphic Viewport (Line Chart vs Bar Chart) */}
       <div className="relative bg-white dark:bg-slate-900/60 rounded-xl border border-border p-3 sm:p-5 shadow-2xs overflow-hidden">
-        {/* Empty state banner if 0 sessions scheduled */}
         {totalWeeklySessions === 0 && (
           <div className="absolute inset-x-4 top-4 z-20 p-3 rounded-lg bg-amber-50/90 border border-amber-200 text-amber-900 flex items-center justify-between gap-3 text-xs shadow-xs backdrop-blur-xs">
             <div className="flex items-center gap-2">
@@ -355,9 +334,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
 
         <AnimatePresence mode="wait">
           {chartMode === 'line' ? (
-            /* ========================================================================= */
-            /* MODE 1: TREN GARIS MODERN (BLACK LINE, THEME BULLSEYE DOTS, CLEAN LABELS)  */
-            /* ========================================================================= */
             <motion.div
               key="line-chart-mode"
               initial={{ opacity: 0, scale: 0.99 }}
@@ -371,7 +347,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
                   viewBox={`0 0 ${svgWidth} ${svgHeight}`}
                   className="w-full h-full overflow-visible"
                 >
-                  {/* Subtle Grid Dotted Lines (Horizontal Y-Ticks) */}
                   {yTicks.map(({ val, y }) => (
                     <g key={val} className="text-slate-400">
                       <line
@@ -395,7 +370,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
                     </g>
                   ))}
 
-                  {/* Vertical Dotted Guide Lines behind each node (Image 1 style) */}
                   {points.map((pt) => (
                     <line
                       key={`vline-${pt.index}`}
@@ -411,7 +385,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
                     />
                   ))}
 
-                  {/* Y-axis Unit Label */}
                   <text
                     x={38}
                     y={paddingTop - 14}
@@ -421,7 +394,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
                     Grafik
                   </text>
 
-                  {/* Active/Hovered Column Guideline (Clean dotted line, NO background pillar) */}
                   {points.map((pt) => {
                     const isSelected = selectedDayIndex === pt.index;
                     const isHovered = hoveredDayIndex === pt.index;
@@ -442,7 +414,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
                     );
                   })}
 
-                  {/* Straight Black Line Path (Reference Image 1 - sleek strokeWidth 2) */}
                   {straightLinePath && (
                     <motion.path
                       d={straightLinePath}
@@ -457,7 +428,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
                     />
                   )}
 
-                  {/* Data Points: Bullseye Target Node with Theme Brand Color (#00B884) & Clean Numbers */}
                   {points.map((pt) => {
                     const isSelected = selectedDayIndex === pt.index;
                     const isHovered = hoveredDayIndex === pt.index;
@@ -465,7 +435,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
 
                     return (
                       <g key={`point-${pt.index}`} className="transition-all">
-                        {/* Focus Ring on Active/Hovered Node */}
                         {(isSelected || isHovered) && (
                           <motion.circle
                             cx={pt.x}
@@ -480,7 +449,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
                           />
                         )}
 
-                        {/* Outer Black Ring with White Fill (Reference Image 1 style - sleek) */}
                         <circle
                           cx={pt.x}
                           cy={pt.y}
@@ -491,7 +459,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
                           className="transition-all"
                         />
 
-                        {/* Inner Center Dot with Theme Brand Color (#00B884) */}
                         <circle
                           cx={pt.x}
                           cy={pt.y}
@@ -500,7 +467,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
                           className="transition-all"
                         />
 
-                        {/* Simple & Clean Floating Value Text (No heavy box, refined typography) */}
                         <text
                           x={pt.x}
                           y={pt.y - 11}
@@ -513,7 +479,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
                           {pt.day.jumlahEskul}
                         </text>
 
-                        {/* X-Axis Label underneath Point */}
                         <g transform={`translate(${pt.x}, ${baselineY + 18})`}>
                           <text
                             x="0"
@@ -530,7 +495,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
                             {pt.day.shortDay}
                           </text>
 
-                          {/* Today mini dot indicator */}
                           {isToday && (
                             <circle
                               cx="0"
@@ -544,7 +508,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
                     );
                   })}
 
-                  {/* Full-height Invisible Touch/Click Target Columns for UX */}
                   {points.map((pt) => (
                     <rect
                       key={`hit-${pt.index}`}
@@ -563,9 +526,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
               </div>
             </motion.div>
           ) : (
-            /* ========================================================================= */
-            /* MODE 2: DIAGRAM BATANG MODERN (CLEAR CAPSULE SILHOUETTES, FULLY FILLED)   */
-            /* ========================================================================= */
             <motion.div
               key="bar-chart-mode"
               initial={{ opacity: 0, scale: 0.99 }}
@@ -580,7 +540,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
                   className="w-full h-full overflow-visible"
                 >
                   <defs>
-                    {/* ClipPaths for each capsule track to guarantee curved top & bottom */}
                     {barColumns.map((col) => (
                       <clipPath key={`clip-${col.index}`} id={`barTrackClip-${col.index}`}>
                         <rect
@@ -594,7 +553,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
                     ))}
                   </defs>
 
-                  {/* 1. Horizontal Dotted Timeline Line at Bottom (Image 2 style) */}
                   <line
                     x1={paddingLeft + 10}
                     y1={baselineY + 16}
@@ -606,7 +564,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
                     className="dark:stroke-slate-700"
                   />
 
-                  {/* 2. Capsule Columns */}
                   {barColumns.map((col) => {
                     const isSelected = selectedDayIndex === col.index;
                     const isHovered = hoveredDayIndex === col.index;
@@ -615,7 +572,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
 
                     return (
                       <g key={`bar-col-${col.index}`}>
-                        {/* Background Capsule Track: distinct light gray with subtle border */}
                         <rect
                           x={col.barX}
                           y={paddingTop}
@@ -628,7 +584,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
                           className="dark:fill-slate-800 dark:stroke-slate-700 transition-colors"
                         />
 
-                        {/* Subtle Horizontal Divider Segments across track (Image 2 detail) */}
                         {[0.25, 0.5, 0.75].map((ratio) => (
                           <line
                             key={ratio}
@@ -643,7 +598,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
                           />
                         ))}
 
-                        {/* Filled Capsule Bar: Clipped with exact coordinates (No transform bug) */}
                         {col.fillHeight > 0 && (
                           <g clipPath={`url(#barTrackClip-${col.index})`}>
                             <rect
@@ -658,7 +612,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
                           </g>
                         )}
 
-                        {/* Clean Outline on Active/Hovered Capsule */}
                         {(isSelected || isHovered) && (
                           <rect
                             x={col.barX - 2}
@@ -673,7 +626,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
                           />
                         )}
 
-                        {/* Value Inside Bar (Image 2 style: number & label stacked) */}
                         {col.day.jumlahEskul > 0 ? (
                           <g transform={`translate(${col.colCenter}, ${col.fillY + (col.fillHeight >= 50 ? 24 : col.fillHeight / 2 + 5)})`}>
                             <text
@@ -716,7 +668,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
                           </text>
                         )}
 
-                        {/* Timeline Circular Dot (Image 2 style) */}
                         <circle
                           cx={col.colCenter}
                           cy={baselineY + 16}
@@ -727,7 +678,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
                           className="transition-all"
                         />
 
-                        {/* Short Day Label underneath Dot */}
                         <text
                           x={col.colCenter}
                           y={baselineY + 32}
@@ -743,7 +693,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
                           {col.day.shortDay}
                         </text>
 
-                        {/* Touch & Click Interaction Overlay Target */}
                         <rect
                           x={col.barX - 8}
                           y={paddingTop - 5}
@@ -765,7 +714,6 @@ export const WeeklyScheduleChart: React.FC<WeeklyScheduleChartProps> = ({
         </AnimatePresence>
       </div>
 
-      {/* 5. Sleek Day Quick-Selector Ribbon (Tap / Click to view Roster) */}
       <div className="space-y-1.5 pt-1">
         <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
           Pilih Hari (Senin — Minggu):

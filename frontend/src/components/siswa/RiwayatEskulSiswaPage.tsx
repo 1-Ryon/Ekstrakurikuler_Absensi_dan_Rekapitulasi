@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eskul, SesiPertemuan, PresensiRecord, PengajuanJadwal, StudentProfile } from '../../types';
+import { calculateEskulAttendance, calculateOverallAttendance } from '../../utils/attendance';
 
 interface RiwayatEskulSiswaPageProps {
   student?: StudentProfile | null;
@@ -68,13 +69,11 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
   const [filterCategory, setFilterCategory] = useState<string>('SEMUA');
   const [attendanceFilter, setAttendanceFilter] = useState<'SEMUA' | 'HADIR' | 'IZIN_SAKIT' | 'ALPA'>('SEMUA');
 
-  // Selected eskul object
   const selectedEskul = useMemo(() => {
     if (!selectedEskulId) return null;
     return enrolledEskuls.find((e) => e.id === selectedEskulId) || null;
   }, [selectedEskulId, enrolledEskuls]);
 
-  // Filtered enrolled eskuls for list view
   const filteredEskuls = useMemo(() => {
     return enrolledEskuls.filter((eskul) => {
       const matchSearch =
@@ -89,28 +88,22 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
     });
   }, [enrolledEskuls, searchQuery, filterCategory]);
 
-  // Overall attendance calculation
   const totalStats = useMemo(() => {
     let totalSessionsCount = 0;
     let totalAttendedCount = 0;
 
     enrolledEskuls.forEach((eskul) => {
-      // Find matching attendance
-      const records = attendanceHistory.filter(
-        (r) =>
-          r.eskulId === eskul.id ||
-          r.namaEskul?.toLowerCase() === eskul.namaEskul?.toLowerCase()
-      );
-      totalSessionsCount += records.length;
-      totalAttendedCount += records.filter((r) => r.status === 'HADIR').length;
+      const stats = calculateEskulAttendance(eskul, student, sessions, attendanceHistory);
+      totalSessionsCount += stats.totalCount;
+      totalAttendedCount += stats.hadirCount;
     });
 
     const averagePercent =
       totalSessionsCount > 0
         ? Math.round((totalAttendedCount / totalSessionsCount) * 100)
-        : student?.kehadiranRataRata || 96;
+        : student?.kehadiranRataRata || 100;
 
-    const activeProposals = jadwalProposals.filter((p) => {
+    const activeProposals = (jadwalProposals || []).filter((p) => {
       const isEnrolled = enrolledEskuls.some(
         (e) => e.id === p.eskulId || e.namaEskul.toLowerCase() === p.namaEskul.toLowerCase()
       );
@@ -123,27 +116,23 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
       totalAttendedCount,
       activeProposalsCount: activeProposals.length,
     };
-  }, [enrolledEskuls, attendanceHistory, student, jadwalProposals]);
+  }, [enrolledEskuls, attendanceHistory, student, sessions, jadwalProposals]);
 
-  // Sessions and attendance for selected eskul
   const selectedEskulData = useMemo(() => {
     if (!selectedEskul) return null;
 
-    // Filter sessions matching this eskul
     const eskulSessions = sessions.filter(
       (s) =>
         s.eskulId === selectedEskul.id ||
         s.namaEskul?.toLowerCase() === selectedEskul.namaEskul?.toLowerCase()
     );
 
-    // Filter proposals matching this eskul
     const eskulProposals = jadwalProposals.filter(
       (p) =>
         p.eskulId === selectedEskul.id ||
         p.namaEskul?.toLowerCase() === selectedEskul.namaEskul?.toLowerCase()
     );
 
-    // Filter attendance records for this student & eskul
     const studentRecords = attendanceHistory.filter(
       (r) =>
         (r.eskulId === selectedEskul.id ||
@@ -151,8 +140,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
         (student ? r.siswaId === student.id || r.nisn === student.nis || r.nisn === student.nomorInduk : true)
     );
 
-    // Combine sessions with student attendance
-    // If sessions list doesn't have all records, synthesize session entries from attendance logs
     const sessionMap = new Map<string, any>();
 
     eskulSessions.forEach((sesi) => {
@@ -180,7 +167,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
       });
     });
 
-    // Add attendance records that might not be in sessions array
     studentRecords.forEach((rec) => {
       if (!sessionMap.has(rec.sesiId)) {
         sessionMap.set(rec.sesiId || rec.id, {
@@ -208,7 +194,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
       return new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime();
     });
 
-    // Stats for this eskul
     const hadirCount = combinedList.filter((s) => s.attendanceStatus === 'HADIR').length;
     const izinSakitCount = combinedList.filter(
       (s) => s.attendanceStatus === 'IZIN' || s.attendanceStatus === 'SAKIT'
@@ -234,7 +219,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
     };
   }, [selectedEskul, sessions, attendanceHistory, jadwalProposals, student]);
 
-  // Categories list for filter
   const categories = useMemo(() => {
     const set = new Set<string>();
     enrolledEskuls.forEach((e) => {
@@ -243,7 +227,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
     return ['SEMUA', ...Array.from(set)];
   }, [enrolledEskuls]);
 
-  // Filtered session list by attendance status
   const filteredSessions = useMemo(() => {
     if (!selectedEskulData) return [];
     if (attendanceFilter === 'SEMUA') return selectedEskulData.sessions;
@@ -262,7 +245,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
 
   return (
     <div className="space-y-6 pb-12">
-      {/* 1. TOP HEADER / HERO */}
       <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-xs relative">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
           <div className="space-y-1.5">
@@ -290,7 +272,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
           )}
         </div>
 
-        {/* Quick KPI Bento Bar */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-slate-100">
           <div className="bg-slate-50 rounded-md p-3.5 border border-slate-200">
             <span className="text-[11px] font-medium text-slate-500 block">Eskul Diikuti</span>
@@ -338,12 +319,8 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
         </div>
       </div>
 
-      {/* 2. MAIN CONTENT AREA: LIST VIEW vs DETAIL VIEW */}
       <AnimatePresence mode="wait">
         {!selectedEskul ? (
-          /* ========================================================== */
-          /* VIEW A: LIST EKSTRAKURIKULER YANG DIIKUTI                  */
-          /* ========================================================== */
           <motion.div
             key="list-view"
             initial={{ opacity: 0, y: 15 }}
@@ -352,9 +329,7 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
             transition={{ duration: 0.2 }}
             className="space-y-5"
           >
-            {/* Filter & Search Bar */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-4 rounded-lg border border-slate-200 shadow-xs">
-              {/* Search Box */}
               <div className="relative flex-1">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
@@ -366,7 +341,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                 />
               </div>
 
-              {/* Category Pills */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
                 {categories.map((cat) => (
                   <button
@@ -384,23 +358,12 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
               </div>
             </div>
 
-            {/* List of Enrolled Eskuls */}
             {filteredEskuls.length > 0 ? (
               <div className="space-y-3.5">
                 {filteredEskuls.map((eskul) => {
-                  // Calculate attendance percentage for this eskul
-                  const eskulRecords = attendanceHistory.filter(
-                    (h) =>
-                      h.eskulId === eskul.id ||
-                      h.namaEskul?.toLowerCase() === eskul.namaEskul?.toLowerCase()
-                  );
-                  const attendedCount = eskulRecords.filter((h) => h.status === 'HADIR').length;
-                  const attendancePercent =
-                    eskulRecords.length > 0
-                      ? Math.round((attendedCount / eskulRecords.length) * 100)
-                      : student?.kehadiranRataRata || 96;
+                  const eskulAttendance = calculateEskulAttendance(eskul, student, sessions, attendanceHistory);
+                  const attendancePercent = eskulAttendance.percent;
 
-                  // Check if there are schedule proposals for this eskul
                   const eskulProposals = jadwalProposals.filter(
                     (p) =>
                       p.eskulId === eskul.id ||
@@ -408,7 +371,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                   );
                   const latestProposal = eskulProposals[0];
 
-                  // Find latest completed session to show latest material
                   const latestSession = sessions
                     .filter(
                       (s) =>
@@ -425,18 +387,15 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                       onClick={() => setSelectedEskulId(eskul.id)}
                       className="group bg-white rounded-lg border border-slate-200 p-5 shadow-xs hover:border-emerald-400 transition-all cursor-pointer relative overflow-hidden"
                     >
-                      {/* Left Accent Bar on Hover */}
                       <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#00B884] opacity-0 group-hover:opacity-100 transition-opacity" />
 
                       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-                        {/* 1. Left Details */}
                         <div className="flex items-start gap-4 flex-1 min-w-0">
                           <div className="w-12 h-12 rounded-md bg-emerald-50 text-[#00B884] flex items-center justify-center shrink-0 border border-emerald-200 shadow-xs group-hover:scale-105 group-hover:bg-[#00B884] group-hover:text-white transition-all">
                             <Volleyball className="w-6 h-6 transition-colors" />
                           </div>
 
                           <div className="min-w-0 flex-1 space-y-2">
-                            {/* Title & Category & Proposal Notice */}
                             <div className="flex items-center gap-2 flex-wrap">
                               <h3 className="text-base sm:text-lg font-extrabold text-slate-800 tracking-tight group-hover:text-emerald-700 transition-colors">
                                 {eskul.namaEskul}
@@ -461,7 +420,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                               )}
                             </div>
 
-                            {/* Pembina Info */}
                             <div className="flex items-center gap-2 text-xs">
                               <span className="text-slate-400 font-medium">Dibina oleh:</span>
                               <span className="font-bold text-slate-700 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200/60 inline-flex items-center gap-1.5">
@@ -470,7 +428,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                               </span>
                             </div>
 
-                            {/* Schedule & Location */}
                             <div className="flex items-center gap-4 flex-wrap text-xs text-slate-500 pt-0.5">
                               <div className="flex items-center gap-1.5 font-semibold text-slate-700">
                                 <Calendar className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -486,7 +443,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                               </div>
                             </div>
 
-                            {/* Latest Session & Material snippet if available */}
                             {latestSession?.materi && (
                               <div className="bg-slate-50 rounded-md p-2.5 border border-slate-200/60 flex items-start gap-2 text-xs mt-2">
                                 <BookOpen className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
@@ -499,7 +455,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                           </div>
                         </div>
 
-                        {/* 2. Right Section: Attendance Percentage & Detail Button */}
                         <div className="flex lg:flex-col items-center lg:items-end justify-between lg:justify-center gap-3 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100 shrink-0 lg:min-w-[170px]">
                           <div className="text-left lg:text-right">
                             <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
@@ -509,7 +464,7 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                               {attendancePercent}%
                             </div>
                             <span className="text-[11px] text-slate-400">
-                              {attendedCount} dari {eskulRecords.length || 1} sesi
+                              {eskulAttendance.hadirCount} dari {eskulAttendance.totalCount || 1} sesi
                             </span>
                           </div>
 
@@ -555,9 +510,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
             )}
           </motion.div>
         ) : (
-          /* ========================================================== */
-          /* VIEW B: DETAIL ESKUL (JADWAL, PERUBAHAN JADWAL & MATERI)    */
-          /* ========================================================== */
           <motion.div
             key="detail-view"
             initial={{ opacity: 0, y: 15 }}
@@ -566,7 +518,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
             transition={{ duration: 0.2 }}
             className="space-y-6"
           >
-            {/* Top Back Navigation Bar */}
             <div className="flex items-center justify-between gap-3 bg-white p-3.5 rounded-lg border border-slate-200 shadow-xs">
               <button
                 onClick={() => setSelectedEskulId(null)}
@@ -581,7 +532,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
               </div>
             </div>
 
-            {/* Eskul Header & KPI Bento Card */}
             <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-xs space-y-6">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100">
                 <div className="flex items-start gap-4">
@@ -610,7 +560,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                   </div>
                 </div>
 
-                {/* Main Attendance Percentage */}
                 <div className="bg-emerald-50/80 rounded-md p-4 border border-emerald-200 text-center md:text-right shrink-0 min-w-[160px]">
                   <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider block">
                     Kehadiran
@@ -624,7 +573,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                 </div>
               </div>
 
-              {/* 4 KPI Badges */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="bg-slate-50 rounded-md p-3.5 border border-slate-200">
                   <span className="text-[11px] font-medium text-slate-500 block">Total Pertemuan</span>
@@ -653,9 +601,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
               </div>
             </div>
 
-            {/* ========================================================== */}
-            {/* SEKSI 1: INFORMASI & PERUBAHAN JADWAL                       */}
-            {/* ========================================================== */}
             <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-xs space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                 <div className="flex items-center gap-2.5">
@@ -673,7 +618,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                 </div>
               </div>
 
-              {/* Jadwal Rutin Card */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="bg-slate-50 p-4 rounded-lg border border-slate-200/80 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-md bg-white text-[#00B884] flex items-center justify-center shadow-xs border border-slate-200/60">
@@ -718,7 +662,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                 </div>
               </div>
 
-              {/* Rincian Perubahan Jadwal (Jadwal Proposals) */}
               {selectedEskulData?.proposals && selectedEskulData.proposals.length > 0 ? (
                 <div className="space-y-3 pt-2">
                   <h4 className="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1.5">
@@ -770,7 +713,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                           )}
                         </div>
 
-                        {/* Detail Perubahan: Hari & Jam Lama vs Baru */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 my-3">
                           <div className="bg-white/80 p-3 rounded-md border border-slate-200/60">
                             <span className="text-[10px] font-semibold text-slate-400 block">Jadwal Lama:</span>
@@ -787,7 +729,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                           </div>
                         </div>
 
-                        {/* Alasan & Catatan Koordinator */}
                         <div className="space-y-1.5 text-xs">
                           <div>
                             <span className="font-semibold text-slate-500">Alasan Perubahan: </span>
@@ -815,9 +756,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
               )}
             </div>
 
-            {/* ========================================================== */}
-            {/* SEKSI 2: RIWAYAT PRESENSI & MATERI YANG TELAH BERLALU       */}
-            {/* ========================================================== */}
             <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-xs space-y-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
                 <div className="flex items-center gap-2.5">
@@ -834,7 +772,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                   </div>
                 </div>
 
-                {/* Filter Status Presensi */}
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
                   {(
                     [
@@ -859,7 +796,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                 </div>
               </div>
 
-              {/* Sessions List */}
               {filteredSessions.length > 0 ? (
                 <div className="space-y-4">
                   {filteredSessions.map((sesi, idx) => {
@@ -874,7 +810,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                         key={sesi.id || idx}
                         className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs hover:border-emerald-300 transition-all space-y-3.5"
                       >
-                        {/* Top Bar: Sesi Header & Attendance Badge */}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-slate-100">
                           <div className="flex items-center gap-3">
                             <span className="w-8 h-8 rounded-md bg-slate-100 text-slate-700 font-extrabold text-xs flex items-center justify-center shrink-0">
@@ -905,7 +840,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                             </div>
                           </div>
 
-                          {/* Attendance Status Badge */}
                           <div className="shrink-0">
                             {isHadir && (
                               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-full font-bold text-xs">
@@ -937,7 +871,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                           </div>
                         </div>
 
-                        {/* MATERI PERTEMUAN (Agenda & Pembahasan Latihan) */}
                         <div className="bg-slate-50/90 rounded-lg p-4 border border-slate-200/80 space-y-2">
                           <div className="flex items-center gap-2">
                             <BookOpen className="w-4 h-4 text-emerald-600" />
@@ -958,7 +891,6 @@ export const RiwayatEskulSiswaPage: React.FC<RiwayatEskulSiswaPageProps> = ({
                           </div>
                         </div>
 
-                        {/* Attendance Log Details (Scan Time & Keaktifan jika hadir) */}
                         {isHadir && (sesi.waktuScan || sesi.nilaiKeaktifan) && (
                           <div className="flex items-center justify-between flex-wrap gap-2 text-xs text-slate-500 pt-1">
                             <div className="flex items-center gap-2">

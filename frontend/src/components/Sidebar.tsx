@@ -59,7 +59,7 @@ interface SidebarProps {
   onOpenAjukanJadwalModal?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({
+const SidebarComponent: React.FC<SidebarProps> = ({
   activeTab,
   onTabChange,
   currentRole,
@@ -93,10 +93,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  // Content of navigation menus
   const renderNavItems = () => (
     <div className="flex-1 overflow-y-auto overflow-x-hidden pr-1.5 space-y-4 my-1 flex flex-col justify-start" style={{ scrollbarWidth: 'thin' }}>
-      {/* 1. MENU KOORDINATOR / ADMIN UTAMA */}
       {isKoordinator && (
         <>
           <div>
@@ -211,7 +209,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </nav>
           </div>
 
-          {/* MENU VALIDASI & PERSETUJUAN (DROPDOWN) */}
           <div>
             <div className="text-[11px] font-semibold text-slate-400 tracking-wider uppercase mb-2 px-3 flex items-center justify-between">
               <span>VALIDASI & PERSETUJUAN</span>
@@ -245,7 +242,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
               </button>
 
-              {/* Dropdown Subitems */}
               <AnimatePresence initial={false}>
                 {isValidasiDropdownOpen && (
                   <motion.div
@@ -325,7 +321,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </>
       )}
 
-      {/* 2. MENU GURU PEMBINA ESKUL */}
       {isPembina && (
         <div className="space-y-4">
           <div>
@@ -467,7 +462,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       )}
 
-      {/* 3. MENU WALI KELAS */}
       {isWaliKelas && (
         <div className="space-y-4">
           <div>
@@ -524,7 +518,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       )}
 
-      {/* 4. MENU SISWA */}
       {isSiswa && (
         <div className="space-y-4">
           <div>
@@ -621,7 +614,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </div>
   );
 
-  // Bottom section: pinned UMUM (Pengaturan & Keluar) with safe-area padding
   const renderBottomSection = () => (
     <div className="pt-3 border-t border-slate-200/80 shrink-0 bg-[#F8F9FA] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       <div className="text-[11px] font-semibold text-slate-400 tracking-wider uppercase mb-2 px-3">
@@ -629,17 +621,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       <nav className="space-y-1">
-        <button
-          onClick={() => handleTabClick('pengaturan')}
-          className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all cursor-pointer ${
-            activeTab === 'pengaturan'
-              ? 'text-[#00B884] font-bold bg-emerald-50/70'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
-          }`}
-        >
-          <Settings className="w-5 h-5 text-slate-500 shrink-0" />
-          <span className="truncate text-left">Pengaturan</span>
-        </button>
+        {isKoordinator && (
+          <button
+            onClick={() => handleTabClick('pengaturan')}
+            className={`w-full flex items-center justify-start text-left gap-3.5 px-3 py-2.5 rounded-md font-medium text-sm transition-all cursor-pointer ${
+              activeTab === 'pengaturan'
+                ? 'text-[#00B884] font-bold bg-emerald-50/70'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+            }`}
+          >
+            <Settings className="w-5 h-5 text-slate-500 shrink-0" />
+            <span className="truncate text-left">Pengaturan</span>
+          </button>
+        )}
 
         <button
           onClick={onLogout}
@@ -654,56 +648,52 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      {/* 1. DESKTOP STICKY SIDEBAR (Animated Spring Collapse / Expand) */}
       <AnimatePresence initial={false}>
         {isDesktopOpen && (
           <motion.aside
             key="desktop-sidebar"
+            role="navigation"
+            data-print-hidden="true"
             initial={{ width: 0, opacity: 0 }}
             animate={{ width: 256, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-            className="hidden lg:flex overflow-hidden bg-[#F8F9FA] h-dvh max-h-screen border-r border-slate-200/80 flex-col justify-between select-none shrink-0 z-40"
+            className="hidden lg:flex overflow-hidden bg-[#F8F9FA] h-dvh max-h-screen border-r border-slate-200/80 flex-col justify-between select-none shrink-0 z-40 print:hidden"
           >
             <div className="w-64 h-full flex flex-col justify-between p-5 shrink-0">
-              {/* School Branding */}
               <div className="pb-5 pt-1 px-1 shrink-0 flex items-center justify-between">
                 <SchoolLogo size="md" showText={true} />
               </div>
 
-              {/* Scrollable Navigation Area */}
               {renderNavItems()}
 
-              {/* Settings & Logout (Pinned Bottom - never scrolls out of view!) */}
               {renderBottomSection()}
             </div>
           </motion.aside>
         )}
       </AnimatePresence>
 
-      {/* 2. MOBILE SLIDE-OUT DRAWER WITH BACKDROP (Visible on mobile when isMobileOpen is true) */}
       <AnimatePresence>
         {isMobileOpen && (
           <>
-            {/* Backdrop Blur Overlay */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
               onClick={onCloseMobile}
-              className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 lg:hidden"
+              className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 lg:hidden print:hidden"
             />
 
-            {/* Slide-in Mobile Drawer */}
             <motion.aside
+              role="navigation"
+              data-print-hidden="true"
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-              className="fixed inset-y-0 left-0 w-[82vw] max-w-[310px] bg-[#F8F9FA] h-dvh flex flex-col justify-between p-4 sm:p-5 z-50 shadow-2xl lg:hidden select-none safe-area-bottom"
+              className="fixed inset-y-0 left-0 w-[82vw] max-w-[310px] bg-[#F8F9FA] h-dvh flex flex-col justify-between p-4 sm:p-5 z-50 shadow-2xl lg:hidden select-none safe-area-bottom print:hidden"
             >
-              {/* Header with Logo and Close Button */}
               <div className="flex items-center justify-between pb-4 pt-1 px-1 shrink-0 border-b border-slate-200/60">
                 <SchoolLogo size="sm" showText={true} />
                 <button
@@ -715,10 +705,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </button>
               </div>
 
-              {/* Scrollable Navigation Area */}
               {renderNavItems()}
 
-              {/* Pinned Bottom Controls */}
               {renderBottomSection()}
             </motion.aside>
           </>
@@ -727,3 +715,5 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </>
   );
 };
+
+export const Sidebar = React.memo(SidebarComponent);

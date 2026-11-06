@@ -4,7 +4,6 @@ import { requireRoles, extractUser, getStudentDefaultPassword, hashPassword } fr
 
 const router = Router();
 
-// GET /api/students
 router.get('/', async (req, res) => {
   try {
     const user = extractUser(req);
@@ -30,6 +29,8 @@ router.get('/', async (req, res) => {
         kelasId: s.kelasId,
         avatarUrl: s.avatarUrl,
         statusAktif: s.statusAktif,
+        email: s.email || null,
+        noHp: s.noHp || null,
         enrolledEskulIds: s.keanggotaanEskul.map((k) => k.eskulId),
         kehadiranRataRata: 94,
       };
@@ -48,7 +49,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/students/import
 router.post('/import', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   try {
     const { rows } = req.body;
@@ -147,7 +147,6 @@ router.post('/import', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) =>
   }
 });
 
-// POST /api/students/assign
 router.post('/assign', async (req, res) => {
   try {
     const { studentId, eskulIds } = req.body;
@@ -172,7 +171,6 @@ router.post('/assign', async (req, res) => {
   }
 });
 
-// POST /api/students/enroll-eskul
 router.post('/enroll-eskul', async (req, res) => {
   try {
     const { siswaId, eskulId, tahunAjaran } = req.body;
@@ -232,6 +230,72 @@ router.post('/enroll-eskul', async (req, res) => {
       success: true,
       message: `Selamat, Anda berhasil terdaftar di ekstrakurikuler ${eskul.namaEskul}!`,
       data: newMember,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+
+router.put('/:id', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { namaLengkap, kelasId, email, noHp, noHpOrtu, alamat, statusAktif, statusSiswa, jenisKelamin, nisn } = req.body;
+
+    const updateData = {};
+    if (namaLengkap !== undefined) updateData.namaLengkap = String(namaLengkap).trim();
+    if (kelasId !== undefined) updateData.kelasId = kelasId;
+    if (email !== undefined) updateData.email = String(email).trim() || null;
+    if (noHp !== undefined) updateData.noHp = String(noHp).trim() || null;
+    if (noHpOrtu !== undefined) updateData.noHpOrtu = String(noHpOrtu).trim() || null;
+    if (alamat !== undefined) updateData.alamat = String(alamat).trim() || null;
+    if (statusAktif !== undefined) updateData.statusAktif = Boolean(statusAktif);
+    if (statusSiswa !== undefined) updateData.statusSiswa = statusSiswa;
+    if (jenisKelamin !== undefined) updateData.jenisKelamin = jenisKelamin;
+    if (nisn !== undefined) updateData.nisn = String(nisn).trim() || null;
+
+    const updated = await prisma.siswa.update({
+      where: { id },
+      data: updateData,
+      include: { kelas: true },
+    });
+
+    res.json({
+      success: true,
+      message: 'Data siswa berhasil diperbarui',
+      data: updated,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/batch-update-class', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
+  try {
+    const { studentIds, targetKelasId } = req.body;
+    if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'Daftar ID siswa wajib diisi.' });
+    }
+    if (!targetKelasId) {
+      return res.status(400).json({ success: false, message: 'Kelas tujuan wajib dipilih.' });
+    }
+
+    const targetKelas = await prisma.kelas.findUnique({
+      where: { id: targetKelasId },
+    });
+    if (!targetKelas) {
+      return res.status(404).json({ success: false, message: 'Kelas tujuan tidak ditemukan.' });
+    }
+
+    const result = await prisma.siswa.updateMany({
+      where: { id: { in: studentIds } },
+      data: { kelasId: targetKelasId },
+    });
+
+    res.json({
+      success: true,
+      message: `Berhasil mempromosikan/memindahkan ${result.count} siswa ke kelas ${targetKelas.namaKelas}.`,
+      count: result.count,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

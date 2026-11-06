@@ -9,23 +9,21 @@ interface UserAvatarProps {
   title?: string;
 }
 
-// WhatsApp & Modern Material vibrant color palette (High contrast with white text)
 const AVATAR_PALETTE = [
-  '#00A884', // WhatsApp Emerald Green
-  '#0284C7', // Ocean Sky Blue
-  '#4F46E5', // Deep Indigo
-  '#7C3AED', // Royal Violet
-  '#C026D3', // Fuchsia Magenta
-  '#E11D48', // Vibrant Rose
-  '#EA580C', // Warm Tangerine
-  '#D97706', // Golden Amber
-  '#059669', // Mint Emerald
-  '#0D9488', // Deep Teal
-  '#2563EB', // Electric Blue
-  '#475569', // Modern Slate
+  '#00A884',
+  '#0284C7',
+  '#4F46E5',
+  '#7C3AED',
+  '#C026D3',
+  '#E11D48',
+  '#EA580C',
+  '#D97706',
+  '#059669',
+  '#0D9488',
+  '#2563EB',
+  '#475569',
 ];
 
-// Helper to clean Indonesian titles and academic degrees from names
 export function getCleanName(fullName: string): string {
   if (!fullName) return '';
   const titlesRegex = /\b(S\.Pd\.|M\.Pd\.|S\.Kom\.|M\.Kom\.|S\.Pd\.I\.|S\.T\.|M\.T\.|S\.Si\.|M\.Si\.|Lc\.|Dr\.|Drs\.|H\.|Hj\.|Ir\.|Bpk\.|Ibu|Pak|Bu)\b/gi;
@@ -36,7 +34,6 @@ export function getCleanName(fullName: string): string {
     .trim();
 }
 
-// Generate 1-2 initials for avatar
 export function getInitials(fullName: string): string {
   const clean = getCleanName(fullName);
   if (!clean) return 'U';
@@ -51,7 +48,6 @@ export function getInitials(fullName: string): string {
   return 'U';
 }
 
-// Deterministic color assignment based on name string
 export function getAvatarColor(fullName: string): string {
   if (!fullName) return AVATAR_PALETTE[0];
   let hash = 0;

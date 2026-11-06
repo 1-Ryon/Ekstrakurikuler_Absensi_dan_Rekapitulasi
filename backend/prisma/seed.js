@@ -9,14 +9,12 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-// Pre-computed bcrypt hashes for instant seed execution
 const HASHED_ADMIN = bcrypt.hashSync('admin123', 10);
 const HASHED_PEMBINA = bcrypt.hashSync('pembina123', 10);
 const HASHED_WALI = bcrypt.hashSync('walikelas123', 10);
 const HASHED_SISWA = bcrypt.hashSync('siswa123', 10);
 const HASHED_FARHAN = bcrypt.hashSync('al_amanah_001', 10);
 
-// 10 Siswa Spesifik yang Diberikan Pengguna
 const SPECIFIC_STUDENTS = [
   { nama: 'Khaisan Ramzi Muzhaffar', nim: '241011400049', gender: 'L', kelasNama: 'X RPL 1', eskuls: ['eskul-01', 'eskul-02'] },
   { nama: 'Muhamad Ariono Putra Agusni', nim: '241011403038', gender: 'L', kelasNama: 'X RPL 1', eskuls: ['eskul-01', 'eskul-10'] },
@@ -30,7 +28,6 @@ const SPECIFIC_STUDENTS = [
   { nama: 'Muhammad Arif Nugroho', nim: '241011403023', gender: 'L', kelasNama: 'X RPL 2', eskuls: ['eskul-16', 'eskul-01'] },
 ];
 
-// Bank Nama Realistis Indonesia untuk 790 Siswa Lainnya
 const FIRST_NAMES_MALE = [
   'Aditya', 'Ahmad', 'Alif', 'Bagas', 'Bima', 'Bayu', 'Daffa', 'Dimas', 'Eko', 'Fajar', 
   'Farhan', 'Galang', 'Gilang', 'Hafizh', 'Ilham', 'Irfan', 'Kevin', 'Lukman', 'Maulana', 
@@ -58,7 +55,6 @@ const LAST_NAMES = [
   'Hermawan', 'Kusumo', 'Wicaksono'
 ];
 
-// Helper chunk array
 function chunkArray(array, size) {
   const chunked = [];
   for (let i = 0; i < array.length; i += size) {
@@ -71,7 +67,6 @@ async function main() {
   const includeDemoEskul = !process.argv.includes('--clean-eskul');
   console.log(`🌱 [SEED DATABASE] Memulai inisialisasi basis data (Mode: ${includeDemoEskul ? 'Dengan Demo Eskul' : 'Clean State / Eskul Kosong'})...`);
 
-  // 1. Bersihkan seluruh database secara terurut
   await prisma.presensi.deleteMany({});
   await prisma.penilaian.deleteMany({});
   await prisma.prestasiLomba.deleteMany({});
@@ -87,7 +82,6 @@ async function main() {
 
   console.log('🧹 Database lama berhasil dibersihkan.');
 
-  // 2. Akun Administrator Sistem (Role: ADMIN)
   await prisma.admin.createMany({
     data: [
       {
@@ -119,9 +113,7 @@ async function main() {
 
   console.log('✅ 2 Akun Administrator dibuat.');
 
-  // 3. 30 Data Guru (2 Koordinator, 18 Pembina Eskul, 10 Guru Wali Kelas/Mapel)
   const guruList = [
-    // 2 Koordinator Ekstrakurikuler
     {
       id: 'guru-koor-01',
       username: 'koordinator',
@@ -155,7 +147,6 @@ async function main() {
       statusAktif: true,
     },
 
-    // 17 Guru Pembina Eskul Lainnya (Total 18 Pembina dengan Bu Viska)
     {
       id: 'guru-pem-01',
       username: 'ahmad.futsal',
@@ -429,7 +420,6 @@ async function main() {
       statusAktif: true,
     },
 
-    // 11 Guru Wali Kelas & Pengajar Mapel
     {
       id: 'guru-wal-01',
       username: 'hendra.wali',
@@ -614,11 +604,9 @@ async function main() {
 
   console.log(`✅ ${guruList.length} Akun Guru berhasil disimpan (termasuk 18 Pembina Eskul).`);
 
-  // 4. Data Master 27 Kelas (X, XI, XII untuk 800 siswa)
   const kelasNames = [
-    // Kelas X
-    { namaKelas: 'X RPL 1', tingkat: 10, jurusan: 'Rekayasa Perangkat Lunak', waliId: 'guru-pem-10' }, // Bu Siti
-    { namaKelas: 'X RPL 2', tingkat: 10, jurusan: 'Rekayasa Perangkat Lunak', waliId: 'guru-wal-01' }, // Pak Hendra
+    { namaKelas: 'X RPL 1', tingkat: 10, jurusan: 'Rekayasa Perangkat Lunak', waliId: 'guru-pem-10' },
+    { namaKelas: 'X RPL 2', tingkat: 10, jurusan: 'Rekayasa Perangkat Lunak', waliId: 'guru-wal-01' },
     { namaKelas: 'X TKJ 1', tingkat: 10, jurusan: 'Teknik Komputer & Jaringan', waliId: 'guru-wal-03' },
     { namaKelas: 'X TKJ 2', tingkat: 10, jurusan: 'Teknik Komputer & Jaringan', waliId: 'guru-wal-04' },
     { namaKelas: 'X AKL 1', tingkat: 10, jurusan: 'Akuntansi Keuangan Lembaga', waliId: 'guru-wal-02' },
@@ -627,7 +615,6 @@ async function main() {
     { namaKelas: 'X OTKP 2', tingkat: 10, jurusan: 'Otomatisasi Tata Kelola Perkantoran', waliId: 'guru-wal-07' },
     { namaKelas: 'X BDP 1', tingkat: 10, jurusan: 'Bisnis Daring & Pemasaran', waliId: 'guru-wal-08' },
 
-    // Kelas XI
     { namaKelas: 'XI RPL 1', tingkat: 11, jurusan: 'Rekayasa Perangkat Lunak', waliId: 'guru-wal-09' },
     { namaKelas: 'XI RPL 2', tingkat: 11, jurusan: 'Rekayasa Perangkat Lunak', waliId: 'guru-wal-10' },
     { namaKelas: 'XI TKJ 1', tingkat: 11, jurusan: 'Teknik Komputer & Jaringan', waliId: 'guru-pem-02' },
@@ -638,7 +625,6 @@ async function main() {
     { namaKelas: 'XI OTKP 2', tingkat: 11, jurusan: 'Otomatisasi Tata Kelola Perkantoran', waliId: 'guru-pem-06' },
     { namaKelas: 'XI BDP 1', tingkat: 11, jurusan: 'Bisnis Daring & Pemasaran', waliId: 'guru-pem-08' },
 
-    // Kelas XII
     { namaKelas: 'XII RPL 1', tingkat: 12, jurusan: 'Rekayasa Perangkat Lunak', waliId: 'guru-wal-11' },
     { namaKelas: 'XII RPL 2', tingkat: 12, jurusan: 'Rekayasa Perangkat Lunak', waliId: 'guru-pem-01' },
     { namaKelas: 'XII TKJ 1', tingkat: 12, jurusan: 'Teknik Komputer & Jaringan', waliId: 'guru-pem-05' },
@@ -669,7 +655,6 @@ async function main() {
 
   console.log(`✅ 27 Kelas (Rombel) berhasil dibuat dan dipetakan dengan wali kelas.`);
 
-  // 5. Data Master 18 Cabang Eskul
   const eskulMasterList = [
     {
       id: 'eskul-01',
@@ -766,7 +751,7 @@ async function main() {
       id: 'eskul-08',
       namaEskul: 'Palang Merah Remaja (PMR)',
       kategori: 'Kepemimpinan',
-      pembinaId: 'guru-koor-01', // Bu Viska
+      pembinaId: 'guru-koor-01',
       jadwalHari: 'Senin',
       jamMulai: '15:30',
       jamSelesai: '17:00',
@@ -916,14 +901,12 @@ async function main() {
     console.log(`✨ Cabang Eskul dibiarkan kosong (0 eskul) sesuai permintaan pengguna.`);
   }
 
-  // 6. Generate 800 Data Siswa (10 Siswa Spesifik + 790 Siswa Terdistribusi)
   console.log('⏳ Meng-generate 800 data siswa SMK Al Amanah...');
 
   const siswaList = [];
   const anggotaList = [];
   const allKelasKeys = Object.keys(kelasMap);
 
-  // A. Tambahkan 10 Siswa Spesifik yang Diberikan Pengguna
   for (let i = 0; i < SPECIFIC_STUDENTS.length; i++) {
     const item = SPECIFIC_STUDENTS[i];
     const siswaId = `sis-${String(i + 1).padStart(3, '0')}`;
@@ -931,7 +914,7 @@ async function main() {
 
     siswaList.push({
       id: siswaId,
-      nis: item.nim, // Memasukkan NIM siswa sebagai NIS & login ID
+      nis: item.nim,
       nisn: `0064${item.nim.slice(-6)}`,
       passwordHash: HASHED_SISWA,
       namaLengkap: item.nama,
@@ -948,7 +931,6 @@ async function main() {
     });
 
     if (includeDemoEskul) {
-      // Daftarkan keanggotaan eskul untuk 10 siswa spesifik
       for (const eskulId of item.eskuls) {
         anggotaList.push({
           id: `ang-${siswaId}-${eskulId}`,
@@ -962,7 +944,6 @@ async function main() {
     }
   }
 
-  // B. Generate 790 Siswa Tambahan hingga Total 800 Siswa
   const eskulIds = eskulMasterList.map(e => e.id);
 
   for (let i = 11; i <= 800; i++) {
@@ -970,7 +951,6 @@ async function main() {
     const gender = i % 2 === 0 ? 'P' : 'L';
     const firstNames = gender === 'L' ? FIRST_NAMES_MALE : FIRST_NAMES_FEMALE;
     
-    // Pilih nama depan dan belakang deterministik
     const firstName = firstNames[(i * 17) % firstNames.length];
     const middleName = FIRST_NAMES_MALE[(i * 31) % FIRST_NAMES_MALE.length];
     const lastName = LAST_NAMES[(i * 23) % LAST_NAMES.length];
@@ -979,12 +959,10 @@ async function main() {
       ? 'Muhammad Farhan Al-Fatih'
       : (i % 3 === 0 ? `${firstName} ${middleName} ${lastName}` : `${firstName} ${lastName}`);
 
-    // NIS format 20241xxx, 20251xxx, 20261xxx
     const angkatan = i <= 280 ? '2026' : i <= 550 ? '2025' : '2024';
     const nis = isFarhan ? '20241001' : `${angkatan}${String(i).padStart(4, '0')}`;
     const nisn = isFarhan ? '20241001' : `00${angkatan.slice(-1)}${String(i * 12345).padStart(7, '0').slice(-7)}`;
 
-    // Petakan ke salah satu dari 27 kelas secara merata
     const kelasNama = isFarhan ? 'X RPL 1' : allKelasKeys[(i - 11) % allKelasKeys.length];
     const kelasId = kelasMap[kelasNama] || kelasMap['X RPL 1'];
 
@@ -1006,7 +984,6 @@ async function main() {
       statusAktif: true,
     });
 
-    // Target kapasitas realistis (50-60% kuota) agar tidak overload / PENUH 88/35
     const targetCapacityMap = {
       'eskul-01': 28, 'eskul-02': 28, 'eskul-03': 18, 'eskul-04': 20,
       'eskul-05': 26, 'eskul-06': 32, 'eskul-07': 30, 'eskul-08': 22,
@@ -1015,7 +992,6 @@ async function main() {
       'eskul-17': 22, 'eskul-18': 16,
     };
 
-    // Siswa sis-020 hingga sis-040 dan sis-011 dikosongkan keanggotaannya untuk pengujian pendaftaran
     const isReservedForTesting = i >= 20 && i <= 40;
 
     if (includeDemoEskul && !isReservedForTesting) {
@@ -1036,7 +1012,6 @@ async function main() {
     }
   }
 
-  // Insert Siswa dalam batch 50
   const siswaBatches = chunkArray(siswaList, 50);
   for (const batch of siswaBatches) {
     await prisma.siswa.createMany({ data: batch });
@@ -1045,7 +1020,6 @@ async function main() {
   console.log(`✅ ${siswaList.length} Siswa berhasil dimasukkan ke basis data (Termasuk 10 siswa spesifik!).`);
 
   if (includeDemoEskul) {
-    // Insert Anggota Eskul dalam batch 50
     const anggotaBatches = chunkArray(anggotaList, 50);
     for (const batch of anggotaBatches) {
       await prisma.anggotaEskul.createMany({ data: batch });
@@ -1054,14 +1028,13 @@ async function main() {
   }
 
   if (includeDemoEskul) {
-    // 7. Sesi Pertemuan (18 Sesi Hari Ini untuk seluruh cabang eskul)
   const todayStr = new Date().toISOString().slice(0, 10);
   const sesiList = [];
 
   for (let idx = 0; idx < eskulMasterList.length; idx++) {
     const e = eskulMasterList[idx];
-    const isHoliday = idx === 2; // Eskul Hadroh ditandai LIBUR sebagai demonstrasi fitur libur
-    const isLocked = idx === 1; // Eskul IT Club ditandai terkunci sebagai demonstrasi history terkunci
+    const isHoliday = idx === 2;
+    const isLocked = idx === 1;
 
     sesiList.push({
       id: `sesi-${String(idx + 1).padStart(2, '0')}`,
@@ -1094,11 +1067,9 @@ async function main() {
 
   console.log(`✅ 18 Sesi Pertemuan Hari Ini berhasil dibuat (dengan opsi libur & sesi terkunci).`);
 
-  // 8. Log Presensi untuk Sesi Hari Ini (Termasuk 10 Siswa Spesifik)
   const presensiList = [];
-  const activeSessionId = 'sesi-01'; // Sesi Futsal
+  const activeSessionId = 'sesi-01';
 
-  // Presensi untuk 10 siswa spesifik
   for (let i = 0; i < SPECIFIC_STUDENTS.length; i++) {
     const s = SPECIFIC_STUDENTS[i];
     const siswaId = `sis-${String(i + 1).padStart(3, '0')}`;
@@ -1119,7 +1090,6 @@ async function main() {
     });
   }
 
-  // Tambahkan 35 presensi lainnya dari siswa acak
   for (let i = 11; i <= 45; i++) {
     const siswaId = `sis-${String(i).padStart(3, '0')}`;
     presensiList.push({
@@ -1143,9 +1113,7 @@ async function main() {
 
   console.log(`✅ ${presensiList.length} Log Presensi Real-Time berhasil diinisialisasi.`);
 
-  // 9. Pendaftaran Eskul (Untuk menguji Menu Validasi Pendaftaran Siswa & Kuota Pembina)
   const pendaftaranSample = [
-    // 1. Eskul-01: Futsal Prestasi (Pembina: Ahmad Syafii)
     {
       id: 'reg-01',
       eskulId: 'eskul-01',
@@ -1184,7 +1152,6 @@ async function main() {
       divalidasiPada: new Date(Date.now() - 3600000 * 24),
     },
 
-    // 2. Eskul-10: Badminton Club (Pembina: Taufik Hidayat) - Permintaan Khusus Pengguna
     {
       id: 'reg-05',
       eskulId: 'eskul-10',
@@ -1223,7 +1190,6 @@ async function main() {
       divalidasiPada: new Date(Date.now() - 3600000 * 48),
     },
 
-    // 3. Eskul-02: Computer & Web Club (Pembina: Abdul Malik)
     {
       id: 'reg-09',
       eskulId: 'eskul-02',
@@ -1254,7 +1220,6 @@ async function main() {
       divalidasiPada: new Date(Date.now() - 3600000 * 20),
     },
 
-    // 4. Eskul-05: Paskibra Satya Amanah (Pembina: Budi Santoso)
     {
       id: 'reg-12',
       eskulId: 'eskul-05',
@@ -1276,7 +1241,6 @@ async function main() {
       divalidasiPada: new Date(Date.now() - 3600000 * 30),
     },
 
-    // 5. Eskul-17: Basket Ball Club (Pembina: Rian Hidayat)
     {
       id: 'reg-14',
       eskulId: 'eskul-17',
@@ -1306,7 +1270,6 @@ async function main() {
       divalidasiPada: new Date(Date.now() - 3600000 * 15),
     },
 
-    // 6. Eskul-08: Palang Merah Remaja (PMR) (Pembina: Viska Adawiyah)
     {
       id: 'reg-17',
       eskulId: 'eskul-08',
@@ -1337,7 +1300,6 @@ async function main() {
       divalidasiPada: new Date(Date.now() - 3600000 * 25),
     },
 
-    // 7. Eskul-11: Seni Tari Tradisional (Pembina: Siti Rahmawati)
     {
       id: 'reg-20',
       eskulId: 'eskul-11',
@@ -1364,7 +1326,6 @@ async function main() {
 
   console.log(`✅ 10 Data Pendaftaran Siswa (berbagai status validasi) berhasil dibuat.`);
 
-  // 10. Pengajuan Jadwal untuk Validasi Jadwal di Sidebar
   await prisma.pengajuanJadwal.createMany({
     data: [
       {
@@ -1426,7 +1387,6 @@ async function main() {
 
   console.log(`✅ Data Pengajuan Jadwal Latihan berhasil dibuat.`);
 
-  // 11. Penilaian Rapor Sampel
   const penilaianList = [];
   for (let i = 0; i < SPECIFIC_STUDENTS.length; i++) {
     const sId = `sis-${String(i + 1).padStart(3, '0')}`;
@@ -1448,7 +1408,6 @@ async function main() {
     });
   }
 
-  // Tambahkan juga penilaian untuk siswa tes (Muhammad Farhan Al-Fatih / sis-011)
   penilaianList.push({
     id: `pen-sis-011-eskul-01`,
     eskulId: 'eskul-01',
@@ -1469,12 +1428,11 @@ async function main() {
     await prisma.penilaian.createMany({ data: penilaianList });
     console.log(`✅ ${penilaianList.length} Catatan Penilaian Rapor berhasil diinisialisasi.`);
 
-    // 12. SEED PRESTASI & KEJUARAAN LOMBA SISWA
     const samplePrestasi = [
       {
         id: 'pres-01',
-        eskulId: 'eskul-01', // Futsal Prestasi
-        siswaId: 'sis-001', // Muhammad Al Fatih
+        eskulId: 'eskul-01',
+        siswaId: 'sis-001',
         namaLomba: 'Kejuaraan Futsal Pelajar Walikota Tangsel Cup 2026',
         penyelenggara: 'Dispora Kota Tangerang Selatan',
         tingkat: 'KOTA',
@@ -1488,8 +1446,8 @@ async function main() {
       },
       {
         id: 'pres-02',
-        eskulId: 'eskul-02', // Computer & Web Club
-        siswaId: 'sis-003', // Rizky Ramadhan
+        eskulId: 'eskul-02',
+        siswaId: 'sis-003',
         namaLomba: 'Lomba Desain UI/UX & Web Development Pelajar Se-Banten',
         penyelenggara: 'Dinas Pendidikan & Kebudayaan Provinsi Banten',
         tingkat: 'PROVINSI',
@@ -1503,8 +1461,8 @@ async function main() {
       },
       {
         id: 'pres-03',
-        eskulId: 'eskul-05', // Paskibra Satya Amanah
-        siswaId: 'sis-007', // Siswa Paskibra
+        eskulId: 'eskul-05',
+        siswaId: 'sis-007',
         namaLomba: 'Lomba Formasi Pengibaran Bendera Kreasi Tingkat Provinsi',
         penyelenggara: 'PPI Banten & Dispora',
         tingkat: 'PROVINSI',
@@ -1518,8 +1476,8 @@ async function main() {
       },
       {
         id: 'pres-04',
-        eskulId: 'eskul-13', // English Debate Club
-        siswaId: 'sis-002', // Nur Annisa
+        eskulId: 'eskul-13',
+        siswaId: 'sis-002',
         namaLomba: 'Tangsel Interschool English Debate Championship',
         penyelenggara: 'MGMP Bahasa Inggris Kota Tangerang Selatan',
         tingkat: 'KOTA',

@@ -28,7 +28,6 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
       setSelectedFile(file);
       setErrorMessage(null);
 
-      // Read file content
       const reader = new FileReader();
       reader.onload = (event) => {
         const text = event.target?.result as string;
@@ -44,13 +43,11 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
     const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     if (lines.length === 0) return [];
 
-    // Check if first line is header
     const firstLineLower = lines[0].toLowerCase();
     const hasHeader = firstLineLower.includes('nis') || firstLineLower.includes('nama');
     const dataLines = hasHeader ? lines.slice(1) : lines;
 
     return dataLines.map((line) => {
-      // Support comma or semicolon or tab (Excel copy-paste)
       const cols = line.includes('\t') 
         ? line.split('\t') 
         : line.includes(';') 
@@ -63,6 +60,7 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
       const kelas = clean[2] || 'X RPL 1';
       const jenisKelamin = clean[3] || 'L';
       const noHp = clean[4] || '';
+      const email = clean[5] || '';
 
       return {
         nis,
@@ -71,6 +69,7 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
         kelas,
         jenisKelamin,
         noHp,
+        email,
       };
     }).filter(r => r.nis && r.namaLengkap);
   };
@@ -106,7 +105,7 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
   };
 
   const downloadSampleTemplate = () => {
-    const templateContent = `NIS,Nama Siswa,Kelas,Jenis Kelamin,No Handphone\n202410011,Muhammad Fatih Al-Ayyubi,X RPL 1,L,081234567811\n202410012,Zahra Khairunnisa,X RPL 1,P,081234567812\n202410013,Rizki Dwi Ramadhan,XI TKJ 2,L,081234567813\n202410014,Salma Nafisah,XI OTKP 1,P,081234567814\n`;
+    const templateContent = `NIS,Nama Siswa,Kelas,Jenis Kelamin,No Handphone,Email\n202410011,Muhammad Fatih Al-Ayyubi,X RPL 1,L,081234567811,fatih@smk-alamanah.sch.id\n202410012,Zahra Khairunnisa,X RPL 1,P,081234567812,zahra@smk-alamanah.sch.id\n202410013,Rizki Dwi Ramadhan,XI TKJ 2,L,081234567813,rizki@smk-alamanah.sch.id\n202410014,Salma Nafisah,XI OTKP 1,P,081234567814,salma@smk-alamanah.sch.id\n`;
     const blob = new Blob([templateContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -117,7 +116,7 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
   };
 
   const fillSampleData = () => {
-    const sample = `202410011\tMuhammad Fatih Al-Ayyubi\tX RPL 1\tL\t081234567811\n202410012\tZahra Khairunnisa\tX RPL 1\tP\t081234567812\n202410013\tRizki Dwi Ramadhan\tXI TKJ 2\tL\t081234567813\n202410014\tSalma Nafisah\tXI OTKP 1\tP\t081234567814`;
+    const sample = `202410011\tMuhammad Fatih Al-Ayyubi\tX RPL 1\tL\t081234567811\tfatih@smk-alamanah.sch.id\n202410012\tZahra Khairunnisa\tX RPL 1\tP\t081234567812\tzahra@smk-alamanah.sch.id\n202410013\tRizki Dwi Ramadhan\tXI TKJ 2\tL\t081234567813\trizki@smk-alamanah.sch.id\n202410014\tSalma Nafisah\tXI OTKP 1\tP\t081234567814\tsalma@smk-alamanah.sch.id`;
     setPastedText(sample);
     setUseTextInput(true);
   };
@@ -132,7 +131,6 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
         className="bg-white rounded-lg w-[92vw] max-w-xl p-4 sm:p-6 shadow-xl border border-slate-200 max-h-[92dvh] flex flex-col justify-between animate-in fade-in zoom-in-95 duration-150"
       >
         <div>
-          {/* Header */}
           <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
             <div>
               <h3 className="text-lg font-bold text-slate-900">
@@ -150,22 +148,26 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
             </button>
           </div>
 
-          {/* Rule Highlight Card */}
-          <div className="p-3.5 bg-emerald-50/70 border border-emerald-200/80 rounded-md mb-4 text-xs">
+          <div className="p-3.5 bg-emerald-50/70 border border-emerald-200/80 rounded-md mb-4 text-xs space-y-2">
             <div className="flex items-start gap-2.5">
               <KeyRound className="size-4 text-emerald-700 shrink-0 mt-0.5" />
               <div>
                 <span className="font-semibold text-emerald-900 block mb-0.5">
-                  Aturan Akun Baru Otomatis:
+                  Aturan Akun Otomatis:
                 </span>
                 <span className="text-emerald-800">
                   Setiap baris siswa yang diimpor akan langsung dibuatkan akun login sistem dengan nama pengguna nomor NIS dan kata sandi bawaan <code className="bg-white/80 px-1.5 py-0.5 rounded font-mono font-bold text-emerald-800 border border-emerald-300">al_amanah_&lt;3_digit_terakhir_nis&gt;</code>.
                 </span>
               </div>
             </div>
+            <div className="pt-2 border-t border-emerald-200/60 text-[11px] text-emerald-800 flex items-start gap-2">
+              <span className="font-semibold text-emerald-900 shrink-0">Naik Kelas & Kontak:</span>
+              <span>
+                Jika siswa naik kelas, cukup unggah file dengan NIS yang sama dan nama kelas baru. Riwayat absensi per sesi, nilai rapor, serta nomor HP/Email yang sudah disimpan siswa tidak akan terhapus.
+              </span>
+            </div>
           </div>
 
-          {/* Mode Switcher: Upload File / Paste Text */}
           {!importSummary && (
             <>
               <div className="flex items-center justify-between mb-2">
@@ -193,7 +195,6 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
               </div>
 
               {!useTextInput ? (
-                /* Drag and Drop File Box */
                 <label className="border-2 border-dashed border-slate-300 hover:border-[#00B884] bg-slate-50 hover:bg-emerald-50/20 rounded-md p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-colors block mb-4">
                   <Upload className="size-8 text-[#00B884] mb-2" />
                   <span className="text-xs font-semibold text-slate-700">
@@ -210,7 +211,6 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
                   />
                 </label>
               ) : (
-                /* Paste Table Text Box */
                 <div className="mb-4">
                   <textarea
                     rows={4}
@@ -231,7 +231,6 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
                 </div>
               )}
 
-              {/* Sample Template & Help */}
               <div className="flex items-center justify-between text-xs text-slate-600 bg-slate-50 p-3 rounded-md mb-4 border border-slate-200">
                 <div className="flex items-center gap-2">
                   <FileSpreadsheet className="size-4 text-emerald-600" />
@@ -247,7 +246,6 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
                 </button>
               </div>
 
-              {/* Error Alert */}
               {errorMessage && (
                 <div className="p-3 bg-rose-50 border border-rose-200 rounded-md flex items-center gap-2 text-rose-700 text-xs font-medium mb-3">
                   <AlertCircle className="size-4 shrink-0" />
@@ -257,7 +255,6 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
             </>
           )}
 
-          {/* Success Summary Table */}
           {importSummary && (
             <div className="space-y-3">
               <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-md flex items-center gap-2 text-emerald-800 text-xs font-semibold">
@@ -292,7 +289,6 @@ export const ImportDataModal: React.FC<ImportDataModalProps> = ({
           )}
         </div>
 
-        {/* Footer Actions */}
         <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100 mt-4">
           {importSummary ? (
             <button

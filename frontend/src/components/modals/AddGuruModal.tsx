@@ -189,7 +189,6 @@ export const AddGuruModal: React.FC<AddGuruModalProps> = ({
             </select>
           </div>
 
-          {/* Info Auto-Credential */}
           <div className="p-3 bg-emerald-50/60 rounded-md border border-emerald-100 flex items-start gap-2.5">
             <School className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
             <div className="text-[11px] text-slate-600">

@@ -4,7 +4,6 @@ import { requireRoles } from '../middlewares/auth.js';
 
 const router = Router();
 
-// GET /api/eskul
 router.get('/', async (req, res) => {
   try {
     const eskulList = await prisma.eskul.findMany({
@@ -43,12 +42,10 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/eskul
 router.post('/', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   try {
     const { namaEskul, pembinaId, jadwalHari, jamMulai, jamSelesai, lokasi, kategori, kuota, deskripsi } = req.body;
 
-    // Pastikan ada pembina default jika belum dipilih
     let selectedPembinaId = pembinaId;
     if (!selectedPembinaId) {
       const firstPembina = await prisma.guru.findFirst({ where: { isPembina: true } });
@@ -78,7 +75,6 @@ router.post('/', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   }
 });
 
-// PUT /api/eskul/:id
 router.put('/:id', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   try {
     const { id } = req.params;
@@ -109,7 +105,6 @@ router.put('/:id', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   }
 });
 
-// DELETE /api/eskul/:id
 router.delete('/:id', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   try {
     await prisma.eskul.delete({ where: { id: req.params.id } });
@@ -119,7 +114,6 @@ router.delete('/:id', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => 
   }
 });
 
-// GET /api/eskul/:id/members
 router.get('/:id/members', async (req, res) => {
   try {
     const { id } = req.params;
@@ -139,7 +133,6 @@ router.get('/:id/members', async (req, res) => {
   }
 });
 
-// POST /api/eskul/:id/kick-member: Pembina/Koordinator/Admin mengeluarkan siswa dari eskul
 router.post('/:id/kick-member', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, res) => {
   try {
     const { id: eskulId } = req.params;
@@ -149,7 +142,18 @@ router.post('/:id/kick-member', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'),
       return res.status(400).json({ success: false, message: 'ID Siswa wajib disertakan.' });
     }
 
-    // 1. Periksa keanggotaan aktif
+    const eskul = await prisma.eskul.findUnique({ where: { id: eskulId } });
+    if (!eskul) {
+      return res.status(404).json({ success: false, message: 'Data eskul tidak ditemukan.' });
+    }
+
+    if (req.user?.role === 'PEMBINA' && eskul.pembinaId !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: `Akses ditolak: Anda bukan pembina resmi ekstrakurikuler ${eskul.namaEskul}.`,
+      });
+    }
+
     const membership = await prisma.anggotaEskul.findFirst({
       where: { eskulId, siswaId, status: 'AKTIF' },
       include: { siswa: true, eskul: true },
@@ -162,13 +166,11 @@ router.post('/:id/kick-member', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'),
       });
     }
 
-    // 2. Ubah status keanggotaan menjadi KELUAR
     await prisma.anggotaEskul.update({
       where: { id: membership.id },
       data: { status: 'KELUAR' },
     });
 
-    // 3. Update juga status pendaftaran jika ada
     await prisma.pendaftaranEskul.updateMany({
       where: { eskulId, siswaId },
       data: {

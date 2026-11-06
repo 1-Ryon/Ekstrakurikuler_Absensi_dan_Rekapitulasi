@@ -50,7 +50,6 @@ export const AddPrestasiModal: React.FC<AddPrestasiModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Calculate estimated bonus points based on tingkat & peringkat
   const calculatedPoints = useMemo(() => {
     if (peringkat === 'JUARA_1') {
       return tingkat === 'INTERNASIONAL' ? 25 : tingkat === 'NASIONAL' ? 20 : tingkat === 'PROVINSI' ? 15 : 10;
@@ -128,7 +127,6 @@ export const AddPrestasiModal: React.FC<AddPrestasiModalProps> = ({
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
         className="bg-white rounded-xl shadow-2xl border border-slate-100 w-[92vw] max-w-xl overflow-hidden my-auto max-h-[92dvh] flex flex-col"
       >
-        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-linear-to-r from-emerald-50 via-teal-50 to-white">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-sm">
@@ -147,7 +145,6 @@ export const AddPrestasiModal: React.FC<AddPrestasiModalProps> = ({
           </button>
         </div>
 
-        {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {errorMsg && (
             <div className="p-3 text-xs bg-rose-50 text-rose-700 border border-rose-200 rounded-md flex items-center gap-2">
@@ -155,7 +152,6 @@ export const AddPrestasiModal: React.FC<AddPrestasiModalProps> = ({
             </div>
           )}
 
-          {/* Eskul Selection */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               Cabang Ekstrakurikuler <span className="text-rose-500">*</span>
@@ -174,7 +170,6 @@ export const AddPrestasiModal: React.FC<AddPrestasiModalProps> = ({
             </select>
           </div>
 
-          {/* Student Search & Selection */}
           <div className="relative">
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               Siswa Peraih Prestasi <span className="text-rose-500">*</span>
@@ -251,7 +246,6 @@ export const AddPrestasiModal: React.FC<AddPrestasiModalProps> = ({
             )}
           </div>
 
-          {/* Nama Lomba & Penyelenggara */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -281,7 +275,6 @@ export const AddPrestasiModal: React.FC<AddPrestasiModalProps> = ({
             </div>
           </div>
 
-          {/* Tingkat & Peringkat */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -317,7 +310,6 @@ export const AddPrestasiModal: React.FC<AddPrestasiModalProps> = ({
             </div>
           </div>
 
-          {/* Tanggal & Poin Bonus Pill */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -343,7 +335,6 @@ export const AddPrestasiModal: React.FC<AddPrestasiModalProps> = ({
             </div>
           </div>
 
-          {/* Keterangan */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               Catatan / Detail Prestasi
@@ -357,7 +348,6 @@ export const AddPrestasiModal: React.FC<AddPrestasiModalProps> = ({
             />
           </div>
 
-          {/* Footer Actions */}
           <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
             <button
               type="button"

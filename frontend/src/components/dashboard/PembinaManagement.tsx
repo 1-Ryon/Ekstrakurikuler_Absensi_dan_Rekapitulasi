@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { Guru, Eskul } from '../../types';
 import { UserAvatar } from '../common/UserAvatar';
+import { ConfirmDeleteModal } from '../modals/ConfirmDeleteModal';
 import {
   Card,
   CardHeader,
@@ -64,20 +65,18 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+  const [deletingPembina, setDeletingPembina] = useState<Guru | null>(null);
 
   const togglePasswordVisibility = (id: string) => {
     setVisiblePasswords((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // Compute statistics
   const totalPembina = pembinaList.length;
   const activePembina = pembinaList.filter(p => p.statusAktif !== false).length;
   const coachedEskulCount = eskulList.filter(e => e.pembinaId).length;
 
-  // Filtered list
   const filteredList = useMemo(() => {
     return pembinaList.filter((p) => {
-      // Search query
       const matchesSearch = 
         p.namaLengkap.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.nip.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -87,13 +86,11 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
 
       if (!matchesSearch) return false;
 
-      // Eskul Filter
       if (selectedEskulFilter !== 'ALL') {
         const hasEskul = p.eskulDiampu?.some(e => e.id === selectedEskulFilter || e.namaEskul === selectedEskulFilter);
         if (!hasEskul) return false;
       }
 
-      // Status Filter
       if (selectedStatusFilter === 'AKTIF' && p.statusAktif === false) return false;
       if (selectedStatusFilter === 'NON_AKTIF' && p.statusAktif !== false) return false;
 
@@ -105,7 +102,6 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Top Header Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -145,7 +141,6 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
         </div>
       </div>
 
-      {/* Summary KPI Bento Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Card className="p-4 flex items-center justify-between">
           <div>
@@ -190,9 +185,7 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
         </Card>
       </div>
 
-      {/* Search, Filter, & View Mode Bar */}
       <Card className="p-3 flex flex-col md:flex-row md:items-center justify-between gap-3">
-        {/* Search Input */}
         <div className="relative flex-1 max-w-md">
           <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -203,9 +196,7 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
           />
         </div>
 
-        {/* Action Controls */}
         <div className="flex items-center gap-2">
-          {/* Filter Trigger Button */}
           <Button
             variant="outline"
             size="sm"
@@ -225,7 +216,6 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
             )}
           </Button>
 
-          {/* View Mode Toggle */}
           <div className="flex items-center bg-muted p-1 rounded-md border border-border">
             <Button
               variant={viewMode === 'table' ? 'secondary' : 'ghost'}
@@ -249,7 +239,6 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
         </div>
       </Card>
 
-      {/* Filter Modal Dialog */}
       {isFilterModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
           <Card className="max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-150">
@@ -269,7 +258,6 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
             </div>
 
             <div className="space-y-4 text-xs">
-              {/* Filter Eskul */}
               <div>
                 <label className="font-medium text-foreground block mb-1.5">Cabang Eskul Binaan</label>
                 <select
@@ -286,7 +274,6 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
                 </select>
               </div>
 
-              {/* Filter Status */}
               <div>
                 <label className="font-medium text-foreground block mb-1.5">Status Akun</label>
                 <select
@@ -324,7 +311,6 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
         </div>
       )}
 
-      {/* Main Content: Table or Grid */}
       {filteredList.length === 0 ? (
         <Card className="p-12 text-center">
           <div className="w-12 h-12 rounded-full bg-muted text-muted-foreground flex items-center justify-center mx-auto mb-3">
@@ -336,7 +322,6 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
           </p>
         </Card>
       ) : viewMode === 'table' ? (
-        /* TABLE VIEW */
         <Card className="overflow-hidden">
           <Table>
             <TableHeader>
@@ -351,14 +336,12 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
             </TableHeader>
             <TableBody>
               {filteredList.map((pembina) => {
-                // Resolve coached eskul names
                 const coachedEskuls = eskulList.filter(
                   (e) => e.pembinaId === pembina.id || (e.pembinaNama && e.pembinaNama.toLowerCase() === pembina.namaLengkap.toLowerCase())
                 );
 
                 return (
                   <TableRow key={pembina.id} className="hover:bg-muted/40 transition-colors">
-                    {/* Name & Avatar */}
                     <TableCell className="py-3.5 px-4">
                       <div className="flex items-center gap-3">
                         <UserAvatar
@@ -381,7 +364,6 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
                       </div>
                     </TableCell>
 
-                    {/* Coached Eskuls */}
                     <TableCell className="py-3.5 px-4">
                       {coachedEskuls.length > 0 ? (
                         <div className="flex flex-wrap gap-1.5">
@@ -414,7 +396,6 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
                       )}
                     </TableCell>
 
-                    {/* Login Credentials */}
                     <TableCell className="py-3.5 px-4">
                       <div className="space-y-1">
                         <div className="flex items-center gap-1.5 font-mono text-xs">
@@ -448,7 +429,6 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
                       </div>
                     </TableCell>
 
-                    {/* Contacts */}
                     <TableCell className="py-3.5 px-4">
                       <div className="space-y-1 text-xs">
                         {pembina.noHp && pembina.noHp !== '-' ? (
@@ -473,7 +453,6 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
                       </div>
                     </TableCell>
 
-                    {/* Status */}
                     <TableCell className="py-3.5 px-4 text-center">
                       <Badge
                         variant={pembina.statusAktif !== false ? 'success' : 'outline'}
@@ -488,7 +467,6 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
                       </Badge>
                     </TableCell>
 
-                    {/* Actions */}
                     <TableCell className="py-3.5 px-4 text-right whitespace-nowrap min-w-[100px]">
                       <div className="flex items-center justify-end gap-1">
                         <Button
@@ -503,11 +481,7 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => {
-                            if (confirm(`Yakin ingin menghapus data pembina "${pembina.namaLengkap}"?`)) {
-                              onDeletePembina(pembina.id);
-                            }
-                          }}
+                          onClick={() => setDeletingPembina(pembina)}
                           className="size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                           title="Hapus Pembina"
                         >
@@ -522,7 +496,6 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
           </Table>
         </Card>
       ) : (
-        /* BENTO GRID VIEW */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredList.map((pembina) => {
             const coachedEskuls = eskulList.filter(
@@ -565,7 +538,6 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
                     </div>
                   )}
 
-                  {/* Coached Eskuls */}
                   <div className="mt-3.5 space-y-1.5">
                     <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                       Cabang Eskul Binaan:
@@ -588,7 +560,6 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
                     </div>
                   </div>
 
-                  {/* Credentials & Contact */}
                   <div className="mt-4 pt-3 border-t border-border space-y-2 text-xs text-muted-foreground">
                     <div className="flex items-center justify-between">
                       <span>Username:</span>
@@ -632,7 +603,6 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
                   </div>
                 </div>
 
-                {/* Footer Actions */}
                 <div className="mt-4 pt-3 border-t border-border flex items-center justify-end gap-2">
                   <Button
                     variant="outline"
@@ -646,11 +616,7 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => {
-                      if (confirm(`Yakin ingin menghapus data pembina "${pembina.namaLengkap}"?`)) {
-                        onDeletePembina(pembina.id);
-                      }
-                    }}
+                    onClick={() => setDeletingPembina(pembina)}
                     className="size-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                     title="Hapus"
                   >
@@ -662,6 +628,21 @@ export const PembinaManagement: React.FC<PembinaManagementProps> = ({
           })}
         </div>
       )}
+
+      <ConfirmDeleteModal
+        isOpen={!!deletingPembina}
+        onClose={() => setDeletingPembina(null)}
+        onConfirm={() => {
+          if (deletingPembina) {
+            onDeletePembina(deletingPembina.id);
+            setDeletingPembina(null);
+          }
+        }}
+        title="Hapus Data Pembina"
+        itemName={deletingPembina?.namaLengkap}
+        itemType="Pembina Ekstrakurikuler"
+        description="Apakah Anda yakin ingin menghapus data pembina ini? Hak akses pembinaan dan tugas pembina pada eskul terkait akan dihentikan."
+      />
     </div>
   );
 };

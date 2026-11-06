@@ -60,7 +60,6 @@ export const ImportGuruModal: React.FC<ImportGuruModalProps> = ({
     const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     if (lines.length === 0) return [];
 
-    // Check if first line is header
     const firstLineLower = lines[0].toLowerCase();
     const hasHeader = 
       firstLineLower.includes('nip') || 
@@ -70,7 +69,6 @@ export const ImportGuruModal: React.FC<ImportGuruModalProps> = ({
     const dataLines = hasHeader ? lines.slice(1) : lines;
 
     return dataLines.map((line) => {
-      // Support tab (Excel copy-paste), semicolon, or comma
       const cols = line.includes('\t') 
         ? line.split('\t') 
         : line.includes(';') 
@@ -187,7 +185,6 @@ export const ImportGuruModal: React.FC<ImportGuruModalProps> = ({
         className="bg-white rounded-lg w-[92vw] max-w-2xl p-4 sm:p-6 shadow-xl border border-slate-200 max-h-[92dvh] flex flex-col justify-between animate-in fade-in zoom-in-95 duration-150"
       >
         <div>
-          {/* Header */}
           <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-100">
             <div className="flex items-center gap-3">
               <div className="size-9 rounded-md bg-emerald-50 border border-emerald-200 text-[#00B884] flex items-center justify-center shrink-0">
@@ -210,7 +207,6 @@ export const ImportGuruModal: React.FC<ImportGuruModalProps> = ({
             </button>
           </div>
 
-          {/* Panduan Akun Login Otomatis */}
           <div className="p-3.5 bg-emerald-50/70 border border-emerald-200/80 rounded-md mb-4 text-xs">
             <div className="flex items-start gap-2.5">
               <KeyRound className="size-4 text-emerald-700 shrink-0 mt-0.5" />
@@ -225,7 +221,6 @@ export const ImportGuruModal: React.FC<ImportGuruModalProps> = ({
             </div>
           </div>
 
-          {/* Action Tabs: File Upload or Paste Excel */}
           <div className="flex items-center gap-2 mb-3">
             <div className="flex items-center gap-1.5 p-0.5 bg-slate-100 rounded-md text-xs">
               <button
@@ -273,7 +268,6 @@ export const ImportGuruModal: React.FC<ImportGuruModalProps> = ({
             </div>
           </div>
 
-          {/* Input Area */}
           {!useTextInput ? (
             <div className="border-2 border-dashed border-slate-300 hover:border-[#00B884] rounded-md p-6 text-center transition-all bg-slate-50/50">
               <input
@@ -310,7 +304,6 @@ export const ImportGuruModal: React.FC<ImportGuruModalProps> = ({
             </div>
           )}
 
-          {/* Error Message */}
           {errorMessage && (
             <div className="mt-3 p-3 bg-rose-50 border border-rose-200 rounded-md flex items-center gap-2 text-rose-700 text-xs">
               <AlertCircle className="size-4 shrink-0" />
@@ -318,7 +311,6 @@ export const ImportGuruModal: React.FC<ImportGuruModalProps> = ({
             </div>
           )}
 
-          {/* Summary Preview After Success */}
           {importSummary && (
             <div className="mt-4 p-3.5 bg-emerald-50 border border-emerald-200 rounded-md">
               <div className="flex items-center justify-between mb-2">
@@ -357,7 +349,6 @@ export const ImportGuruModal: React.FC<ImportGuruModalProps> = ({
           )}
         </div>
 
-        {/* Footer Actions */}
         <div className="flex items-center justify-end gap-2.5 pt-4 mt-4 border-t border-slate-100">
           <button
             type="button"

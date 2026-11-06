@@ -1,14 +1,10 @@
 import { Router } from 'express';
 import { requireRoles } from '../middlewares/auth.js';
 import { prisma } from '../config/prisma.js';
+import { computeFinalScore, calculatePredicate } from '../utils/scoring.js';
 
 const router = Router();
 
-// ==========================================
-// PENILAIAN RAPOR EKSTRAKURIKULER
-// ==========================================
-
-// 1. GET /api/penilaian: Rekap nilai rapor ekstrakurikuler
 router.get('/', async (req, res) => {
   try {
     const records = await prisma.penilaian.findMany({
@@ -44,7 +40,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 2. POST /api/penilaian: Batch input/update nilai rapor (Formula Kurikulum Merdeka)
 router.post('/', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, res) => {
   try {
     const { items } = req.body;
@@ -55,7 +50,6 @@ router.post('/', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, re
     let savedCount = 0;
     const savedItems = [];
     for (const item of items) {
-      // Resolve siswa by id, nis, or nisn
       const siswa = await prisma.siswa.findFirst({
         where: {
           OR: [
@@ -66,7 +60,6 @@ router.post('/', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, re
         },
       });
 
-      // Resolve eskul by id or name
       const eskul = await prisma.eskul.findFirst({
         where: {
           OR: [
@@ -79,23 +72,26 @@ router.post('/', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, re
 
       if (!siswa || !eskul) continue;
 
-      const rawKehadiran = Number(item.nilaiKehadiran);
-      const rawKeaktifan = Number(item.nilaiKeaktifan);
-      const rawKinerja = Number(item.nilaiKinerja);
-      const rawPrestasi = Number(item.poinPrestasi);
+      if (req.user?.role === 'PEMBINA' && eskul.pembinaId !== req.user.id) {
+        return res.status(403).json({
+          success: false,
+          message: `Akses ditolak: Anda bukan pembina resmi ekstrakurikuler ${eskul.namaEskul}.`,
+        });
+      }
 
-      const kehadiran = Math.min(100, Math.max(0, isNaN(rawKehadiran) ? 90 : rawKehadiran));
-      const keaktifan = Math.min(100, Math.max(0, isNaN(rawKeaktifan) ? 85 : rawKeaktifan));
-      const kinerja = Math.min(100, Math.max(0, isNaN(rawKinerja) ? 85 : rawKinerja));
-      const prestasi = Math.min(25, Math.max(0, isNaN(rawPrestasi) ? 0 : rawPrestasi));
+      const calculated = computeFinalScore({
+        nilaiKehadiran: item.nilaiKehadiran !== undefined ? item.nilaiKehadiran : 90,
+        nilaiKeaktifan: item.nilaiKeaktifan !== undefined ? item.nilaiKeaktifan : 85,
+        nilaiKinerja: item.nilaiKinerja !== undefined ? item.nilaiKinerja : 85,
+        poinPrestasi: item.poinPrestasi !== undefined ? item.poinPrestasi : 0,
+      });
 
-      const rawFinalScore = item.nilaiAkhir !== undefined && !isNaN(Number(item.nilaiAkhir))
-        ? Number(item.nilaiAkhir)
-        : Math.min(100, Math.round((kehadiran * 0.4 + keaktifan * 0.25 + kinerja * 0.25 + prestasi) * 10) / 10);
-      const finalScore = Math.min(100, Math.max(0, Math.round(rawFinalScore * 10) / 10));
+      const finalScore = item.nilaiAkhir !== undefined && !isNaN(Number(item.nilaiAkhir))
+        ? Math.min(100, Math.max(0, Math.round(Number(item.nilaiAkhir) * 10) / 10))
+        : calculated.nilaiAkhir;
 
-      const finalPredikat = item.predikat || (finalScore >= 90 ? 'A' : finalScore >= 80 ? 'B' : finalScore >= 70 ? 'C' : 'D');
-      const ratingKeaktifan = item.ratingKeaktifan || (keaktifan >= 88 ? 'Sangat Baik' : keaktifan >= 75 ? 'Baik' : 'Cukup');
+      const finalPredikat = item.predikat || calculatePredicate(finalScore);
+      const ratingKeaktifan = item.ratingKeaktifan || (calculated.nilaiKeaktifan >= 88 ? 'Sangat Baik' : calculated.nilaiKeaktifan >= 75 ? 'Baik' : 'Cukup');
 
       const saved = await prisma.penilaian.upsert({
         where: {
@@ -107,11 +103,11 @@ router.post('/', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, re
           },
         },
         update: {
-          nilaiKehadiran: kehadiran,
-          nilaiKeaktifan: keaktifan,
+          nilaiKehadiran: calculated.nilaiKehadiran,
+          nilaiKeaktifan: calculated.nilaiKeaktifan,
           ratingKeaktifan,
-          nilaiKinerja: kinerja,
-          poinPrestasi: prestasi,
+          nilaiKinerja: calculated.nilaiKinerja,
+          poinPrestasi: calculated.poinPrestasi,
           nilaiAkhir: finalScore,
           predikat: finalPredikat,
           capaianKompetensi: item.catatan || item.capaianKompetensi || '',
@@ -121,11 +117,11 @@ router.post('/', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, re
           siswaId: siswa.id,
           semester: item.semester || 1,
           tahunAjaran: item.tahunAjaran || '2026/2027',
-          nilaiKehadiran: kehadiran,
-          nilaiKeaktifan: keaktifan,
+          nilaiKehadiran: calculated.nilaiKehadiran,
+          nilaiKeaktifan: calculated.nilaiKeaktifan,
           ratingKeaktifan,
-          nilaiKinerja: kinerja,
-          poinPrestasi: prestasi,
+          nilaiKinerja: calculated.nilaiKinerja,
+          poinPrestasi: calculated.poinPrestasi,
           nilaiAkhir: finalScore,
           predikat: finalPredikat,
           capaianKompetensi: item.catatan || item.capaianKompetensi || '',

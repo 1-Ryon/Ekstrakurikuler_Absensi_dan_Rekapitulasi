@@ -25,10 +25,13 @@ import {
   ChevronLeft,
   ChevronRight,
   ExternalLink,
-  ChevronDown
+  ChevronDown,
+  GraduationCap,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { StudentProfile, Eskul, Role } from '../../types';
+import { StudentProfile, Eskul, Role, Kelas } from '../../types';
+import { api } from '../../services/api';
 import { StudentCardModal } from '../modals/StudentCardModal';
 import { UserAvatar } from '../common/UserAvatar';
 import {
@@ -51,6 +54,8 @@ import {
 interface StudentManagementProps {
   students: StudentProfile[];
   eskulList: Eskul[];
+  kelasList?: Kelas[];
+  onRefreshStudents?: () => void;
   onAssignEskul: (studentId: string, eskulIds: string[]) => void;
   onAddStudent: () => void;
   defaultClasses?: string[];
@@ -64,6 +69,8 @@ type ViewMode = 'table' | 'grid';
 export const StudentManagement: React.FC<StudentManagementProps> = ({
   students,
   eskulList,
+  kelasList = [],
+  onRefreshStudents,
   onAssignEskul,
   onAddStudent,
   defaultClasses = [],
@@ -71,7 +78,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   currentRole = 'ADMIN',
 }) => {
   const isKoordinator = currentRole === 'ADMIN' || currentRole === 'KOORDINATOR';
-  // Search & Filter States
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClasses, setSelectedClasses] = useState<string[]>(defaultClasses);
   const [selectedEskulFilters, setSelectedEskulFilters] = useState<string[]>(defaultEskuls);
@@ -79,25 +85,51 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
 
-  // Multi-Selection State
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
 
-  // Password visibility map (studentId -> boolean)
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(10);
 
-  // Modals
   const [editingStudent, setEditingStudent] = useState<StudentProfile | null>(null);
   const [selectedEskulsForEdit, setSelectedEskulsForEdit] = useState<string[]>([]);
   const [cardModalStudent, setCardModalStudent] = useState<StudentProfile | null>(null);
   const [isBatchCardModalOpen, setIsBatchCardModalOpen] = useState(false);
   const [batchModalStudents, setBatchModalStudents] = useState<StudentProfile[]>([]);
 
-  // Sync default filter props
+  const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
+  const [targetKelasId, setTargetKelasId] = useState('');
+  const [isPromoting, setIsPromoting] = useState(false);
+  const [promoteSuccessMsg, setPromoteSuccessMsg] = useState<string | null>(null);
+  const [promoteErrorMsg, setPromoteErrorMsg] = useState<string | null>(null);
+
+  const handleBatchPromoteClass = async () => {
+    if (!targetKelasId) {
+      setPromoteErrorMsg('Silakan pilih kelas tujuan terlebih dahulu.');
+      return;
+    }
+    setIsPromoting(true);
+    setPromoteErrorMsg(null);
+    try {
+      const res = await api.batchUpdateStudentClass(selectedStudentIds, targetKelasId);
+      setPromoteSuccessMsg(res.message || 'Kenaikan/Pindah kelas berhasil diproses!');
+      if (onRefreshStudents) {
+        onRefreshStudents();
+      }
+      setTimeout(() => {
+        setIsPromoteModalOpen(false);
+        setPromoteSuccessMsg(null);
+        setSelectedStudentIds([]);
+      }, 1500);
+    } catch (err: any) {
+      setPromoteErrorMsg(err.message || 'Gagal memproses kenaikan kelas.');
+    } finally {
+      setIsPromoting(false);
+    }
+  };
+
   React.useEffect(() => {
     if (defaultClasses.length > 0) setSelectedClasses(defaultClasses);
   }, [defaultClasses.join(',')]);
@@ -106,7 +138,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
     if (defaultEskuls.length > 0) setSelectedEskulFilters(defaultEskuls);
   }, [defaultEskuls.join(',')]);
 
-  // Available classes computed dynamically from students + standard SMK classes
   const availableClasses = useMemo(() => {
     const set = new Set<string>();
     students.forEach(s => {
@@ -116,7 +147,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
     return Array.from(set).sort();
   }, [students]);
 
-  // Overall Statistics for KPI Cards
   const stats = useMemo(() => {
     const total = students.length;
     const withEskul = students.filter(s => s.enrolledEskulIds && s.enrolledEskulIds.length > 0);
@@ -137,24 +167,19 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
     };
   }, [students]);
 
-  // Filter Logic
   const filteredStudents = useMemo(() => {
     return students.filter((s) => {
-      // 1. Search filter
       const search = searchTerm.toLowerCase().trim();
       const nis = (s.nis || s.nomorInduk || '').toLowerCase();
       const nisn = (s.nisn || '').toLowerCase();
       const name = s.namaLengkap.toLowerCase();
       const matchesSearch = !search || name.includes(search) || nis.includes(search) || nisn.includes(search);
 
-      // 2. Class filter
       const matchesClass = selectedClasses.length === 0 || selectedClasses.includes(s.kelas);
 
-      // 3. Eskul filter
       const matchesEskul = selectedEskulFilters.length === 0 || 
         selectedEskulFilters.some(id => s.enrolledEskulIds?.includes(id));
 
-      // 4. Quick filter tab
       let matchesQuick = true;
       if (quickFilter === 'WITH_ESKUL') {
         matchesQuick = (s.enrolledEskulIds?.length || 0) > 0;
@@ -168,7 +193,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
     });
   }, [students, searchTerm, selectedClasses, selectedEskulFilters, quickFilter]);
 
-  // Pagination slice
   const paginatedStudents = useMemo(() => {
     if (pageSize === -1) return filteredStudents;
     const start = (currentPage - 1) * pageSize;
@@ -177,22 +201,18 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
 
   const totalPages = pageSize === -1 ? 1 : Math.max(1, Math.ceil(filteredStudents.length / pageSize));
 
-  // Reset page on filter changes
   React.useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, selectedClasses, selectedEskulFilters, quickFilter, pageSize]);
 
-  // Selection handlers
   const isAllSelected = paginatedStudents.length > 0 && paginatedStudents.every(s => selectedStudentIds.includes(s.id));
   const isIndeterminate = paginatedStudents.some(s => selectedStudentIds.includes(s.id)) && !isAllSelected;
 
   const handleToggleSelectAll = () => {
     if (isAllSelected) {
-      // Unselect all on current page
       const pageIds = paginatedStudents.map(s => s.id);
       setSelectedStudentIds(prev => prev.filter(id => !pageIds.includes(id)));
     } else {
-      // Select all on current page
       const pageIds = paginatedStudents.map(s => s.id);
       setSelectedStudentIds(prev => Array.from(new Set([...prev, ...pageIds])));
     }
@@ -208,19 +228,16 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
     setSelectedStudentIds([]);
   };
 
-  // Clipboard copy helper
   const handleCopyText = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
     setCopiedKey(key);
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  // Password toggle
   const togglePasswordVisibility = (studentId: string) => {
     setVisiblePasswords(prev => ({ ...prev, [studentId]: !prev[studentId] }));
   };
 
-  // Assign modal
   const openAssignModal = (student: StudentProfile) => {
     setEditingStudent(student);
     setSelectedEskulsForEdit([...(student.enrolledEskulIds || [])]);
@@ -241,7 +258,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
     }
   };
 
-  // Batch Print Selected Students
   const handlePrintSelected = () => {
     const selectedList = students.filter(s => selectedStudentIds.includes(s.id));
     if (selectedList.length === 0) return;
@@ -249,7 +265,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
     setIsBatchCardModalOpen(true);
   };
 
-  // Batch Print All Filtered
   const handlePrintAllFiltered = () => {
     if (filteredStudents.length === 0) return;
     setBatchModalStudents(filteredStudents);
@@ -260,7 +275,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
 
   return (
     <div className="space-y-6 pb-16">
-      {/* 1. Header & Title Section */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -276,7 +290,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
           </p>
         </div>
 
-        {/* Global Action Buttons */}
         <div className="flex flex-wrap items-center gap-2.5">
           <Button
             type="button"
@@ -305,9 +318,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
         </div>
       </div>
 
-      {/* 2. KPI Summary Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-        {/* Card 1: Total Siswa */}
         <Card className="p-4 sm:p-5 flex items-center gap-3.5 border-border">
           <div className="w-10 h-10 rounded-md bg-emerald-50 text-primary flex items-center justify-center shrink-0">
             <Users className="size-5" />
@@ -325,7 +336,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
           </div>
         </Card>
 
-        {/* Card 2: Partisipasi Eskul */}
         <Card className="p-4 sm:p-5 flex items-center gap-3.5 border-border">
           <div className="w-10 h-10 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
             <Award className="size-5" />
@@ -342,7 +352,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
           </div>
         </Card>
 
-        {/* Card 3: Belum Memilih Eskul */}
         <Card 
           onClick={() => setQuickFilter(quickFilter === 'WITHOUT_ESKUL' ? 'ALL' : 'WITHOUT_ESKUL')}
           className={`p-4 sm:p-5 flex items-center gap-3.5 cursor-pointer transition-colors ${
@@ -367,7 +376,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
           </div>
         </Card>
 
-        {/* Card 4: Rata-Rata Presensi */}
         <Card className="p-4 sm:p-5 flex items-center gap-3.5 border-border">
           <div className="w-10 h-10 rounded-md bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
             <CalendarCheck className="size-5" />
@@ -384,10 +392,8 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
         </Card>
       </div>
 
-      {/* 3. Controls Toolbar: Search, Quick Tabs, Filters & View Toggle */}
       <Card className="p-4 border-border space-y-3.5">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-          {/* Search Box */}
           <div className="relative flex-1 max-w-md">
             <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -408,9 +414,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
             )}
           </div>
 
-          {/* Right Toolbar: View Toggle & Advanced Filter */}
           <div className="flex items-center gap-2 shrink-0">
-            {/* Filter Dialog Trigger */}
             <Button
               type="button"
               variant={activeFilterCount > 0 ? "brand" : "outline"}
@@ -427,7 +431,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
               )}
             </Button>
 
-            {/* View Mode Toggle */}
             <div className="flex items-center bg-muted p-1 rounded-md border border-border">
               <button
                 type="button"
@@ -457,7 +460,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
           </div>
         </div>
 
-        {/* Quick Filter Segmentation Tabs */}
         <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border">
           <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mr-1">Status:</span>
           
@@ -501,7 +503,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
             Presensi &lt;80% ({stats.lowAttendanceCount})
           </Button>
 
-          {/* Active Applied Filter Badges */}
           {activeFilterCount > 0 && (
             <div className="flex flex-wrap items-center gap-1.5 ml-auto">
               {selectedClasses.map((cls) => (
@@ -535,7 +536,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
         </div>
       </Card>
 
-      {/* 4. Main Data Display (Table or Grid View) */}
       {filteredStudents.length === 0 ? (
         <Card className="p-12 text-center border-border">
           <div className="w-12 h-12 rounded-md bg-muted text-muted-foreground flex items-center justify-center mx-auto mb-3">
@@ -561,13 +561,11 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
           </Button>
         </Card>
       ) : viewMode === 'table' ? (
-        /* TABLE VIEW */
         <Card className="border-border overflow-hidden">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="border-b border-slate-200 bg-slate-50/75 hover:bg-slate-50/75 text-slate-500 font-bold text-xs uppercase tracking-wider">
-                  {/* Checkbox Select All */}
                   <TableHead className="w-10 text-center py-3">
                     <input
                       type="checkbox"
@@ -604,7 +602,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                         isSelected ? 'bg-primary/5 hover:bg-primary/10' : ''
                       }`}
                     >
-                      {/* Checkbox Single */}
                       <TableCell className="py-3 px-4 text-center">
                         <input
                           type="checkbox"
@@ -614,7 +611,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                         />
                       </TableCell>
 
-                      {/* Profil Siswa */}
                       <TableCell className="py-3 px-4">
                         <div className="flex items-center gap-3">
                           <UserAvatar
@@ -647,14 +643,12 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                         </div>
                       </TableCell>
 
-                      {/* Kelas (No wrapping) */}
                       <TableCell className="py-3 px-4 whitespace-nowrap">
                         <Badge variant="outline" className="font-semibold text-xs">
                           {student.kelas || 'Belum Ada'}
                         </Badge>
                       </TableCell>
 
-                      {/* Eskul Terdaftar */}
                       <TableCell className="py-3 px-4">
                         <div className="flex flex-wrap items-center gap-1.5 max-w-xs">
                           {enrolledEskuls.length > 0 ? (
@@ -681,7 +675,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                         </div>
                       </TableCell>
 
-                      {/* Presensi Micro Progress */}
                       <TableCell className="py-3 px-4 whitespace-nowrap">
                         <div className="space-y-1">
                           <div className="flex items-center justify-between text-xs font-bold text-foreground">
@@ -707,7 +700,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                         </div>
                       </TableCell>
 
-                      {/* Kredensial Login atau Status Akun */}
                       {isKoordinator ? (
                         <TableCell className="py-3 px-4 whitespace-nowrap">
                           <div className="space-y-1">
@@ -767,7 +759,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                         </TableCell>
                       )}
 
-                      {/* Status */}
                       <TableCell className="py-3 px-4 text-center whitespace-nowrap">
                         {student.statusAktif ? (
                           <Badge variant="success" className="gap-1.5">
@@ -782,10 +773,8 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                         )}
                       </TableCell>
 
-                      {/* Aksi */}
                       <TableCell className="py-3 px-4 text-right whitespace-nowrap min-w-[100px]">
                         <div className="flex items-center justify-end gap-1.5">
-                          {/* Tombol Cetak / Tampilkan Kartu QR Siswa */}
                           <Button
                             type="button"
                             variant="secondary"
@@ -798,7 +787,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                             <span className="hidden sm:inline">Kartu QR</span>
                           </Button>
 
-                          {/* Tombol Tetapkan Eskul */}
                           <Button
                             type="button"
                             variant="outline"
@@ -819,7 +807,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
             </Table>
           </div>
 
-          {/* Table Footer with Pagination Controls */}
           <div className="p-3.5 bg-muted/30 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-muted-foreground">
             <div className="flex items-center gap-3">
               <span>
@@ -842,7 +829,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
               </div>
             </div>
 
-            {/* Pagination Buttons */}
             {totalPages > 1 && (
               <div className="flex items-center gap-1.5">
                 <Button
@@ -875,7 +861,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
           </div>
         </Card>
       ) : (
-        /* GRID / CARD VIEW */
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {paginatedStudents.map((student) => {
             const enrolledEskuls = eskulList.filter(e => student.enrolledEskulIds?.includes(e.id));
@@ -890,7 +875,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                   isSelected ? 'border-primary ring-1 ring-primary/20 bg-primary/5' : 'hover:border-primary/40'
                 }`}
               >
-                {/* Card Top: Checkbox, Class & Status */}
                 <div>
                   <div className="flex items-center justify-between pb-3 border-b border-border">
                     <div className="flex items-center gap-2.5">
@@ -911,7 +895,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                     </Badge>
                   </div>
 
-                  {/* Card Center: Avatar & Info */}
                   <div className="flex items-start gap-3.5 my-3.5">
                     <UserAvatar
                       name={student.namaLengkap}
@@ -921,7 +904,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                       <h4 className="font-bold text-foreground text-sm truncate">{student.namaLengkap}</h4>
                       <p className="text-xs text-muted-foreground font-mono mt-0.5">NIS: {studentNis}</p>
                       
-                      {/* Attendance Bar */}
                       <div className="mt-2 space-y-1">
                         <div className="flex items-center justify-between text-[11px]">
                           <span className="text-muted-foreground">Kehadiran Eskul:</span>
@@ -939,7 +921,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                     </div>
                   </div>
 
-                  {/* Card Eskuls */}
                   <div className="space-y-1.5 mb-3.5">
                     <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Eskul Terdaftar:</span>
                     <div className="flex flex-wrap gap-1.5">
@@ -962,7 +943,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                   </div>
                 </div>
 
-                {/* Card Actions */}
                 <div className="flex items-center gap-2 pt-3 border-t border-border">
                   <Button
                     type="button"
@@ -992,7 +972,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
         </div>
       )}
 
-      {/* 5. Floating Bottom Bulk Action Bar (Visible when >= 1 student selected) */}
       <AnimatePresence>
         {selectedStudentIds.length > 0 && (
           <motion.div
@@ -1022,6 +1001,24 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
               <span>Cetak Kartu QR ({selectedStudentIds.length})</span>
             </Button>
 
+            {isKoordinator && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setTargetKelasId(kelasList[0]?.id || '');
+                  setPromoteErrorMsg(null);
+                  setPromoteSuccessMsg(null);
+                  setIsPromoteModalOpen(true);
+                }}
+                className="gap-1.5 h-7 px-3 text-xs bg-white text-slate-800 hover:bg-slate-100 border-slate-300"
+              >
+                <GraduationCap className="size-3.5 text-emerald-600" />
+                <span>Naik / Pindah Kelas ({selectedStudentIds.length})</span>
+              </Button>
+            )}
+
             <Button
               type="button"
               variant="ghost"
@@ -1035,7 +1032,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
         )}
       </AnimatePresence>
 
-      {/* 6. Modal Filter Spesifik (Kelas & Eskul) */}
       <AnimatePresence>
         {isFilterModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -1072,7 +1068,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                 </button>
               </div>
 
-              {/* Filter Kelas */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-foreground uppercase tracking-wider">
@@ -1122,7 +1117,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                 </div>
               </div>
 
-              {/* Filter Eskul */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-foreground uppercase tracking-wider">
@@ -1172,7 +1166,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                 </div>
               </div>
 
-              {/* Modal Actions */}
               <div className="flex items-center justify-between pt-3 border-t border-border">
                 <Button
                   type="button"
@@ -1201,7 +1194,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
         )}
       </AnimatePresence>
 
-      {/* 7. Modal Multi-Select Assign Eskul */}
       {editingStudent && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-background rounded-lg max-w-lg w-full p-5 shadow-xl border border-border animate-in fade-in zoom-in-95 duration-150">
@@ -1252,7 +1244,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
               </div>
             </div>
 
-            {/* Checkboxes List */}
             <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
               {eskulList.map((eskul) => {
                 const isSelected = selectedEskulsForEdit.includes(eskul.id);
@@ -1290,7 +1281,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
               })}
             </div>
 
-            {/* Modal Actions */}
             <div className="flex items-center justify-end gap-2.5 mt-5 pt-3.5 border-t border-border">
               <Button
                 type="button"
@@ -1313,7 +1303,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
         </div>
       )}
 
-      {/* 8. Modal Cetak Kartu QR Satuan Siswa */}
       <StudentCardModal
         isOpen={cardModalStudent !== null}
         onClose={() => setCardModalStudent(null)}
@@ -1322,7 +1311,6 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
         isBatchMode={false}
       />
 
-      {/* 9. Modal Cetak Massal Lembar A4 (Batch PDF) */}
       <StudentCardModal
         isOpen={isBatchCardModalOpen}
         onClose={() => {
@@ -1334,6 +1322,120 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
         eskulList={eskulList}
         isBatchMode={true}
       />
+
+      {isPromoteModalOpen && (
+        <div
+          onClick={() => !isPromoting && setIsPromoteModalOpen(false)}
+          className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-xl w-[92vw] max-w-md shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-emerald-100 text-emerald-700 rounded-lg">
+                  <GraduationCap className="size-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-sm">
+                    Naik Kelas / Promosi Rombel
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Perbarui tingkat rombel belajar siswa terpilih
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={isPromoting}
+                onClick={() => setIsPromoteModalOpen(false)}
+                className="size-7 rounded-md border border-slate-200 bg-white hover:bg-slate-100 flex items-center justify-center text-slate-500 cursor-pointer"
+              >
+                <X className="size-3.5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <div className="p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-lg text-xs space-y-1">
+                <span className="font-bold text-emerald-950 flex items-center gap-1.5">
+                  <CheckCircle2 className="size-3.5 text-emerald-600" />
+                  <span>{selectedStudentIds.length} Siswa Terpilih</span>
+                </span>
+                <p className="text-emerald-800 text-[11px] leading-relaxed">
+                  Riwayat absensi per sesi latihan, presensi QR lampau, dan nilai rapor (KHN) siswa pada semester sebelumnya tetap tersimpan permanen dan tidak akan hilang.
+                </p>
+              </div>
+
+              {promoteSuccessMsg && (
+                <div className="p-2.5 bg-emerald-100 border border-emerald-300 rounded text-emerald-900 text-xs font-semibold flex items-center gap-2">
+                  <Check className="size-4 text-emerald-700 shrink-0" />
+                  <span>{promoteSuccessMsg}</span>
+                </div>
+              )}
+
+              {promoteErrorMsg && (
+                <div className="p-2.5 bg-rose-50 border border-rose-200 rounded text-rose-800 text-xs flex items-center gap-2">
+                  <AlertCircle className="size-4 text-rose-600 shrink-0" />
+                  <span>{promoteErrorMsg}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                  Pilih Kelas Tujuan Baru:
+                </label>
+                <select
+                  value={targetKelasId}
+                  onChange={(e) => setTargetKelasId(e.target.value)}
+                  disabled={isPromoting}
+                  className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 font-medium"
+                >
+                  <option value="">-- Pilih Kelas Tujuan --</option>
+                  {kelasList.map((k) => (
+                    <option key={k.id} value={k.id}>
+                      {k.namaKelas} (Tingkat {k.tingkat || 10} - {k.jurusan})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isPromoting}
+                onClick={() => setIsPromoteModalOpen(false)}
+                className="text-xs h-8 cursor-pointer"
+              >
+                Batal
+              </Button>
+              <Button
+                type="button"
+                variant="brand"
+                size="sm"
+                disabled={isPromoting || !targetKelasId}
+                onClick={handleBatchPromoteClass}
+                className="text-xs h-8 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+              >
+                {isPromoting ? (
+                  <>
+                    <Loader2 className="size-3.5 animate-spin" />
+                    <span>Memproses...</span>
+                  </>
+                ) : (
+                  <>
+                    <GraduationCap className="size-3.5" />
+                    <span>Konfirmasi Naik Kelas</span>
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

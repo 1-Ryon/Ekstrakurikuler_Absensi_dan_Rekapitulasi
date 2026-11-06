@@ -28,10 +28,13 @@ import {
   Search,
   UserCheck,
   HeartPulse,
+  Camera,
+  Image as ImageIcon,
   X
 } from 'lucide-react';
 import { Eskul, SesiPertemuan, Role, User, StudentProfile, PresensiRecord } from '../../types';
 import { UserAvatar } from '../common/UserAvatar';
+import { StartAttendanceModal } from '../modals/StartAttendanceModal';
 import { api } from '../../services/api';
 
 interface DynamicQrGeneratorProps {
@@ -83,7 +86,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
 }) => {
   const isPembina = currentRole === 'PEMBINA';
 
-  // Defensive Filter: For PEMBINA, ONLY show sessions belonging to their assigned coached eskuls!
   const visibleSessions = useMemo(() => {
     if (isPembina && coachedEskulIds && coachedEskulIds.length > 0) {
       return sessions.filter(s => coachedEskulIds.includes(s.eskulId));
@@ -91,7 +93,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
     return sessions;
   }, [sessions, isPembina, coachedEskulIds]);
 
-  // If the currentSession is outside visibleSessions, auto-select the first visible session
   useEffect(() => {
     if (isPembina && visibleSessions.length > 0) {
       const isCurrentValid = visibleSessions.some(s => s.id === currentSession?.id);
@@ -101,7 +102,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
     }
   }, [visibleSessions, currentSession?.id, isPembina, onSelectSession]);
 
-  // Stepper State: 1 = QR Proyektor & Scan, 2 = Nilai Keaktifan (Tombol Skor), 3 = Izin/Sakit/Telat, 4 = Review & Kunci Log
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
 
   const [timeLeft, setTimeLeft] = useState(15);
@@ -110,8 +110,8 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
   const [soundEnabled, setSoundEnabled] = useState(true);
   const qrContainerRef = useRef<HTMLDivElement>(null);
 
-  // Modals
   const [isHolidayModalOpen, setIsHolidayModalOpen] = useState(false);
+  const [isStartAttendanceModalOpen, setIsStartAttendanceModalOpen] = useState(false);
   const [holidayReason, setHolidayReason] = useState('Hari Libur Nasional / Tanggal Merah');
   const [isLockModalOpen, setIsLockModalOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -123,17 +123,14 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  // Enrolled students in current session's eskul
   const enrolledStudents = useMemo(() => {
     if (!currentSession) return [];
     const filtered = students.filter(s => s.enrolledEskulIds?.includes(currentSession.eskulId));
     return filtered.length > 0 ? filtered : students;
   }, [students, currentSession?.eskulId]);
 
-  // Attendance Map for multi-stage workflow
   const [attendanceMap, setAttendanceMap] = useState<Record<string, StudentAttendanceItem>>({});
 
-  // Sync attendanceMap from enrolledStudents and real-time presensiLog
   useEffect(() => {
     if (!currentSession) return;
     const sessionLogs = presensiLog.filter(l => l.sesiId === currentSession.id);
@@ -170,7 +167,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
     });
   }, [currentSession?.id, enrolledStudents, presensiLog]);
 
-  // Derived lists
   const attendanceList = useMemo(() => Object.values(attendanceMap), [attendanceMap]);
   const hadirStudents = useMemo(() => attendanceList.filter(s => s.status === 'HADIR'), [attendanceList]);
   const nonHadirStudents = useMemo(() => attendanceList.filter(s => s.status !== 'HADIR'), [attendanceList]);
@@ -183,7 +179,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
 
   const isSessionLocked = currentSession ? (currentSession.isLocked || currentSession.status === 'SELESAI') : false;
 
-  // Function to generate time-based encrypted dynamic token
   const generateNewToken = () => {
     if (!currentSession) return;
     const timestamp = Math.floor(Date.now() / 15000);
@@ -192,14 +187,13 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
     setTokenPayload(token);
     setTimeLeft(15);
 
-    // Subtle audio feedback if enabled
     if (soundEnabled) {
       try {
         const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
         gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1);
         osc.connect(gain);
@@ -207,14 +201,25 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
         osc.start();
         osc.stop(audioCtx.currentTime + 0.1);
       } catch {
-        // ignore audio context restrictions
       }
     }
   };
 
-  // 15 seconds timer countdown
   useEffect(() => {
-    if (!currentSession || currentSession.status !== 'BERLANGSUNG') return;
+    if (!currentSession) return;
+    if (currentSession.status === 'BERLANGSUNG') {
+      const timestamp = Math.floor(Date.now() / 15000);
+      const salt = Math.random().toString(36).substring(2, 6).toUpperCase();
+      const freshToken = (currentSession.tokenAktif && currentSession.tokenAktif.startsWith('SMK-AMANAH:'))
+        ? currentSession.tokenAktif
+        : `SMK-AMANAH:${currentSession.id}:${timestamp}:${salt}`;
+      setTokenPayload(freshToken);
+      setTimeLeft(15);
+    }
+  }, [currentSession?.id, currentSession?.status, currentSession?.tokenAktif]);
+
+  useEffect(() => {
+    if (!currentSession || currentSession.status !== 'BERLANGSUNG' || currentStep !== 1) return;
 
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -227,7 +232,7 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [currentSession?.status, currentSession?.id, soundEnabled]);
+  }, [currentSession?.status, currentSession?.id, currentStep, soundEnabled]);
 
   const toggleFullscreen = () => {
     if (!qrContainerRef.current) return;
@@ -242,8 +247,16 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
 
   const timerPercentage = ((15 - timeLeft) / 15) * 100;
 
-  // Toggle manual presence for a student during stage 1 (if camera/phone issue)
   const handleToggleManualHadir = (studentId: string) => {
+    if (currentSession?.status === 'BELUM_DIMULAI') {
+      setIsStartAttendanceModalOpen(true);
+      showToast('Harap mulai sesi absensi dan unggah foto kegiatan terlebih dahulu.', 'error');
+      return;
+    }
+    if (isSessionLocked) {
+      showToast('Sesi sudah selesai dan terkunci.', 'error');
+      return;
+    }
     setAttendanceMap(prev => {
       const curr = prev[studentId];
       if (!curr) return prev;
@@ -261,7 +274,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
     });
   };
 
-  // Tahap 2: Rating Keaktifan Options (BUKAN BINTANG, TAPI TOMBOL SKOR RESMI)
   const ratingOptions = [
     { label: 'Luar Biasa', score: 98, color: 'bg-emerald-600 text-white' },
     { label: 'Sangat Baik', score: 92, color: 'bg-teal-600 text-white' },
@@ -293,7 +305,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
     showToast(`Semua siswa hadir disetel nilai keaktifan ${score} (${label}).`, 'success');
   };
 
-  // Tahap 3: Update Non-Hadir (Izin, Sakit, Telat, Alpa)
   const handleSetNonHadirStatus = (siswaId: string, status: 'HADIR' | 'IZIN' | 'SAKIT' | 'ALFA', isTelat = false) => {
     setAttendanceMap(prev => ({
       ...prev,
@@ -318,7 +329,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
     }));
   };
 
-  // Tahap 4: Final Submit (Kunci Sesi & Masuk ke Log Presensi Resmi Eskul)
   const handleFinalizeAndLock = async () => {
     if (!currentSession) return;
     setActionLoading(true);
@@ -359,7 +369,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
     }
   };
 
-  // Handle Mark Holiday
   const handleConfirmHoliday = async () => {
     if (!currentSession || !holidayReason.trim()) return;
     setActionLoading(true);
@@ -414,7 +423,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Toast Alert */}
       {toastMessage && (
         <div className={`fixed top-4 right-4 z-50 px-4 py-2.5 rounded-md shadow-lg border text-xs font-bold flex items-center gap-2 animate-in fade-in slide-in-from-top-2 ${
           toastMessage.type === 'success' 
@@ -426,7 +434,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
         </div>
       )}
 
-      {/* Page Title & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -446,9 +453,7 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
           </p>
         </div>
 
-        {/* Action Controls */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Audio Beep Switch */}
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
             className="p-2.5 bg-white border border-slate-200 rounded-md text-slate-600 hover:text-slate-900 shadow-2xs transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
@@ -457,7 +462,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
             <span>{soundEnabled ? 'Beep Aktif' : 'Hening'}</span>
           </button>
 
-          {/* Holiday Marker */}
           <button
             onClick={() => setIsHolidayModalOpen(true)}
             className="px-3.5 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/80 rounded-md text-xs font-bold shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer"
@@ -466,21 +470,79 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
             <span>Tandai Libur</span>
           </button>
 
-          {/* Lock & Finalize Session */}
-          <button
-            onClick={() => setIsLockModalOpen(true)}
-            className="px-4 py-2.5 bg-[#00B884] hover:bg-[#009e70] text-white rounded-md text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
-          >
-            <Lock className="w-4 h-4 text-white" />
-            <span>Kunci &amp; Selesaikan Sesi</span>
-          </button>
+          {currentSession?.status === 'BELUM_DIMULAI' ? (
+            <button
+              type="button"
+              onClick={() => setIsStartAttendanceModalOpen(true)}
+              className="px-4 py-2.5 bg-[#00B884] hover:bg-emerald-600 text-white rounded-md text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <Play className="w-4 h-4 fill-white text-white" />
+              <span>Mulai Sesi Absensi</span>
+            </button>
+          ) : currentSession?.status === 'BERLANGSUNG' ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setIsStartAttendanceModalOpen(true)}
+                className="px-3.5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-md text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                title="Perbarui judul, materi, atau foto dokumentasi kegiatan"
+              >
+                <Camera className="w-4 h-4 text-emerald-600" />
+                <span>Bukti Kegiatan</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsLockModalOpen(true)}
+                className="px-4 py-2.5 bg-[#00B884] hover:bg-[#009e70] text-white rounded-md text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <Lock className="w-4 h-4 text-white" />
+                <span>Kunci &amp; Selesaikan Sesi</span>
+              </button>
+            </>
+          ) : currentSession ? (
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-2 bg-slate-100 text-slate-700 border border-slate-200 rounded-md text-xs font-semibold flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-slate-500" />
+                <span>Sesi Terkunci</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsStartAttendanceModalOpen(true)}
+                className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Play className="w-3.5 h-3.5 fill-emerald-600 text-emerald-600" />
+                <span>Buka Ulang Absensi</span>
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
 
-      {/* Stepper Navigation: 4 Tahap Berurutan */}
+      {!currentSession ? (
+        <div className="bg-white rounded-xl border border-slate-200 p-8 text-center flex flex-col items-center justify-center shadow-xs">
+          <div className="size-16 rounded-full bg-emerald-50 text-[#00B884] flex items-center justify-center mb-4">
+            <QrCode className="size-8" />
+          </div>
+          <h3 className="text-base font-bold text-slate-800">Belum Ada Sesi Presensi Aktif Hari Ini</h3>
+          <p className="text-xs text-slate-500 mt-1 max-w-md">
+            Belum ada jadwal sesi yang aktif untuk ekstrakurikuler binaan Anda hari ini. Anda dapat membuka sesi presensi baru kapan saja.
+          </p>
+          {onOpenBukaAbsensiModal && (
+            <button
+              type="button"
+              onClick={onOpenBukaAbsensiModal}
+              className="mt-4 px-4 py-2 bg-[#00B884] hover:bg-emerald-600 text-white rounded-lg text-xs font-bold shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
+            >
+              <Play className="size-4 fill-white" />
+              <span>Buka Sesi Presensi Baru</span>
+            </button>
+          )}
+        </div>
+      ) : (
+        <>
       <div className="bg-white border border-slate-200 p-2 sm:p-2.5 rounded-lg shadow-xs">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          {/* Step 1 */}
           <button
             onClick={() => setCurrentStep(1)}
             className={`p-3 rounded-md border text-left transition-all cursor-pointer ${
@@ -500,7 +562,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
             </div>
           </button>
 
-          {/* Step 2 */}
           <button
             onClick={() => setCurrentStep(2)}
             className={`p-3 rounded-md border text-left transition-all cursor-pointer ${
@@ -520,7 +581,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
             </div>
           </button>
 
-          {/* Step 3 */}
           <button
             onClick={() => setCurrentStep(3)}
             className={`p-3 rounded-md border text-left transition-all cursor-pointer ${
@@ -540,7 +600,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
             </div>
           </button>
 
-          {/* Step 4 */}
           <button
             onClick={() => setCurrentStep(4)}
             className={`p-3 rounded-md border text-left transition-all cursor-pointer ${
@@ -562,33 +621,28 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* TAHAP 1: QR DINAMIS PROYEKTOR & LIVE SCAN SISWA                           */}
-      {/* ========================================================================= */}
       {currentStep === 1 && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Left Column: The Dynamic QR Code Box */}
             <div
               ref={qrContainerRef}
               className={`lg:col-span-7 bg-white rounded-lg border border-slate-200 p-6 sm:p-8 shadow-xs flex flex-col items-center justify-between relative transition-all ${
                 isFullscreen ? 'fixed inset-0 z-50 p-12 flex flex-col justify-center items-center bg-slate-900 text-white' : ''
               }`}
             >
-              {/* Header of QR Box */}
               <div className="w-full flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <span className={`w-3 h-3 rounded-full ${
-                    currentSession.status === 'BERLANGSUNG'
+                    currentSession?.status === 'BERLANGSUNG'
                       ? 'bg-emerald-500 animate-ping'
-                      : currentSession.status === 'BELUM_DIMULAI'
+                      : currentSession?.status === 'BELUM_DIMULAI'
                       ? 'bg-amber-400'
                       : 'bg-slate-400'
                   }`} />
                   <span className={`text-xs font-bold uppercase tracking-wider ${
                     isFullscreen ? 'text-slate-200' : 'text-slate-700'
                   }`}>
-                    Status: {currentSession.status === 'BERLANGSUNG' ? 'Sesi Aktif Membuka Presensi' : currentSession.status}
+                    Status: {currentSession?.status === 'BERLANGSUNG' ? 'Sesi Aktif Membuka Presensi' : (currentSession?.status || 'BELUM DIMULAI')}
                   </span>
                 </div>
 
@@ -615,72 +669,143 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
                 </div>
               </div>
 
-              {/* Judul & Deskripsi Sesi Presensi (Ditampilkan Mencolok di Layar Proyektor) */}
-              <div className={`w-full text-center px-4 py-3 rounded-md border mb-3 transition-colors ${
+              <div className={`w-full px-4 py-3 rounded-md border mb-3 transition-colors ${
                 isFullscreen 
                   ? 'bg-slate-800/90 border-slate-700 text-white' 
                   : 'bg-emerald-50/70 border-emerald-200/80 text-slate-800'
               }`}>
-                <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-[#00B884] text-white">
-                    Materi &amp; Agenda Hari Ini
-                  </span>
-                  <span className={`text-xs font-bold ${isFullscreen ? 'text-emerald-400' : 'text-emerald-800'}`}>
-                    {currentSession.namaEskul}
-                  </span>
-                </div>
-                <h3 className={`text-base sm:text-lg font-black tracking-tight ${
-                  isFullscreen ? 'text-emerald-300' : 'text-slate-900'
-                }`}>
-                  {currentSession.judul || currentSession.materi || 'Latihan Rutin Mingguan'}
-                </h3>
-                <p className={`text-xs mt-0.5 max-w-md mx-auto line-clamp-2 ${
-                  isFullscreen ? 'text-slate-300' : 'text-slate-600'
-                }`}>
-                  {currentSession.deskripsi || currentSession.materi || 'Pertemuan dan pembinaan rutin ekstrakurikuler.'}
-                </p>
-              </div>
-
-              {/* Center QR Graphic */}
-              <div className="flex flex-col items-center justify-center my-auto py-2">
-                <div className="relative p-5 bg-white rounded-lg shadow-xs border-2 border-emerald-500/25 flex items-center justify-center">
-                  {currentSession.status === 'BERLANGSUNG' ? (
-                    <div className="relative">
-                      <QRCodeSVG
-                        value={tokenPayload}
-                        size={isFullscreen ? 320 : 230}
-                        level="H"
-                        includeMargin={false}
+                <div className="flex flex-col sm:flex-row items-center gap-3 text-center sm:text-left">
+                  {currentSession?.fotoKegiatan && (
+                    <div className="relative shrink-0">
+                      <img
+                        src={currentSession.fotoKegiatan}
+                        alt="Bukti Dokumentasi Latihan"
+                        className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-md border border-emerald-300 shadow-2xs"
                       />
-                      {/* Subtle scanline animation */}
-                      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#00B884]/15 to-transparent h-6 w-full animate-bounce pointer-events-none rounded-md" />
-                    </div>
-                  ) : (
-                    <div className="w-[230px] h-[230px] rounded-md bg-slate-100 flex flex-col items-center justify-center text-slate-400 gap-2 border border-slate-200">
-                      <QrCode className="w-12 h-12 stroke-[1.5]" />
-                      <span className="text-xs font-semibold">QR Code Ditangguhkan</span>
+                      <span className="absolute -bottom-1.5 -right-1.5 bg-emerald-600 text-white p-0.5 rounded-full shadow-2xs">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                      </span>
                     </div>
                   )}
-                </div>
 
-                {/* Time Left Bar & Indicator */}
-                {currentSession.status === 'BERLANGSUNG' && (
-                  <div className="mt-5 flex items-center gap-3 w-full max-w-xs">
-                    <Clock className="w-4 h-4 text-[#00B884] shrink-0" />
-                    <div className="flex-1 bg-slate-200 rounded-full h-2.5 overflow-hidden">
-                      <div
-                        className="bg-[#00B884] h-full rounded-full transition-all duration-1000 ease-linear"
-                        style={{ width: `${100 - timerPercentage}%` }}
-                      />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-center sm:justify-start gap-1.5 mb-1 flex-wrap">
+                      <span className="text-[10px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full bg-[#00B884] text-white">
+                        Materi &amp; Agenda Hari Ini
+                      </span>
+                      <span className={`text-xs font-bold ${isFullscreen ? 'text-emerald-400' : 'text-emerald-800'}`}>
+                        {currentSession?.namaEskul}
+                      </span>
+                      {currentSession?.fotoKegiatan && (
+                        <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-200 px-1.5 py-0.5 rounded font-semibold flex items-center gap-1">
+                          <Check className="w-3 h-3 text-emerald-600" />
+                          <span>Foto Bukti Terlampir</span>
+                        </span>
+                      )}
                     </div>
-                    <span className="text-xs font-bold text-[#00B884] w-8 text-right font-mono">
-                      {timeLeft}s
-                    </span>
+                    <h3 className={`text-base sm:text-lg font-black tracking-tight ${
+                      isFullscreen ? 'text-emerald-300' : 'text-slate-900'
+                    }`}>
+                      {currentSession?.judul || currentSession?.materi || 'Latihan Rutin Mingguan'}
+                    </h3>
+                    <p className={`text-xs mt-0.5 max-w-xl line-clamp-2 ${
+                      isFullscreen ? 'text-slate-300' : 'text-slate-600'
+                    }`}>
+                      {currentSession?.deskripsi || currentSession?.materi || 'Pertemuan dan pembinaan rutin ekstrakurikuler.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center justify-center my-auto py-2">
+                {currentSession?.status === 'BERLANGSUNG' ? (
+                  <>
+                    <div className="relative p-5 bg-white rounded-lg shadow-xs border-2 border-emerald-500/25 flex items-center justify-center">
+                      <div className="relative">
+                        <QRCodeSVG
+                          value={tokenPayload}
+                          size={isFullscreen ? 320 : 230}
+                          level="H"
+                          includeMargin={false}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#00B884]/15 to-transparent h-6 w-full animate-bounce pointer-events-none rounded-md" />
+                      </div>
+                    </div>
+
+                    <div className="mt-5 flex items-center gap-3 w-full max-w-xs">
+                      <Clock className="w-4 h-4 text-[#00B884] shrink-0" />
+                      <div className="flex-1 bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                        <div
+                          className="bg-[#00B884] h-full rounded-full transition-all duration-1000 ease-linear"
+                          style={{ width: `${100 - timerPercentage}%` }}
+                        />
+                      </div>
+                      <span className="text-xs font-bold text-[#00B884] w-8 text-right font-mono">
+                        {timeLeft}s
+                      </span>
+                    </div>
+                  </>
+                ) : currentSession?.status === 'BELUM_DIMULAI' ? (
+                  <div className="w-[300px] p-6 rounded-xl bg-slate-50 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-center gap-3">
+                    <div className="size-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shadow-2xs">
+                      <Play className="size-7 fill-emerald-600 text-emerald-600 ml-0.5" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-sm">Presensi Belum Dimulai</h4>
+                      <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                        Pembina wajib mengisi judul kegiatan, rincian materi, dan melampirkan foto bukti kegiatan sebelum QR presensi dibuka.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsStartAttendanceModalOpen(true)}
+                      className="mt-1 inline-flex items-center gap-2 px-4 py-2 bg-[#00B884] hover:bg-emerald-600 text-white rounded-lg text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                    >
+                      <Play className="size-3.5 fill-white text-white" />
+                      <span>Mulai Sesi Absensi</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-[300px] p-6 rounded-xl bg-slate-50 border border-slate-200 flex flex-col items-center justify-center text-center gap-3">
+                    <div className="size-12 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center">
+                      <Lock className="size-6 text-slate-500" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-sm">Sesi Telah Selesai &amp; Terkunci</h4>
+                      <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                        Seluruh data kehadiran siswa telah difinalisasi dan disimpan permanen ke rekapitulasi sekolah.
+                      </p>
+                    </div>
+                    {currentSession.fotoKegiatan && (
+                      <div className="flex flex-col items-center mt-0.5">
+                        <img src={currentSession.fotoKegiatan} alt="Foto Dokumentasi" className="h-16 w-32 object-cover rounded border border-slate-200 shadow-2xs" />
+                        <span className="text-[10px] text-slate-400 mt-1">Dokumentasi Terlampir</span>
+                      </div>
+                    )}
+                    <div className="flex flex-wrap items-center justify-center gap-2 mt-1">
+                      {onOpenBukaAbsensiModal && (
+                        <button
+                          type="button"
+                          onClick={onOpenBukaAbsensiModal}
+                          className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#00B884] hover:bg-[#009e70] text-white rounded-md text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                        >
+                          <Play className="size-3.5 fill-white text-white" />
+                          <span>Buka Sesi Baru Hari Ini</span>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setIsStartAttendanceModalOpen(true)}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 text-xs text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-md border border-slate-200 font-semibold cursor-pointer"
+                      >
+                        <RefreshCw className="size-3 text-slate-600" />
+                        <span>Buka Ulang Sesi Ini</span>
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Dynamic Payload Hash details */}
               <div className="w-full mt-4 p-3 bg-slate-50 rounded-md border border-slate-200 flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -701,9 +826,7 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
               </div>
             </div>
 
-            {/* Right Column: Session Selector, Attendees & Controls */}
             <div className="lg:col-span-5 space-y-5">
-              {/* Active Session Card */}
               <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-xs">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-base font-bold text-slate-800">
@@ -716,7 +839,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
                   )}
                 </div>
 
-                {/* Session Selector Buttons */}
                 {visibleSessions.length === 0 ? (
                   <div className="p-6 text-center rounded-md bg-amber-50/60 border border-amber-200 text-amber-800 text-xs">
                     <AlertCircle className="w-6 h-6 mx-auto mb-2 text-amber-600" />
@@ -761,7 +883,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
                   </div>
                 )}
 
-                {/* Agenda & Materi Sesi Ini */}
                 <div className="mt-5 p-4 rounded-md bg-emerald-50/60 border border-emerald-200/80 text-xs space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-emerald-900 flex items-center gap-1.5">
@@ -780,15 +901,14 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
                   </div>
                   <div className="bg-white/80 p-3 rounded-md border border-emerald-100">
                     <div className="font-extrabold text-slate-900 text-xs">
-                      {currentSession.judul || currentSession.materi || 'Latihan Rutin Mingguan'}
+                      {currentSession?.judul || currentSession?.materi || 'Latihan Rutin Mingguan'}
                     </div>
                     <p className="text-slate-600 text-[11px] mt-1 leading-relaxed">
-                      {currentSession.deskripsi || currentSession.materi || 'Materi pembinaan dan evaluasi kompetensi anggota ekstrakurikuler.'}
+                      {currentSession?.deskripsi || currentSession?.materi || 'Materi pembinaan dan evaluasi kompetensi anggota ekstrakurikuler.'}
                     </p>
                   </div>
                 </div>
 
-                {/* Real-time Attendees List */}
                 <div className="mt-6 pt-4 border-t border-slate-100">
                   <div className="flex items-center justify-between text-xs font-semibold text-slate-700 mb-2">
                     <span>Daftar Siswa Hadir Sesi Ini</span>
@@ -797,7 +917,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
                     </span>
                   </div>
 
-                  {/* Search / filter box */}
                   <div className="relative mb-2">
                     <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
                     <input
@@ -838,7 +957,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
                   </div>
                 </div>
 
-                {/* Session State Actions */}
                 <div className="mt-6 space-y-2">
                   <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
                     Kontrol Sesi Presensi
@@ -846,14 +964,14 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
                   <div className="grid grid-cols-3 gap-2">
                     <button
                       onClick={() => {
-                        if (currentSession.status === 'BELUM_DIMULAI' && onOpenBukaAbsensiModal) {
+                        if (currentSession?.status === 'BELUM_DIMULAI' && onOpenBukaAbsensiModal) {
                           onOpenBukaAbsensiModal();
                         } else {
                           onUpdateSessionStatus('BERLANGSUNG');
                         }
                       }}
                       className={`py-2 px-3 rounded-md text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
-                        currentSession.status === 'BERLANGSUNG'
+                        currentSession?.status === 'BERLANGSUNG'
                           ? 'bg-[#00B884] text-white shadow-xs'
                           : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
@@ -865,7 +983,7 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
                     <button
                       onClick={() => onUpdateSessionStatus('BELUM_DIMULAI')}
                       className={`py-2 px-3 rounded-md text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
-                        currentSession.status === 'BELUM_DIMULAI'
+                        currentSession?.status === 'BELUM_DIMULAI'
                           ? 'bg-amber-500 text-white shadow-xs'
                           : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
@@ -877,7 +995,7 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
                     <button
                       onClick={() => onUpdateSessionStatus('SELESAI')}
                       className={`py-2 px-3 rounded-md text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
-                        currentSession.status === 'SELESAI'
+                        currentSession?.status === 'SELESAI'
                           ? 'bg-rose-500 text-white shadow-xs'
                           : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
@@ -891,7 +1009,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
             </div>
           </div>
 
-          {/* Bottom Bar: Lanjut ke Tahap 2 */}
           <div className="p-4 bg-white rounded-lg border border-slate-200 flex items-center justify-between">
             <span className="text-xs text-slate-600 font-medium">
               Selesai sesi pemindaian QR proyektor? Lanjutkan untuk memberikan nilai keaktifan lapangan.
@@ -907,9 +1024,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* TAHAP 2: NILAI KEAKTIFAN LAPANGAN (BUKAN BINTANG, TAPI TOMBOL SKOR RESMI) */}
-      {/* ========================================================================= */}
       {currentStep === 2 && (
         <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-xs space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
@@ -923,7 +1037,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
               </p>
             </div>
 
-            {/* Quick Batch Set Buttons */}
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs text-slate-400 font-medium">Setel Cepat Semua Hadir:</span>
               <button
@@ -972,7 +1085,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
                     </div>
                   </div>
 
-                  {/* Rating Selector Buttons (Luar Biasa, Sangat Baik, Baik, Cukup) */}
                   <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-slate-200">
                     {ratingOptions.map((opt) => {
                       const isSelected = s.nilaiKeaktifan === opt.score;
@@ -998,7 +1110,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
             </div>
           )}
 
-          {/* Navigation Bar */}
           <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
             <button
               onClick={() => setCurrentStep(1)}
@@ -1018,9 +1129,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* TAHAP 3: SIAPA YANG TIDAK HADIR, TELAT, IZIN, ATAU SAKIT                 */}
-      {/* ========================================================================= */}
       {currentStep === 3 && (
         <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-xs space-y-6">
           <div className="border-b border-slate-100 pb-5">
@@ -1055,7 +1163,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
                       </div>
                     </div>
 
-                    {/* Status Action Buttons */}
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <button
                         type="button"
@@ -1104,7 +1211,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
                     </div>
                   </div>
 
-                  {/* Keterangan Input */}
                   <div className="pt-2 border-t border-slate-200 flex items-center gap-2">
                     <span className="text-[11px] font-bold text-slate-500 shrink-0">Keterangan:</span>
                     <input
@@ -1120,7 +1226,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
             )}
           </div>
 
-          {/* Navigation Bar */}
           <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
             <button
               onClick={() => setCurrentStep(2)}
@@ -1140,9 +1245,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* TAHAP 4: REVIEW REKAPITULASI & FINAL SUBMIT KUNCI LOG PRESENSI            */}
-      {/* ========================================================================= */}
       {currentStep === 4 && (
         <div className="bg-white rounded-lg border border-slate-200 p-6 sm:p-7 shadow-xs space-y-6">
           <div className="border-b border-slate-100 pb-5">
@@ -1155,7 +1257,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
             </p>
           </div>
 
-          {/* Metrics Overview */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="p-4 rounded-md bg-emerald-50 border border-emerald-100 text-emerald-900">
               <div className="text-[11px] font-bold text-emerald-700">Hadir</div>
@@ -1185,7 +1286,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
             </div>
           </div>
 
-          {/* Summary Roster List */}
           <div className="border border-slate-200 rounded-md overflow-hidden max-h-72 overflow-y-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold uppercase text-slate-500">
@@ -1245,7 +1345,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
             </table>
           </div>
 
-          {/* Navigation & Final Submit */}
           <div className="pt-4 border-t border-slate-100 flex items-center justify-between flex-wrap gap-3">
             <button
               onClick={() => setCurrentStep(3)}
@@ -1274,8 +1373,9 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
           </div>
         </div>
       )}
+        </>
+      )}
 
-      {/* MODAL 1: Tandai Libur / Tanggal Merah */}
       {isHolidayModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl border border-slate-200">
@@ -1324,7 +1424,6 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
         </div>
       )}
 
-      {/* MODAL 2: Kunci & Finalisasi Sesi (Lock & Finalize) */}
       {isLockModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl border border-slate-200">
@@ -1338,7 +1437,7 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
 
             <div className="p-3 bg-emerald-50 rounded-md border border-emerald-200 mb-6 text-xs text-emerald-800 space-y-1">
               <div>Total Hadir Terverifikasi: <strong>{hadirStudents.length} Siswa</strong></div>
-              <div>Ekstrakurikuler: <strong>{currentSession.namaEskul}</strong></div>
+              <div>Ekstrakurikuler: <strong>{currentSession?.namaEskul || 'Ekstrakurikuler'}</strong></div>
               <div>Status: <strong>Terkunci Permanen</strong></div>
             </div>
 
@@ -1362,6 +1461,17 @@ export const DynamicQrGenerator: React.FC<DynamicQrGeneratorProps> = ({
           </div>
         </div>
       )}
+
+      <StartAttendanceModal
+        isOpen={isStartAttendanceModalOpen}
+        onClose={() => setIsStartAttendanceModalOpen(false)}
+        session={currentSession}
+        onStartSuccess={(updated) => {
+          onSelectSession(updated);
+          if (onRefreshData) onRefreshData();
+          showToast('Sesi absensi berhasil dimulai dan QR Proyektor aktif!', 'success');
+        }}
+      />
     </div>
   );
 };

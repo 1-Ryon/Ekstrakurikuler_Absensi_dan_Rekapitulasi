@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Kelas, Guru } from '../../types';
 import { UserAvatar } from '../common/UserAvatar';
+import { ConfirmDeleteModal } from '../modals/ConfirmDeleteModal';
 import {
   Card,
   Button,
@@ -32,7 +33,6 @@ export interface JurusanInfo {
   nama: string;
 }
 
-// Daftar jurusan vokasi SMK standar & populer di Indonesia
 export const POPULAR_JURUSAN: JurusanInfo[] = [
   { kode: 'RPL', nama: 'Rekayasa Perangkat Lunak' },
   { kode: 'TKJ', nama: 'Teknik Komputer & Jaringan' },
@@ -66,18 +66,16 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
   onUpdateKelas,
   onDeleteKelas,
 }) => {
-  // Search & Filter states
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTingkat, setSelectedTingkat] = useState<string[]>([]);
   const [selectedStatusWali, setSelectedStatusWali] = useState<string[]>([]);
   const [selectedJurusanFilter, setSelectedJurusanFilter] = useState<string>('ALL');
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
-  // Modals state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingKelas, setEditingKelas] = useState<Kelas | null>(null);
+  const [deletingKelas, setDeletingKelas] = useState<{ id: string; nama: string } | null>(null);
 
-  // Add Form states
   const [namaKelas, setNamaKelas] = useState('');
   const [tingkat, setTingkat] = useState(10);
   const [jurusan, setJurusan] = useState('Rekayasa Perangkat Lunak');
@@ -85,7 +83,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
   const [customJurusan, setCustomJurusan] = useState('');
   const [selectedWaliId, setSelectedWaliId] = useState('');
 
-  // Edit Form states
   const [editNamaKelas, setEditNamaKelas] = useState('');
   const [editTingkat, setEditTingkat] = useState(10);
   const [editJurusan, setEditJurusan] = useState('');
@@ -93,7 +90,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
   const [editCustomJurusan, setEditCustomJurusan] = useState('');
   const [editWaliId, setEditWaliId] = useState('');
 
-  // Dynamically aggregate ALL unique majors (Preset + existing custom from database)
   const allAvailableJurusan = useMemo(() => {
     const map = new Map<string, string>();
     POPULAR_JURUSAN.forEach(j => {
@@ -107,7 +103,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
     return Array.from(map.values()).sort();
   }, [kelasList]);
 
-  // Unique majors currently in use across existing classes (for quick filter tabs)
   const activeJurusanSummary = useMemo(() => {
     const counts: Record<string, number> = {};
     kelasList.forEach(k => {
@@ -118,12 +113,10 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
     return counts;
   }, [kelasList]);
 
-  // Smart Auto-detection of Jurusan from Class Name (e.g., typing 'X DKV 1' -> 'Desain Komunikasi Visual')
   const handleNamaKelasChange = (val: string) => {
     setNamaKelas(val);
     const upper = val.toUpperCase();
 
-    // Check against popular abbreviations
     for (const item of POPULAR_JURUSAN) {
       if (upper.includes(item.kode)) {
         setJurusan(item.nama);
@@ -132,7 +125,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
       }
     }
 
-    // Auto detect Tingkat (X, XI, XII or 10, 11, 12)
     if (upper.startsWith('XII') || upper.startsWith('12')) {
       setTingkat(12);
     } else if (upper.startsWith('XI') || upper.startsWith('11')) {
@@ -156,7 +148,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
 
   const activeFiltersCount = selectedTingkat.length + selectedStatusWali.length + (selectedJurusanFilter !== 'ALL' ? 1 : 0);
 
-  // Filtered Class List
   const filteredKelas = useMemo(() => {
     return kelasList.filter((k) => {
       const search = searchTerm.toLowerCase();
@@ -175,7 +166,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
     });
   }, [kelasList, searchTerm, selectedTingkat, selectedStatusWali, selectedJurusanFilter]);
 
-  // Handle Save New Class
   const handleSaveKelas = (e: React.FormEvent) => {
     e.preventDefault();
     if (!namaKelas.trim()) return;
@@ -191,7 +181,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
       waliKelasId: selectedWaliId || undefined,
     });
 
-    // Reset Form
     setNamaKelas('');
     setCustomJurusan('');
     setIsCustomJurusan(false);
@@ -199,7 +188,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
     setIsAddModalOpen(false);
   };
 
-  // Open Edit Modal
   const openEditModal = (k: Kelas) => {
     setEditingKelas(k);
     setEditNamaKelas(k.namaKelas);
@@ -217,7 +205,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
     }
   };
 
-  // Handle Save Edit Class
   const handleSaveEditKelas = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingKelas) return;
@@ -234,26 +221,18 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
         waliKelasId: editWaliId || undefined,
       });
     } else {
-      // Fallback: assign wali kelas only
       onAssignWaliKelas(editingKelas.id, editWaliId);
     }
 
     setEditingKelas(null);
   };
 
-  // Handle Delete Class
   const handleDeleteClass = (kelasId: string, nama: string) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus kelas "${nama}"? Data siswa di kelas ini tidak akan terhapus, namun status rombelnya akan direset.`)) {
-      if (onDeleteKelas) {
-        onDeleteKelas(kelasId);
-      }
-      setEditingKelas(null);
-    }
+    setDeletingKelas({ id: kelasId, nama });
   };
 
   return (
     <div className="space-y-6 pb-16">
-      {/* 1. Header & Title Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -285,7 +264,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
         </Button>
       </div>
 
-      {/* 2. Search & Filter Bar */}
       <Card className="p-4 space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="relative flex-1 max-w-md">
@@ -308,7 +286,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
           </div>
 
           <div className="flex items-center gap-2.5">
-            {/* Filter Button */}
             <Button
               variant="outline"
               size="sm"
@@ -335,7 +312,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
           </div>
         </div>
 
-        {/* 3. Dynamic Quick Jurusan Filter Tabs */}
         <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">Jurusan:</span>
           
@@ -383,7 +359,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
           )}
         </div>
 
-        {/* Active Filters Display */}
         {(selectedTingkat.length > 0 || selectedStatusWali.length > 0) && (
           <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100 text-xs">
             <span className="text-slate-400 text-[11px] font-medium">Filter Aktif:</span>
@@ -420,7 +395,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
         )}
       </Card>
 
-      {/* 4. Filter Modal Window */}
       <AnimatePresence>
         {isFilterModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -460,7 +434,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
                   </Button>
                 </div>
 
-                {/* Tingkat */}
                 <div className="space-y-2">
                   <label className="text-xs font-semibold text-foreground uppercase tracking-wider block">
                     Tingkat Kelas
@@ -486,7 +459,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
                   </div>
                 </div>
 
-                {/* Status Wali */}
                 <div className="space-y-2">
                   <label className="text-xs font-semibold text-foreground uppercase tracking-wider block">
                     Status Wali Kelas
@@ -520,7 +492,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
                   </div>
                 </div>
 
-                {/* Actions */}
                 <div className="flex items-center justify-between pt-4 border-t border-border">
                   <Button
                     variant="ghost"
@@ -550,7 +521,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
         )}
       </AnimatePresence>
 
-      {/* 5. Grid of Classes */}
       {filteredKelas.length === 0 ? (
         <Card className="p-12 text-center">
           <div className="size-12 rounded-full bg-muted text-muted-foreground flex items-center justify-center mx-auto mb-3">
@@ -598,7 +568,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
                     </div>
                   </div>
                   
-                  {/* Edit button */}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -611,7 +580,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
                   </Button>
                 </div>
 
-                {/* Wali Kelas Card */}
                 <div className="p-3 bg-muted/40 rounded-md border border-border mb-3">
                   <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2 flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
@@ -658,7 +626,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
                 </div>
               </div>
 
-              {/* Card Footer */}
               <div className="pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5">
                   <Users className="size-3.5" />
@@ -673,7 +640,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
         </div>
       )}
 
-      {/* 6. Modal Tambah Kelas Baru (With Dynamic Jurusan Support) */}
       <AnimatePresence>
         {isAddModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -709,7 +675,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
                 </div>
 
                 <form onSubmit={handleSaveKelas} className="space-y-4">
-                  {/* Nama Kelas */}
                   <div>
                     <label className="text-xs font-semibold text-foreground block mb-1.5">
                       Nama Rombel Kelas (Contoh: X RPL 1, XI DKV 2)
@@ -728,7 +693,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
-                    {/* Tingkat */}
                     <div>
                       <label className="text-xs font-semibold text-foreground block mb-1.5">Tingkat</label>
                       <select
@@ -742,7 +706,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
                       </select>
                     </div>
 
-                    {/* Jurusan Dropdown */}
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
                         <label className="text-xs font-semibold text-foreground">Jurusan</label>
@@ -799,7 +762,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
                     </div>
                   )}
 
-                  {/* Pilih Wali Kelas (Opsional) */}
                   <div>
                     <label className="text-xs font-semibold text-foreground block mb-1.5">
                       Pilih Wali Kelas (Opsional)
@@ -818,7 +780,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
                     </select>
                   </div>
 
-                  {/* Buttons */}
                   <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
                     <Button
                       variant="outline"
@@ -843,7 +804,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
         )}
       </AnimatePresence>
 
-      {/* 7. Modal Edit / Detail Rombel Kelas & Wali Kelas */}
       <AnimatePresence>
         {editingKelas && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -879,7 +839,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
                 </div>
 
                 <form onSubmit={handleSaveEditKelas} className="space-y-4">
-                  {/* Nama Kelas */}
                   <div>
                     <label className="text-xs font-semibold text-foreground block mb-1.5">Nama Rombel Kelas</label>
                     <Input
@@ -891,7 +850,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
-                    {/* Tingkat */}
                     <div>
                       <label className="text-xs font-semibold text-foreground block mb-1.5">Tingkat</label>
                       <select
@@ -905,7 +863,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
                       </select>
                     </div>
 
-                    {/* Jurusan */}
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
                         <label className="text-xs font-semibold text-foreground">Jurusan</label>
@@ -950,7 +907,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
                     </div>
                   </div>
 
-                  {/* Wali Kelas */}
                   <div>
                     <label className="text-xs font-semibold text-foreground block mb-1.5">
                       Wali Kelas
@@ -969,7 +925,6 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
                     </select>
                   </div>
 
-                  {/* Modal Buttons */}
                   <div className="flex items-center justify-between pt-3 border-t border-border">
                     <Button
                       type="button"
@@ -1006,6 +961,22 @@ export const KelasManagement: React.FC<KelasManagementProps> = ({
           </div>
         )}
       </AnimatePresence>
+
+      <ConfirmDeleteModal
+        isOpen={!!deletingKelas}
+        onClose={() => setDeletingKelas(null)}
+        onConfirm={() => {
+          if (deletingKelas && onDeleteKelas) {
+            onDeleteKelas(deletingKelas.id);
+            setDeletingKelas(null);
+            setEditingKelas(null);
+          }
+        }}
+        title="Hapus Rombel Kelas"
+        itemName={deletingKelas?.nama}
+        itemType="Rombel Kelas"
+        description="Apakah Anda yakin ingin menghapus kelas ini? Data siswa di kelas ini tidak akan terhapus, namun status rombel dan penugasan wali kelasnya akan direset."
+      />
     </div>
   );
 };

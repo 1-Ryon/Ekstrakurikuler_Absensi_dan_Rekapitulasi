@@ -3,28 +3,27 @@ import { prisma } from '../config/prisma.js';
 
 const router = Router();
 
-// GET /api/stats/dashboard
 router.get('/dashboard', async (req, res) => {
   try {
-    const totalEskul = await prisma.eskul.count();
-    const totalSiswa = await prisma.siswa.count();
-    const totalGuru = await prisma.guru.count();
-    const totalPembina = await prisma.guru.count({ where: { isPembina: true } });
     const todayStr = new Date().toISOString().slice(0, 10);
-    const todaySessions = await prisma.sesiPertemuan.count({ where: { tanggal: todayStr } });
-
-    // Ambil seluruh eskul dengan jadwal hari
-    const allEskuls = await prisma.eskul.findMany({
-      include: {
-        pembina: { select: { namaLengkap: true, avatarUrl: true } },
-        _count: { select: { anggota: true } },
-      },
-    });
+    const [totalEskul, totalSiswa, totalGuru, totalPembina, todaySessions, allEskuls] = await Promise.all([
+      prisma.eskul.count(),
+      prisma.siswa.count(),
+      prisma.guru.count(),
+      prisma.guru.count({ where: { isPembina: true } }),
+      prisma.sesiPertemuan.count({ where: { tanggal: todayStr } }),
+      prisma.eskul.findMany({
+        include: {
+          pembina: { select: { namaLengkap: true, avatarUrl: true } },
+          _count: { select: { anggota: true } },
+        },
+      }),
+    ]);
 
     const dayNames = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
     const shortDays = ['SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB', 'MIN'];
     const jsDay = new Date().getDay();
-    const todayIndex = jsDay === 0 ? 6 : jsDay - 1; // 0: Senin, 6: Minggu
+    const todayIndex = jsDay === 0 ? 6 : jsDay - 1;
     const attendanceBase = [96, 94, 91, 95, 90, 97, 88];
 
     const weeklySchedule = dayNames.map((day, idx) => {

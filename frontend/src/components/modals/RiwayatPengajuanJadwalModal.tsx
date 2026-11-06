@@ -32,7 +32,6 @@ export const RiwayatPengajuanJadwalModal: React.FC<RiwayatPengajuanJadwalModalPr
 }) => {
   if (!isOpen) return null;
 
-  // Filter proposals submitted by this pembina or matching their coached eskuls
   const myProposals = proposals.filter((p) => {
     if (p.pembinaId === pembina.id) return true;
     const nameKeywords = (pembina.namaLengkap || '').toLowerCase().split(' ');
@@ -53,7 +52,6 @@ export const RiwayatPengajuanJadwalModal: React.FC<RiwayatPengajuanJadwalModalPr
           transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
           className="bg-white rounded-lg w-[92vw] max-w-xl shadow-xl border border-slate-200 overflow-hidden my-auto flex flex-col max-h-[90dvh]"
         >
-          {/* Header */}
           <div className="p-5 sm:p-6 border-b border-slate-100 flex items-start justify-between gap-4 shrink-0">
             <div className="space-y-1.5">
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-md text-[11px] font-semibold">
@@ -77,7 +75,6 @@ export const RiwayatPengajuanJadwalModal: React.FC<RiwayatPengajuanJadwalModalPr
             </button>
           </div>
 
-          {/* Body */}
           <div className="p-6 overflow-y-auto flex-1 space-y-3.5">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <span className="text-xs font-semibold text-slate-700">
@@ -144,7 +141,6 @@ export const RiwayatPengajuanJadwalModal: React.FC<RiwayatPengajuanJadwalModalPr
                       </div>
                     </div>
 
-                    {/* Schedule Comparison */}
                     <div className="grid grid-cols-2 gap-2 text-[11px]">
                       <div className="p-2.5 rounded-md bg-slate-50 border border-slate-100">
                         <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block">Jadwal Asal</span>
@@ -185,7 +181,6 @@ export const RiwayatPengajuanJadwalModal: React.FC<RiwayatPengajuanJadwalModalPr
             )}
           </div>
 
-          {/* Footer */}
           <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end shrink-0">
             <button
               type="button"

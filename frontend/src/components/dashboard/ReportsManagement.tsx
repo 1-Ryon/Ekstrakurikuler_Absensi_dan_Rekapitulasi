@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FileSpreadsheet, 
@@ -45,7 +46,15 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
-  // Sync default filters
+  React.useEffect(() => {
+    if (showPrintModal) {
+      document.body.classList.add('has-print-modal-open');
+      return () => {
+        document.body.classList.remove('has-print-modal-open');
+      };
+    }
+  }, [showPrintModal]);
+
   React.useEffect(() => {
     if (defaultClasses.length > 0) setSelectedClasses(defaultClasses);
   }, [defaultClasses.join(',')]);
@@ -81,7 +90,6 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
     selectedClasses.length +
     (selectedPredikatFilter !== 'ALL' ? 1 : 0);
 
-  // Filtered List
   const filteredPenilaian = useMemo(() => {
     return penilaianList.filter((p) => {
       const search = searchTerm.toLowerCase().trim();
@@ -99,7 +107,6 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
     });
   }, [penilaianList, searchTerm, selectedEskuls, selectedClasses, selectedPredikatFilter]);
 
-  // Dynamic Statistics computed from active data
   const stats = useMemo(() => {
     const total = filteredPenilaian.length;
     if (total === 0) {
@@ -172,12 +179,13 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
   };
 
   const handlePrint = () => {
-    window.print();
+    requestAnimationFrame(() => {
+      window.print();
+    });
   };
 
   return (
     <div className="space-y-6 pb-16">
-      {/* 1. Header & Title Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -193,7 +201,6 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
           </p>
         </div>
 
-        {/* Global Export & Print Buttons */}
         <div className="flex flex-wrap items-center gap-2.5">
           <button
             type="button"
@@ -217,9 +224,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
         </div>
       </div>
 
-      {/* 2. Summary KPI Cards (Responsive 4-Grid) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-        {/* Card 1: Rerata Nilai Akhir */}
         <div className="bg-white p-4 sm:p-5 rounded-lg border border-slate-200/80 shadow-xs flex items-center gap-3.5">
           <div className="w-10 h-10 rounded-md bg-emerald-50 text-[#00B884] flex items-center justify-center shrink-0">
             <TrendingUp className="w-5 h-5" />
@@ -237,7 +242,6 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
           </div>
         </div>
 
-        {/* Card 2: Total Data Rekap */}
         <div className="bg-white p-4 sm:p-5 rounded-lg border border-slate-200/80 shadow-xs flex items-center gap-3.5">
           <div className="w-10 h-10 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
             <Users className="w-5 h-5" />
@@ -254,7 +258,6 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
           </div>
         </div>
 
-        {/* Card 3: Distribusi Predikat A */}
         <div 
           onClick={() => setSelectedPredikatFilter(selectedPredikatFilter === 'A' ? 'ALL' : 'A')}
           className={`bg-white p-4 sm:p-5 rounded-lg border transition-all cursor-pointer flex items-center gap-3.5 ${
@@ -278,7 +281,6 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
           </div>
         </div>
 
-        {/* Card 4: Predikat B & C */}
         <div className="bg-white p-4 sm:p-5 rounded-lg border border-slate-200/80 shadow-xs flex items-center gap-3.5">
           <div className="w-10 h-10 rounded-md bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
             <FileCheck2 className="w-5 h-5" />
@@ -296,10 +298,8 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
         </div>
       </div>
 
-      {/* 3. Toolbar: Search, Filters & Quick Pills */}
       <div className="bg-white p-4 rounded-lg border border-slate-200/80 shadow-xs space-y-3">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-          {/* Search Box */}
           <div className="relative flex-1 max-w-md">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -321,7 +321,6 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
           </div>
 
           <div className="flex items-center gap-2.5">
-            {/* Filter Modal Trigger */}
             <button
               type="button"
               onClick={() => setIsFilterModalOpen(true)}
@@ -346,7 +345,6 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
           </div>
         </div>
 
-        {/* Quick Filter Segmentation Tabs */}
         <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">Predikat:</span>
           
@@ -388,7 +386,6 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
 
           <div className="h-4 w-px bg-slate-200 mx-1 hidden sm:block" />
 
-          {/* Active Applied Filter Badges */}
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-700 text-[11px] font-semibold rounded-md border border-slate-200">
               <Calendar className="w-3 h-3 text-slate-400" />
@@ -434,7 +431,6 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
         </div>
       </div>
 
-      {/* 4. Rekapitulasi Table (Crisp Typography & Zero Wrapping Bugs) */}
       <div className="bg-white rounded-lg border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -476,12 +472,10 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
               ) : (
                 filteredPenilaian.map((item, idx) => (
                   <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
-                    {/* No */}
                     <td className="py-3.5 px-4 text-center text-xs font-mono text-slate-400">
                       {idx + 1}
                     </td>
 
-                    {/* Nama Siswa */}
                     <td className="py-3.5 px-4 whitespace-nowrap">
                       <div className="flex items-center gap-2.5">
                         <UserAvatar
@@ -494,7 +488,6 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
                       </div>
                     </td>
 
-                    {/* NISN & Kelas */}
                     <td className="py-3.5 px-4 whitespace-nowrap">
                       <div className="space-y-1">
                         <div className="font-mono text-xs font-semibold text-slate-700">
@@ -506,14 +499,12 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
                       </div>
                     </td>
 
-                    {/* Cabang Eskul */}
                     <td className="py-3.5 px-4 whitespace-nowrap">
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-[#009e70] text-xs font-semibold rounded-lg border border-emerald-200/70">
                         {item.namaEskul}
                       </span>
                     </td>
 
-                    {/* Kehadiran (40%) */}
                     <td className="py-3.5 px-3 text-center whitespace-nowrap">
                       <div className="font-bold text-slate-800 text-xs">{item.nilaiKehadiran}</div>
                       <div className="text-[10px] text-slate-400 font-mono">
@@ -521,7 +512,6 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
                       </div>
                     </td>
 
-                    {/* Keaktifan (30%) */}
                     <td className="py-3.5 px-3 text-center whitespace-nowrap">
                       <div className="font-bold text-slate-800 text-xs">{item.nilaiKeaktifan}</div>
                       <div className="text-[10px] text-slate-400 font-mono">
@@ -529,7 +519,6 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
                       </div>
                     </td>
 
-                    {/* Kinerja (30%) */}
                     <td className="py-3.5 px-3 text-center whitespace-nowrap">
                       <div className="font-bold text-slate-800 text-xs">{item.nilaiKinerja}</div>
                       <div className="text-[10px] text-slate-400 font-mono">
@@ -537,14 +526,12 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
                       </div>
                     </td>
 
-                    {/* Nilai Akhir */}
                     <td className="py-3.5 px-3 text-center whitespace-nowrap">
                       <span className="font-black text-sm text-[#00B884]">
                         {item.nilaiAkhir}
                       </span>
                     </td>
 
-                    {/* Predikat */}
                     <td className="py-3.5 px-3 text-center whitespace-nowrap">
                       <span className={`inline-flex items-center justify-center w-7 h-7 rounded-md font-black text-xs border shadow-2xs ${
                         item.predikat === 'A'
@@ -557,7 +544,6 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
                       </span>
                     </td>
 
-                    {/* Keterangan Capaian Kompetensi */}
                     <td className="py-3.5 px-4 min-w-[240px] max-w-md">
                       <div className="text-xs text-slate-600 leading-relaxed py-0.5">
                         {item.catatan}
@@ -570,14 +556,12 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
           </table>
         </div>
 
-        {/* Footer Summary */}
         <div className="p-4 bg-slate-50/80 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-500">
           <span>Menampilkan <strong>{filteredPenilaian.length}</strong> dari <strong>{penilaianList.length}</strong> data rekapitulasi penilaian</span>
           <span className="font-semibold text-slate-700">Semester Ganjil</span>
         </div>
       </div>
 
-      {/* 5. Filter Modal Window (Multi-Choice) */}
       <AnimatePresence>
         {isFilterModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -595,7 +579,6 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
               transition={{ type: 'spring', duration: 0.25 }}
               className="bg-white rounded-lg p-6 w-full max-w-lg shadow-xl border border-slate-200 relative z-10 space-y-5"
             >
-              {/* Modal Header */}
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-md bg-emerald-50 text-[#00B884] flex items-center justify-center">
@@ -615,9 +598,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
                 </button>
               </div>
 
-              {/* Filter Options */}
               <div className="space-y-4">
-                {/* 1. Semester */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">
                     Semester
@@ -641,7 +622,6 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
                   </div>
                 </div>
 
-                {/* 2. Cabang Ekstrakurikuler (Multi-select) */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
@@ -691,7 +671,6 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
                   </div>
                 </div>
 
-                {/* 3. Kelas (Multi-select) */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
@@ -742,7 +721,6 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
                 </div>
               </div>
 
-              {/* Modal Actions */}
               <div className="flex items-center justify-between pt-4 border-t border-slate-100">
                 <button
                   type="button"
@@ -769,11 +747,12 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
         )}
       </AnimatePresence>
 
-      {/* 6. Modal Preview Cetak Resmi PDF (Official Print Document) */}
-      {showPrintModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full p-6 sm:p-8 shadow-xl border border-slate-200 max-h-[90vh] overflow-y-auto">
-            {/* Modal Header Actions */}
+      {showPrintModal && createPortal(
+        <div 
+          id="printable-report-modal-portal" 
+          className="printable-fixed printable-modal-portal fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 print:static print:block print:p-0 print:m-0 print:bg-transparent print:w-full print:h-auto print:overflow-visible"
+        >
+          <div className="report-modal-content bg-white rounded-lg max-w-4xl w-full p-6 sm:p-8 shadow-xl border border-slate-200 max-h-[90vh] overflow-y-auto print:max-w-none print:w-full print:p-0 print:m-0 print:border-none print:shadow-none print:max-h-none print:overflow-visible print:block print:bg-transparent">
             <div className="flex items-center justify-between pb-4 border-b border-slate-200 print:hidden">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                 Pratinjau Dokumen Rekapitulasi Rapor Resmi
@@ -797,8 +776,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
               </div>
             </div>
 
-            {/* Official School Document Header (Kop Surat Resmi) */}
-            <div className="my-6 border-b-2 border-slate-900 pb-4 flex items-center justify-center gap-4">
+            <div className="my-6 print:my-2 print:mt-0 border-b-2 border-slate-900 pb-4 flex items-center justify-center gap-4">
               <SchoolLogo size="lg" showText={false} className="shrink-0" />
               <div className="text-center">
                 <h2 className="text-xl font-black text-slate-900 tracking-wide uppercase">
@@ -816,7 +794,6 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
               </div>
             </div>
 
-            {/* Content Table in Print Modal */}
             <table className="w-full text-xs text-left border border-slate-300 border-collapse mb-6">
               <thead>
                 <tr className="bg-slate-100 border-b border-slate-300 font-bold">
@@ -844,8 +821,7 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
               </tbody>
             </table>
 
-            {/* Signature Area (Tanda Tangan Kepala Sekolah & Koordinator) */}
-            <div className="grid grid-cols-2 text-center text-xs pt-4 border-t border-slate-200 text-slate-800">
+            <div className="grid grid-cols-2 text-center text-xs pt-4 border-t border-slate-200 text-slate-800 print-avoid-break">
               <div>
                 <p>Mengetahui,</p>
                 <p className="font-bold">Kepala SMK Al Amanah</p>
@@ -863,7 +839,8 @@ export const ReportsManagement: React.FC<ReportsManagementProps> = ({
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -38,15 +38,12 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
   onNavigate,
   onAssignEskul,
 }) => {
-  // Determine assigned class (default to X RPL 1 or from currentWali.kelas)
   const targetClass = currentWali.kelas || 'X RPL 1';
 
-  // Filter students in this class
   const classStudents = students.filter(
     (s) => s.kelas.toLowerCase().trim() === targetClass.toLowerCase().trim()
   );
 
-  // Students with and without eskul
   const studentsWithEskul = classStudents.filter(
     (s) => s.enrolledEskulIds && s.enrolledEskulIds.length > 0
   );
@@ -54,12 +51,10 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
     (s) => !s.enrolledEskulIds || s.enrolledEskulIds.length === 0
   );
 
-  // Calculate participation percentage
   const participationRate = classStudents.length > 0
     ? Math.round((studentsWithEskul.length / classStudents.length) * 100)
     : 100;
 
-  // Average attendance for class
   const avgAttendance = classStudents.length > 0
     ? Math.round(
         classStudents.reduce((acc, s) => acc + (s.kehadiranRataRata || 90), 0) /
@@ -67,7 +62,6 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
       )
     : 92;
 
-  // Breakdown of eskuls taken by this class
   const eskulDistribution = eskulList.map((eskul) => {
     const count = classStudents.filter(
       (s) => s.enrolledEskulIds && s.enrolledEskulIds.includes(eskul.id)
@@ -86,7 +80,6 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
       (s.nis && s.nis.includes(searchQuery))
   );
 
-  // Modal for quick assigning eskul to unassigned student
   const [assigningStudent, setAssigningStudent] = useState<StudentProfile | null>(null);
   const [selectedEskulsToAssign, setSelectedEskulsToAssign] = useState<string[]>([]);
 
@@ -104,7 +97,6 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Welcome Banner */}
       <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-xs relative">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1.5">
@@ -121,7 +113,6 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
             </p>
           </div>
 
-          {/* Quick Action Buttons */}
           <div className="flex flex-wrap items-center gap-2.5">
             <button
               onClick={() => onNavigate('laporan')}
@@ -141,7 +132,6 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
         </div>
       </div>
 
-      {/* KPI Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-white p-4 sm:p-5 rounded-lg border border-slate-200 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between text-xs text-slate-500 font-medium mb-2">
@@ -212,7 +202,6 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
         </div>
       </div>
 
-      {/* Alert Banner: Siswa yang belum memilih eskul */}
       {studentsWithoutEskul.length > 0 && (
         <div className="p-4 sm:p-5 rounded-lg bg-amber-50/80 border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-start gap-3">
@@ -247,9 +236,7 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
         </div>
       )}
 
-      {/* Two Column Layout: Student Roster & Eskul Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Left Column (2 Cols): Daftar Siswa Kelas Saya */}
         <div className="lg:col-span-2 space-y-4">
           <div className="bg-white rounded-lg border border-slate-200 p-5 sm:p-6 shadow-xs space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -262,7 +249,6 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
                 </p>
               </div>
 
-              {/* Search input */}
               <div className="relative w-full sm:w-56">
                 <Search className="size-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
@@ -275,7 +261,6 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
               </div>
             </div>
 
-            {/* Table */}
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left">
                 <thead>
@@ -370,7 +355,6 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
           </div>
         </div>
 
-        {/* Right Column (1 Col): Sebaran Eskul di Kelas */}
         <div className="space-y-4">
           <div className="bg-white rounded-lg border border-slate-200 p-5 sm:p-6 shadow-xs space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -391,7 +375,6 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
                       <span className="font-semibold text-slate-800 truncate">{item.namaEskul}</span>
                       <span className="text-xs font-semibold text-[#00B884]">{item.studentCountInClass} Siswa ({percent}%)</span>
                     </div>
-                    {/* Bar */}
                     <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
                       <div
                         className="bg-[#00B884] h-full rounded-full transition-all"
@@ -412,7 +395,6 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
             </button>
           </div>
 
-          {/* Quick Info Box */}
           <div className="p-4 rounded-lg bg-blue-50/70 border border-blue-200 text-xs text-blue-900 space-y-1.5">
             <span className="font-bold flex items-center gap-1.5">
               <CheckCircle2 className="size-4 text-blue-600" />
@@ -425,7 +407,6 @@ export const WaliKelasDashboard: React.FC<WaliKelasDashboardProps> = ({
         </div>
       </div>
 
-      {/* Modal Quick Assign Eskul */}
       {assigningStudent && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4">

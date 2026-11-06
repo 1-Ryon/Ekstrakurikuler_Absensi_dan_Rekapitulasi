@@ -5,7 +5,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { securityHeaders } from './middlewares/security.js';
 
-// Route Modules
 import authRoutes from './routes/auth.js';
 import statsRoutes from './routes/stats.js';
 import eskulRoutes from './routes/eskul.js';
@@ -19,17 +18,33 @@ import presensiRoutes from './routes/presensi.js';
 import penilaianRoutes from './routes/penilaian.js';
 import prestasiRoutes from './routes/prestasi.js';
 import settingsRoutes from './routes/settings.js';
+import uploadRoutes from './routes/upload.js';
 
 const app = express();
 
-// 1. CORS Configuration (Defensive whitelist, safe in development and production)
-const allowedOrigins = process.env.ALLOWED_ORIGINS 
-  ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim()) 
-  : ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:3000', 'http://127.0.0.1:5173', 'https://absensieskulsmkalamanah.arionoputra.net'];
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const configuredOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',').map((s) => s.trim()) 
+  : [];
+
+function isOriginAllowed(origin) {
+  if (!origin) return true;
+  if (configuredOrigins.includes(origin)) return true;
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return true;
+  if (origin === 'https://arionoputra.net' || origin.endsWith('.arionoputra.net')) return true;
+  if (origin === 'https://trycloudflare.com' || origin.endsWith('.trycloudflare.com')) return true;
+  return false;
+}
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.arionoputra.net') || process.env.NODE_ENV !== 'production') {
+    if (isOriginAllowed(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Akses diblokir oleh kebijakan CORS.'));
@@ -39,14 +54,13 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
 }));
 
-// 2. Request Parsers (Bounded body size)
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
-// 3. OWASP Defensive Security Headers
 app.use(securityHeaders);
 
-// 4. Health Check Endpoint
+app.use('/uploads', express.static(uploadDir));
+
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -56,11 +70,10 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// 5. Mount Sub-Routers
 app.use('/api/auth', authRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/eskul', eskulRoutes);
-app.use('/api', guruRoutes); // Handles /api/pembina, /api/guru, /api/walikelas
+app.use('/api', guruRoutes);
 app.use('/api/kelas', kelasRoutes);
 app.use('/api/students', studentsRoutes);
 app.use('/api/sessions', sessionsRoutes);
@@ -70,8 +83,8 @@ app.use('/api/presensi', presensiRoutes);
 app.use('/api/penilaian', penilaianRoutes);
 app.use('/api/prestasi', prestasiRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/upload', uploadRoutes);
 
-// 6. 404 Handler for Unmatched API Routes
 app.use('/api', (req, res) => {
   res.status(404).json({
     success: false,
@@ -79,23 +92,25 @@ app.use('/api', (req, res) => {
   });
 });
 
-// 6b. Serve Production Frontend Static Build (if exists)
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const frontendDistPath = path.join(__dirname, '../../frontend/dist');
-
 if (fs.existsSync(frontendDistPath)) {
   app.use(express.static(frontendDistPath));
   app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api')) return next();
+    if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) return next();
     res.sendFile(path.join(frontendDistPath, 'index.html'));
   });
 }
 
-// 7. Global Error Handler
 app.use((err, req, res, next) => {
+  if (err.message && err.message.includes('CORS')) {
+    return res.status(403).json({
+      success: false,
+      message: 'Akses diblokir oleh kebijakan keamanan CORS SMK Al Amanah.',
+    });
+  }
+
   console.error('[API SERVER ERROR]:', err);
-  res.status(err.status || 500).json({
+  res.status(err.status || err.statusCode || 500).json({
     success: false,
     message: err.message || 'Terjadi kesalahan internal pada server.',
   });

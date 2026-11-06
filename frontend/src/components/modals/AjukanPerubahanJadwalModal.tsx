@@ -56,7 +56,6 @@ export const AjukanPerubahanJadwalModal: React.FC<AjukanPerubahanJadwalModalProp
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Initialize selected eskul
   useEffect(() => {
     if (coachedEskuls.length > 0 && (!selectedEskulId || !coachedEskuls.some(e => e.id === selectedEskulId))) {
       setSelectedEskulId(coachedEskuls[0].id);
@@ -75,7 +74,6 @@ export const AjukanPerubahanJadwalModal: React.FC<AjukanPerubahanJadwalModalProp
     }
   }, [activeEskul, isOpen]);
 
-  // Check possible facility or day conflicts with other eskuls
   const potentialConflicts = useMemo(() => {
     if (!activeEskul || !hariBaru) return [];
     return allEskuls.filter(
@@ -138,7 +136,6 @@ export const AjukanPerubahanJadwalModal: React.FC<AjukanPerubahanJadwalModalProp
           transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
           className="bg-white rounded-lg w-[92vw] max-w-xl shadow-xl border border-slate-200 overflow-hidden my-auto max-h-[92dvh] flex flex-col"
         >
-          {/* Header */}
           <div className="p-5 sm:p-6 border-b border-slate-100 flex items-start justify-between gap-4">
             <div className="space-y-1.5">
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-md text-[11px] font-semibold">
@@ -174,7 +171,6 @@ export const AjukanPerubahanJadwalModal: React.FC<AjukanPerubahanJadwalModalProp
               </motion.div>
             )}
 
-            {/* 1. Pilih Eskul yang dibina */}
             {coachedEskuls.length > 1 ? (
               <div className="space-y-1">
                 <label className="font-semibold text-slate-800 block">
@@ -204,9 +200,7 @@ export const AjukanPerubahanJadwalModal: React.FC<AjukanPerubahanJadwalModalProp
               </div>
             )}
 
-            {/* 2. Side-by-side comparison: Jadwal Sekarang vs Jadwal Baru */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Box Jadwal Saat Ini (Read-only) */}
               <div className="p-3.5 rounded-md bg-slate-50 border border-slate-200 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
@@ -230,7 +224,6 @@ export const AjukanPerubahanJadwalModal: React.FC<AjukanPerubahanJadwalModalProp
                 </div>
               </div>
 
-              {/* Box Jadwal Baru Yang Diajukan */}
               <div className="p-3.5 rounded-md bg-emerald-50/70 border border-emerald-200 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-semibold text-emerald-800 uppercase tracking-wider flex items-center gap-1">
@@ -275,7 +268,6 @@ export const AjukanPerubahanJadwalModal: React.FC<AjukanPerubahanJadwalModalProp
               </div>
             </div>
 
-            {/* 3. Lokasi & Jenis Perubahan */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="font-semibold text-slate-700 block">
@@ -321,7 +313,6 @@ export const AjukanPerubahanJadwalModal: React.FC<AjukanPerubahanJadwalModalProp
               </div>
             </div>
 
-            {/* 4. Tanggal Efektif (jika sementara atau terjadwal) */}
             {jenisPerubahan === 'SEMENTARA' && (
               <div className="space-y-1">
                 <label className="font-semibold text-slate-700 block">
@@ -336,7 +327,6 @@ export const AjukanPerubahanJadwalModal: React.FC<AjukanPerubahanJadwalModalProp
               </div>
             )}
 
-            {/* Potential conflict hint */}
             {potentialConflicts.length > 0 && (
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-md text-[11px] text-amber-800 space-y-1">
                 <div className="font-semibold flex items-center gap-1.5">
@@ -349,7 +339,6 @@ export const AjukanPerubahanJadwalModal: React.FC<AjukanPerubahanJadwalModalProp
               </div>
             )}
 
-            {/* 5. Alasan Pengajuan (WAJIB) */}
             <div className="space-y-1">
               <label className="font-semibold text-slate-800 flex items-center justify-between">
                 <span>Alasan Pengajuan Perubahan Jadwal <span className="text-rose-500">*</span></span>
@@ -372,7 +361,6 @@ export const AjukanPerubahanJadwalModal: React.FC<AjukanPerubahanJadwalModalProp
               </div>
             </div>
 
-            {/* Footer Buttons */}
             <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
               <button
                 type="button"

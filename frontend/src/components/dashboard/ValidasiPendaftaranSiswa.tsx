@@ -23,6 +23,7 @@ import confetti from 'canvas-confetti';
 import { Eskul, PendaftaranEskul, User } from '../../types';
 import { UserAvatar } from '../common/UserAvatar';
 import { api } from '../../services/api';
+import { pushSystemNotification } from '../../utils/notificationService';
 import {
   Card,
   CardHeader,
@@ -88,7 +89,6 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
         setRegistrations(data);
       }
     } catch {
-      // Fallback local mockup data if server temporarily unavailable
     } finally {
       setIsLoading(false);
     }
@@ -98,7 +98,6 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
     fetchRegistrations();
   }, []);
 
-  // Base list filtered by selected eskul and search query (before tab filter)
   const baseFilteredList = registrations.filter((item) => {
     const matchEskul = selectedEskulId === 'ALL' || item.eskulId === selectedEskulId;
     const matchSearch = 
@@ -111,12 +110,10 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
     return matchEskul && matchSearch;
   });
 
-  // Tab counters scoped to current selected eskul
   const pendingCount = baseFilteredList.filter(r => r.status === 'MENUNGGU_VALIDASI_KOORDINATOR').length;
   const approvedCount = baseFilteredList.filter(r => r.status === 'RESMI_TERDAFTAR').length;
   const totalCount = baseFilteredList.length;
 
-  // Final list filtered by active tab
   const filteredList = baseFilteredList.filter((item) => {
     if (activeTab === 'PENDING') {
       return item.status === 'MENUNGGU_VALIDASI_KOORDINATOR';
@@ -127,7 +124,6 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
     return true;
   });
 
-  // Global pending counts per eskul for card badge indicators
   const pendingCountByEskul = registrations.reduce((acc, r) => {
     if (r.status === 'MENUNGGU_VALIDASI_KOORDINATOR') {
       acc[r.eskulId] = (acc[r.eskulId] || 0) + 1;
@@ -178,7 +174,39 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
       if (data.success) {
         if (modalAction.type === 'APPROVE') {
           confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+          modalAction.targetIds.forEach(id => {
+            const reg = registrations.find(r => r.id === id);
+            if (reg) {
+              pushSystemNotification({
+                title: `Pendaftaran Eskul ${reg.namaEskul} DITERIMA!`,
+                desc: `Selamat ${reg.namaSiswa}! Pendaftaran Anda di ekstrakurikuler ${reg.namaEskul} telah disetujui resmi oleh Koordinator. Anda kini resmi menjadi anggota aktif. Silakan ikuti jadwal latihan mingguan!`,
+                category: 'PENDAFTARAN',
+                senderName: currentUser.namaLengkap || 'Koordinator Ekstrakurikuler',
+                time: 'Baru saja',
+                type: 'success',
+                targetRoles: ['SISWA'],
+                targetUserId: reg.siswaId,
+              });
+            }
+          });
+        } else {
+          modalAction.targetIds.forEach(id => {
+            const reg = registrations.find(r => r.id === id);
+            if (reg) {
+              pushSystemNotification({
+                title: `Pendaftaran Eskul ${reg.namaEskul} Ditolak`,
+                desc: `Mohon maaf ${reg.namaSiswa}, pendaftaran Anda di ekstrakurikuler ${reg.namaEskul} belum dapat disetujui oleh Koordinator. Catatan / Alasan: "${modalAction.catatan || 'Kuota kelas telah terpenuhi.'}"`,
+                category: 'PENDAFTARAN',
+                senderName: currentUser.namaLengkap || 'Koordinator Ekstrakurikuler',
+                time: 'Baru saja',
+                type: 'warning',
+                targetRoles: ['SISWA'],
+                targetUserId: reg.siswaId,
+              });
+            }
+          });
         }
+
         showToast(data.message || 'Validasi pendaftaran siswa berhasil diproses!', 'success');
         setSelectedIds([]);
         setModalAction(prev => ({ ...prev, isOpen: false }));
@@ -196,7 +224,6 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
 
   return (
     <div className="space-y-6 pb-12 animate-in fade-in-50 duration-300">
-      {/* Toast Alert */}
       <AnimatePresence>
         {toastMessage && (
           <motion.div
@@ -219,7 +246,6 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
         )}
       </AnimatePresence>
 
-      {/* Header Card */}
       <Card>
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -275,7 +301,6 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
             </div>
           </div>
 
-          {/* Stats Row */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mt-6 pt-6 border-t border-border">
             <div className="bg-muted/40 rounded-lg p-4 border border-border">
               <div className="text-xs text-muted-foreground font-medium">Menunggu Validasi Anda</div>
@@ -302,7 +327,6 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
         </CardContent>
       </Card>
 
-      {/* Eskul Quota Status Cards */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -314,7 +338,6 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {/* Master All Eskul Card */}
             <div 
               onClick={() => setSelectedEskulId('ALL')}
               className={`p-3 rounded-lg border transition-all cursor-pointer ${
@@ -391,9 +414,7 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
         </CardContent>
       </Card>
 
-      {/* Filter Toolbar & Actions */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-        {/* Tab switch */}
         <div className="flex items-center bg-muted/60 p-1 rounded-lg self-start border border-border">
           <Button
             variant={activeTab === 'PENDING' ? 'brand' : 'ghost'}
@@ -423,7 +444,6 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
           </Button>
         </div>
 
-        {/* Filter controls */}
         <div className="flex items-center gap-2.5">
           <div className="relative flex-1 sm:w-64">
             <Search className="size-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
@@ -449,7 +469,6 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
         </div>
       </div>
 
-      {/* Batch Action Toolbar */}
       {selectedIds.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -486,7 +505,6 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
         </motion.div>
       )}
 
-      {/* Table of Registrations */}
       <Card className="overflow-hidden">
         {isLoading ? (
           <div className="p-12 text-center text-muted-foreground flex flex-col items-center justify-center gap-3">
@@ -567,7 +585,6 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
                       key={item.id}
                       className={isSelected ? 'bg-primary/5' : ''}
                     >
-                      {/* Checkbox */}
                       <TableCell>
                         <input
                           type="checkbox"
@@ -577,7 +594,6 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
                         />
                       </TableCell>
 
-                      {/* Siswa Details */}
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <UserAvatar
@@ -597,7 +613,6 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
                         </div>
                       </TableCell>
 
-                      {/* Eskul Info */}
                       <TableCell>
                         <div className="font-semibold text-foreground flex items-center gap-1.5">
                           <span className="size-2 rounded-full bg-primary" />
@@ -611,14 +626,12 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
                         </div>
                       </TableCell>
 
-                      {/* Catatan Pembina */}
                       <TableCell className="max-w-xs">
                         <div className="p-2.5 rounded-md bg-muted/50 border border-border text-[11px] text-muted-foreground leading-relaxed italic">
                           "{item.catatanPembina || item.alasanDaftar || 'Direkomendasikan oleh pembina.'}"
                         </div>
                       </TableCell>
 
-                      {/* Status */}
                       <TableCell className="whitespace-nowrap">
                         {isPending && (
                           <Badge variant="warning" className="gap-1 text-[10px]">
@@ -643,7 +656,6 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
                         </div>
                       </TableCell>
 
-                      {/* Action buttons */}
                       <TableCell className="text-center whitespace-nowrap">
                         {isPending ? (
                           <div className="flex items-center justify-center gap-1.5">
@@ -682,7 +694,6 @@ export const ValidasiPendaftaranSiswa: React.FC<ValidasiPendaftaranSiswaProps> =
         )}
       </Card>
 
-      {/* Confirmation Modal */}
       <AnimatePresence>
         {modalAction.isOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs">

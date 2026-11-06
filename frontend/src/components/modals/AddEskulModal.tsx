@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Plus, Volleyball } from 'lucide-react';
 import { Eskul, Guru } from '../../types';
 import { PEMBINA_LIST } from '../../data/mockData';
+import { SearchablePembinaSelect } from '../common/SearchablePembinaSelect';
 
 interface AddEskulModalProps {
   isOpen: boolean;
@@ -87,7 +88,6 @@ export const AddEskulModal: React.FC<AddEskulModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3.5 text-xs max-h-[75vh] overflow-y-auto pr-1">
-          {/* Nama Eskul */}
           <div>
             <label className="font-semibold text-slate-700 block mb-1">
               Nama Ekstrakurikuler
@@ -102,7 +102,6 @@ export const AddEskulModal: React.FC<AddEskulModalProps> = ({
             />
           </div>
 
-          {/* Kategori & Kuota */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="font-semibold text-slate-700 block mb-1">Kategori Eskul</label>
@@ -155,25 +154,19 @@ export const AddEskulModal: React.FC<AddEskulModalProps> = ({
             </div>
           </div>
 
-          {/* Pembina */}
           <div>
             <label className="font-semibold text-slate-700 block mb-1">
               Guru / Pembina Terdaftar
             </label>
-            <select
+            <SearchablePembinaSelect
               value={pembinaId}
-              onChange={(e) => setPembinaId(e.target.value)}
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 focus:border-[#00B884]"
-            >
-              {allPembinaOptions.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.namaLengkap} {p.spesialisasi ? `(${p.spesialisasi})` : ''}
-                </option>
-              ))}
-            </select>
+              onChange={setPembinaId}
+              options={allPembinaOptions}
+              placeholder="Pilih atau cari guru pembina..."
+              searchPlaceholder="Ketik nama pembina / NIP untuk mencari..."
+            />
           </div>
 
-          {/* Jadwal Hari & Jam */}
           <div className="grid grid-cols-3 gap-2">
             <div>
               <label className="font-semibold text-slate-700 block mb-1">Hari</label>
@@ -211,7 +204,6 @@ export const AddEskulModal: React.FC<AddEskulModalProps> = ({
             </div>
           </div>
 
-          {/* Lokasi */}
           <div>
             <label className="font-semibold text-slate-700 block mb-1">
               Lokasi Latihan
@@ -225,7 +217,6 @@ export const AddEskulModal: React.FC<AddEskulModalProps> = ({
             />
           </div>
 
-          {/* Deskripsi */}
           <div>
             <label className="font-semibold text-slate-700 block mb-1">
               Deskripsi Singkat Ekstrakurikuler
@@ -239,7 +230,6 @@ export const AddEskulModal: React.FC<AddEskulModalProps> = ({
             />
           </div>
 
-          {/* Action Buttons */}
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
             <button
               type="button"

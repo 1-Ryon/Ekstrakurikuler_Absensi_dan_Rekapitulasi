@@ -1,11 +1,6 @@
 import { Eskul, SesiPertemuan } from '../types';
 
-/**
- * Daftar Hari Libur Nasional & Cuti Bersama Indonesia (2025 - 2027)
- * Format: YYYY-MM-DD
- */
 export const INDONESIA_HOLIDAYS: Record<string, string> = {
-  // Tahun 2025
   '2025-01-01': 'Tahun Baru 2025 Masehi',
   '2025-01-27': 'Isra Mi\'raj Nabi Muhammad SAW',
   '2025-01-29': 'Tahun Baru Imlek 2576 Kongzili',
@@ -24,7 +19,6 @@ export const INDONESIA_HOLIDAYS: Record<string, string> = {
   '2025-09-05': 'Maulid Nabi Muhammad SAW',
   '2025-12-25': 'Hari Raya Natal',
 
-  // Tahun 2026
   '2026-01-01': 'Tahun Baru 2026 Masehi',
   '2026-01-16': 'Isra Mi\'raj Nabi Muhammad SAW',
   '2026-02-17': 'Tahun Baru Imlek 2577 Kongzili',
@@ -42,7 +36,6 @@ export const INDONESIA_HOLIDAYS: Record<string, string> = {
   '2026-08-25': 'Maulid Nabi Muhammad SAW',
   '2026-12-25': 'Hari Raya Natal',
 
-  // Tahun 2027
   '2027-01-01': 'Tahun Baru 2027 Masehi',
   '2027-02-06': 'Tahun Baru Imlek 2578 Kongzili',
   '2027-03-10': 'Hari Raya Idul Fitri 1448 H',
@@ -54,16 +47,10 @@ export const INDONESIA_HOLIDAYS: Record<string, string> = {
 
 export const INDONESIAN_DAYS = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
-/**
- * Mendapatkan nama hari bahasa Indonesia dari objek Date
- */
 export const getIndonesianDayName = (date: Date = new Date()): string => {
   return INDONESIAN_DAYS[date.getDay()] || 'Senin';
 };
 
-/**
- * Format tanggal ke format YYYY-MM-DD standar
- */
 export const formatDateToYmd = (date: Date = new Date()): string => {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -71,9 +58,6 @@ export const formatDateToYmd = (date: Date = new Date()): string => {
   return `${y}-${m}-${d}`;
 };
 
-/**
- * Format tanggal bahasa Indonesia lengkap (e.g. "Senin, 13 Oktober 2025")
- */
 export const formatIndonesianFullDate = (date: Date = new Date()): string => {
   const months = [
     'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -86,9 +70,6 @@ export const formatIndonesianFullDate = (date: Date = new Date()): string => {
   return `${dayName}, ${dayNum} ${monthName} ${year}`;
 };
 
-/**
- * Memeriksa apakah tanggal yang diberikan merupakan Hari Libur Nasional / Tanggal Merah
- */
 export const checkIsIndonesianHoliday = (
   date: Date = new Date()
 ): { isHoliday: boolean; holidayName?: string; isWeekendHoliday: boolean } => {
@@ -100,7 +81,6 @@ export const checkIsIndonesianHoliday = (
     return { isHoliday: true, holidayName, isWeekendHoliday: isSunday };
   }
 
-  // Hari Minggu selalu tanggal merah
   if (isSunday) {
     return { isHoliday: true, holidayName: 'Hari Libur Akhir Pekan (Minggu)', isWeekendHoliday: true };
   }
@@ -108,9 +88,6 @@ export const checkIsIndonesianHoliday = (
   return { isHoliday: false, isWeekendHoliday: false };
 };
 
-/**
- * Parse string jam "HH:mm" atau "HH.mm" ke menit dari awal hari (0-1439)
- */
 export const parseTimeToMinutes = (timeStr?: string): number => {
   if (!timeStr) return 0;
   const sanitized = timeStr.replace('.', ':').trim();
@@ -136,7 +113,7 @@ export interface EskulRealtimeStatusInfo {
   badgeClass: string;
   dotColor: string;
   isLive: boolean;
-  priority: number; // untuk sorting / filter
+  priority: number;
 }
 
 export interface StatusEvaluationOptions {
@@ -146,9 +123,6 @@ export interface StatusEvaluationOptions {
   holidayReason?: string;
 }
 
-/**
- * Menghitung status real-time ekstrakurikuler berdasarkan jadwal, jam sekarang, sesi aktif, dan tanggal merah
- */
 export const getEskulRealTimeStatus = (
   eskul: Eskul,
   options: StatusEvaluationOptions = {}
@@ -157,7 +131,6 @@ export const getEskulRealTimeStatus = (
   const todayDayName = getIndonesianDayName(now);
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-  // 1. Jika Eskul Dinonaktifkan (Master Status = Non-Aktif)
   if (eskul.status === 'Non-Aktif') {
     return {
       key: 'NON_AKTIF',
@@ -171,10 +144,14 @@ export const getEskulRealTimeStatus = (
     };
   }
 
-  // 2. Cek apakah ada sesi aktif yang ditandai LIBUR hari ini
-  const todaySession = options.sessions?.find(
-    (s) => s.eskulId === eskul.id && (s.tanggal === formatDateToYmd(now) || !s.tanggal)
-  );
+  const todayYmd = formatDateToYmd(now);
+  const isScheduledToday = (eskul.jadwalHari || '').trim().toLowerCase() === todayDayName.trim().toLowerCase();
+
+  const todaySession = options.sessions?.find((s) => {
+    if (s.eskulId !== eskul.id) return false;
+    if (s.tanggal) return s.tanggal === todayYmd;
+    return isScheduledToday;
+  });
 
   const holidayCheck = checkIsIndonesianHoliday(now);
   const isHoliday = Boolean(options.forceHoliday || holidayCheck.isHoliday || todaySession?.isLibur || todaySession?.status === 'LIBUR');
@@ -193,37 +170,44 @@ export const getEskulRealTimeStatus = (
     };
   }
 
-  // 3. Cek apakah ada Sesi yang sedang BERLANGSUNG di database / state
-  const hasLiveSession = Boolean(
-    options.sessions?.some(
-      (s) => s.eskulId === eskul.id && s.status === 'BERLANGSUNG'
-    )
-  );
+  const liveSessionToday = options.sessions?.find((s) => {
+    if (s.eskulId !== eskul.id) return false;
+    if (s.status !== 'BERLANGSUNG') return false;
+    if (s.tanggal) return s.tanggal === todayYmd;
+    return isScheduledToday;
+  });
 
-  // 4. Cek apakah hari ini adalah hari jadwal eskul
-  const isScheduledToday = (eskul.jadwalHari || '').trim().toLowerCase() === todayDayName.trim().toLowerCase();
+  const startMinutes = parseTimeToMinutes(liveSessionToday?.jamMulai || todaySession?.jamMulai || eskul.jamMulai || '15:30');
+  const endMinutes = parseTimeToMinutes(liveSessionToday?.jamSelesai || todaySession?.jamSelesai || eskul.jamSelesai || '17:00');
 
-  const startMinutes = parseTimeToMinutes(eskul.jamMulai || '15:30');
-  const endMinutes = parseTimeToMinutes(eskul.jamSelesai || '17:00');
-
-  // Jika hari ini jadwalnya
   if (isScheduledToday) {
-    // 4A. Sedang Berlangsung (Jam sekarang masuk rentang ATAU ada sesi live dibuka)
-    if (hasLiveSession || (currentMinutes >= startMinutes && currentMinutes <= endMinutes)) {
+    if (todaySession?.status === 'SELESAI') {
       return {
-        key: 'BERLANGSUNG',
-        label: 'Sedang Berjalan',
-        badgeText: 'Sedang Berjalan',
-        detail: `Latihan berlangsung: ${eskul.jamMulai || '15:30'} - ${eskul.jamSelesai || '17:00'} WIB`,
-        badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-300 font-bold hover:bg-emerald-100',
-        dotColor: 'bg-emerald-500',
-        isLive: true,
-        priority: 1,
+        key: 'HARI_INI_SELESAI',
+        label: 'Selesai Hari Ini',
+        badgeText: 'Selesai Hari Ini',
+        detail: `Sesi latihan hari ini telah selesai pada ${todaySession?.jamSelesai || eskul.jamSelesai || '17:00'} WIB`,
+        badgeClass: 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200',
+        dotColor: 'bg-slate-400',
+        isLive: false,
+        priority: 4,
       };
     }
 
-    // 4B. Jadwal Hari Ini tapi jam sekarang BELUM mulai
-    if (currentMinutes < startMinutes) {
+    if (currentMinutes > endMinutes && !liveSessionToday) {
+      return {
+        key: 'HARI_INI_SELESAI',
+        label: 'Selesai Hari Ini',
+        badgeText: 'Selesai Hari Ini',
+        detail: `Sesi latihan hari ini telah selesai pada ${eskul.jamSelesai || '17:00'} WIB`,
+        badgeClass: 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200',
+        dotColor: 'bg-slate-400',
+        isLive: false,
+        priority: 4,
+      };
+    }
+
+    if (currentMinutes < startMinutes && !liveSessionToday?.isLocked) {
       return {
         key: 'HARI_INI_MENUNGGU',
         label: `Hari Ini (${eskul.jamMulai || '15:30'})`,
@@ -236,28 +220,52 @@ export const getEskulRealTimeStatus = (
       };
     }
 
-    // 4C. Jadwal Hari Ini tapi jam latihan SUDAH selesai
-    if (currentMinutes > endMinutes || todaySession?.status === 'SELESAI') {
+    if (liveSessionToday || (currentMinutes >= startMinutes && currentMinutes <= endMinutes)) {
+      return {
+        key: 'BERLANGSUNG',
+        label: 'Sedang Berjalan',
+        badgeText: 'Sedang Berjalan',
+        detail: `Latihan berlangsung: ${eskul.jamMulai || '15:30'} - ${eskul.jamSelesai || '17:00'} WIB`,
+        badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-300 font-bold hover:bg-emerald-100',
+        dotColor: 'bg-emerald-500',
+        isLive: true,
+        priority: 1,
+      };
+    }
+  }
+
+  if (liveSessionToday) {
+    if (todaySession?.status === 'SELESAI' || currentMinutes > endMinutes) {
       return {
         key: 'HARI_INI_SELESAI',
         label: 'Selesai Hari Ini',
         badgeText: 'Selesai Hari Ini',
-        detail: `Sesi latihan hari ini telah selesai pada ${eskul.jamSelesai || '17:00'} WIB`,
+        detail: `Sesi khusus hari ini (${todayDayName}) telah selesai pada ${liveSessionToday.jamSelesai || '17:00'} WIB`,
         badgeClass: 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200',
         dotColor: 'bg-slate-400',
         isLive: false,
         priority: 4,
       };
     }
-  }
 
-  // 5. Jika bukan hari jadwal eskul, tapi ada sesi dibuka (misal latihan tambahan / lomba)
-  if (hasLiveSession) {
+    if (currentMinutes < startMinutes) {
+      return {
+        key: 'HARI_INI_MENUNGGU',
+        label: `Sesi Khusus (${liveSessionToday.jamMulai || '15:30'})`,
+        badgeText: `Sesi Khusus • ${liveSessionToday.jamMulai || '15:30'}`,
+        detail: `Sesi khusus hari ini (${todayDayName}), dimulai pukul ${liveSessionToday.jamMulai || '15:30'} WIB`,
+        badgeClass: 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100',
+        dotColor: 'bg-amber-500',
+        isLive: false,
+        priority: 2,
+      };
+    }
+
     return {
       key: 'BERLANGSUNG',
       label: 'Sedang Berjalan',
       badgeText: 'Sedang Berjalan',
-      detail: `Sesi khusus dibuka hari ini (${todayDayName})`,
+      detail: `Sesi khusus dibuka hari ini (${todayDayName}) • ${liveSessionToday.jamMulai || '15:30'} - ${liveSessionToday.jamSelesai || '17:00'} WIB`,
       badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-300 font-bold hover:bg-emerald-100',
       dotColor: 'bg-emerald-500',
       isLive: true,
@@ -265,7 +273,6 @@ export const getEskulRealTimeStatus = (
     };
   }
 
-  // 6. Terjadwal di hari lain (Aktif tapi bukan jadwal hari ini)
   const targetDay = eskul.jadwalHari || 'Jumat';
   return {
     key: 'TERJADWAL',

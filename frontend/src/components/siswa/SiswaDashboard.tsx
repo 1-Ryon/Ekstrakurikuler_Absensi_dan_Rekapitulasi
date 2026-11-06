@@ -9,13 +9,16 @@ import {
   QrCode,
   ShieldCheck,
   UserCheck,
-  ChevronRight
+  ChevronRight,
+  Plus
 } from 'lucide-react';
 import { StudentProfile, Eskul, SesiPertemuan, PresensiRecord, PenilaianRecord } from '../../types';
 import { Card, Button, Badge } from '../ui';
 import { QrScannerModal } from './QrScannerModal';
 import { KartuHasilNilaiModal } from './KartuHasilNilaiModal';
 import { StudentCardModal } from '../modals/StudentCardModal';
+import { DaftarEskulModal } from '../modals/DaftarEskulModal';
+import { calculateEskulAttendance, calculateOverallAttendance } from '../../utils/attendance';
 
 const getCategoryBadge = (kategori?: string) => {
   switch (kategori) {
@@ -45,6 +48,8 @@ interface SiswaDashboardProps {
   onNavigateToKhn?: () => void;
   onNavigateToCard?: () => void;
   onNavigateToHistory?: (eskulId?: string) => void;
+  allEskuls?: Eskul[];
+  onRefresh?: () => void;
 }
 
 export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
@@ -58,6 +63,8 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
   onNavigateToKhn,
   onNavigateToCard,
   onNavigateToHistory,
+  allEskuls = [],
+  onRefresh,
 }) => {
   const currentStudent: StudentProfile = rawStudent || {
     id: 'usr-sis-01',
@@ -77,6 +84,7 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
   const [isScannerOpen, setIsScannerOpen] = useState(initialOpenModal === 'scanner');
   const [isKhnOpen, setIsKhnOpen] = useState(initialOpenModal === 'khn');
   const [isCardModalOpen, setIsCardModalOpen] = useState(initialOpenModal === 'card');
+  const [isDaftarEskulOpen, setIsDaftarEskulOpen] = useState(false);
   const [selectedSessionToken, setSelectedSessionToken] = useState<string>('SMK-AMANAH-DEMO');
 
   React.useEffect(() => {
@@ -128,9 +136,15 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
     }
   };
 
+  const overallSemesterAttendance = calculateOverallAttendance(
+    enrolledEskuls,
+    currentStudent,
+    todaySessions,
+    attendanceHistory
+  );
+
   return (
     <div className="space-y-6 pb-8">
-      {/* 1. WELCOME BANNER / CARD PORTAL PRESENSI */}
       <Card className="p-6 border-slate-200/90 shadow-2xs">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
           <div className="space-y-1.5">
@@ -144,13 +158,11 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
               Halo, {currentStudent.namaLengkap}!
             </h1>
             <p className="text-slate-500 text-xs sm:text-sm mt-1 max-w-2xl font-normal">
-              NISN: <span className="font-mono text-slate-700 font-semibold">{currentStudent.nomorInduk || currentStudent.nis}</span> • Kehadiran Semester Ini: <span className="font-semibold text-emerald-600">{currentStudent.kehadiranRataRata}%</span>
+              NISN: <span className="font-mono text-slate-700 font-semibold">{currentStudent.nomorInduk || currentStudent.nis}</span> • Kehadiran Semester Ini: <span className="font-semibold text-emerald-600">{overallSemesterAttendance}%</span>
             </p>
           </div>
 
-          {/* Action Buttons: Pindai Kamera, Kartu QR Saya, & Nilai Rapor (KHN) */}
           <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 w-full md:w-auto">
-            {/* Pindai QR Kamera Aktif */}
             <Button
               onClick={() => handleOpenScannerForSession()}
               className="bg-[#00B884] hover:bg-emerald-600 text-white flex-1 sm:flex-none flex items-center justify-center gap-2 text-xs font-semibold rounded-md h-10 px-4"
@@ -160,7 +172,6 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
               <span>Pindai QR Presensi</span>
             </Button>
 
-            {/* Kartu QR Saya */}
             <Button
               variant="outline"
               onClick={handleOpenCard}
@@ -171,7 +182,6 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
               <span>Kartu QR Saya</span>
             </Button>
 
-            {/* Kartu Nilai (KHN) */}
             <Button
               variant="outline"
               onClick={handleOpenKhn}
@@ -184,7 +194,6 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
         </div>
       </Card>
 
-      {/* 2. EKSTRAKURIKULER YANG ANDA IKUTI */}
       <div className="space-y-3.5">
         <div className="flex items-center justify-between pb-1">
           <div className="flex items-center gap-2.5">
@@ -200,22 +209,27 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
               </p>
             </div>
           </div>
-          <Badge variant="outline" className="text-xs text-emerald-700 bg-emerald-50 border-emerald-200 font-semibold shrink-0">
-            {enrolledEskuls.length} Cabang Aktif
-          </Badge>
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            <Badge variant="outline" className="text-xs text-emerald-700 bg-emerald-50 border-emerald-200 font-semibold shrink-0">
+              {enrolledEskuls.length} / 2 Cabang Diikuti
+            </Badge>
+
+            <Button
+              size="sm"
+              onClick={() => setIsDaftarEskulOpen(true)}
+              className="h-8 px-3 text-xs font-bold gap-1.5 bg-[#00B884] hover:bg-emerald-600 text-white shadow-2xs cursor-pointer"
+            >
+              <Plus className="size-3.5" />
+              <span>Daftar Eskul</span>
+            </Button>
+          </div>
         </div>
 
         {enrolledEskuls.length > 0 ? (
           <div className="space-y-3">
             {enrolledEskuls.map((eskul) => {
-              // Hitung persentase kehadiran eskul ini
-              const eskulRecords = attendanceHistory.filter(
-                (h) => h.eskulId === eskul.id || h.namaEskul?.toLowerCase() === eskul.namaEskul?.toLowerCase()
-              );
-              const attendedCount = eskulRecords.filter((h) => h.status === 'HADIR').length;
-              const attendancePercent = eskulRecords.length > 0
-                ? Math.round((attendedCount / eskulRecords.length) * 100)
-                : (currentStudent.kehadiranRataRata || 96);
+              const eskulAttendance = calculateEskulAttendance(eskul, currentStudent, todaySessions, attendanceHistory);
+              const attendancePercent = eskulAttendance.percent;
 
               const catBadgeStyle = getCategoryBadge(eskul.kategori);
 
@@ -227,7 +241,6 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
                     onNavigateToHistory ? 'cursor-pointer group' : ''
                   }`}
                 >
-                  {/* Sisi Kiri: Informasi Eskul, Pembina, Jadwal & Lokasi */}
                   <div className="flex items-start gap-4 min-w-0 flex-1">
                     <div className="w-11 h-11 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100 font-bold group-hover:bg-[#00B884] group-hover:text-white transition-all">
                       <Award className="w-5 h-5 transition-colors" />
@@ -243,7 +256,6 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
                         </span>
                       </div>
 
-                      {/* Dibina oleh siapa */}
                       <div className="flex items-center gap-2 text-xs">
                         <span className="text-slate-400 font-medium">Dibina oleh:</span>
                         <span className="font-semibold text-slate-700 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-200 inline-flex items-center gap-1.5">
@@ -252,7 +264,6 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
                         </span>
                       </div>
 
-                      {/* Jadwal & Lokasi */}
                       <div className="flex items-center gap-3.5 flex-wrap text-xs text-slate-500 pt-0.5">
                         <div className="flex items-center gap-1.5 font-semibold text-slate-700">
                           <Calendar className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -270,7 +281,6 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
                     </div>
                   </div>
 
-                  {/* Sisi Kanan: Persenan Kehadiran */}
                   <div className="flex md:flex-col items-center md:items-end justify-between md:justify-center gap-2 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100 shrink-0 md:min-w-[150px]">
                     <div className="text-left md:text-right">
                       <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
@@ -303,12 +313,30 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
           <Card className="p-8 text-center text-slate-400 border-slate-200">
             <Award className="w-10 h-10 mx-auto mb-2 text-slate-300" />
             <p className="text-sm font-bold text-slate-700">Belum terdaftar di ekstrakurikuler</p>
-            <p className="text-xs text-slate-400 mt-1">Anda belum terdaftar dalam cabang kegiatan ekstrakurikuler apapun.</p>
+            <p className="text-xs text-slate-400 mt-1">Anda belum terdaftar dalam cabang kegiatan ekstrakurikuler apapun (Maksimal 2 Cabang).</p>
+            <Button
+              size="sm"
+              onClick={() => setIsDaftarEskulOpen(true)}
+              className="mt-4 bg-[#00B884] hover:bg-emerald-600 text-white text-xs font-bold gap-1.5 cursor-pointer mx-auto"
+            >
+              <Plus className="size-3.5" />
+              <span>Daftar Ekstrakurikuler Sekarang</span>
+            </Button>
           </Card>
         )}
       </div>
 
-      {/* Real Camera QR Scanner Modal */}
+      <DaftarEskulModal
+        isOpen={isDaftarEskulOpen}
+        onClose={() => setIsDaftarEskulOpen(false)}
+        student={currentStudent}
+        allEskuls={allEskuls}
+        enrolledEskuls={enrolledEskuls}
+        onSuccess={() => {
+          if (onRefresh) onRefresh();
+        }}
+      />
+
       <QrScannerModal
         isOpen={isScannerOpen}
         onClose={() => setIsScannerOpen(false)}
@@ -318,16 +346,16 @@ export const SiswaDashboard: React.FC<SiswaDashboardProps> = ({
         studentName={currentStudent.namaLengkap}
       />
 
-      {/* Kartu Hasil Nilai (KHN) Modal Fallback */}
       <KartuHasilNilaiModal
         isOpen={isKhnOpen}
         onClose={() => setIsKhnOpen(false)}
         student={currentStudent}
         enrolledEskuls={enrolledEskuls}
         penilaianRecords={penilaianRecords}
+        sessions={todaySessions}
+        attendanceHistory={attendanceHistory}
       />
 
-      {/* Modal Kartu QR Siswa untuk Ditunjukkan ke Guru / Dicetak */}
       <StudentCardModal
         isOpen={isCardModalOpen}
         onClose={() => setIsCardModalOpen(false)}

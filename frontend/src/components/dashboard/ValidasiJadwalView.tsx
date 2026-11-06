@@ -64,14 +64,11 @@ export const ValidasiJadwalView: React.FC<ValidasiJadwalViewProps> = ({
   const approvedProposals = proposals.filter((p) => p.status === 'DISETUJUI');
 
   const filteredProposals = proposals.filter((p) => {
-    // Tab filter
     if (activeTab === 'PENDING' && p.status !== 'MENUNGGU_VALIDASI') return false;
     if (activeTab === 'HISTORY' && p.status === 'MENUNGGU_VALIDASI') return false;
 
-    // Eskul filter
     if (selectedEskulFilter !== 'ALL' && p.eskulId !== selectedEskulFilter) return false;
 
-    // Search query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchName = p.namaEskul.toLowerCase().includes(q);
@@ -123,7 +120,6 @@ export const ValidasiJadwalView: React.FC<ValidasiJadwalViewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Header Banner */}
       <Card className="p-6 border-border">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-start gap-4">
@@ -159,7 +155,6 @@ export const ValidasiJadwalView: React.FC<ValidasiJadwalViewProps> = ({
             </div>
           </div>
 
-          {/* Quick Metrics */}
           <div className="flex items-center gap-3 shrink-0">
             <div className="bg-amber-50/70 border border-amber-200 rounded-md px-3.5 py-2.5 text-center min-w-[90px]">
               <span className="text-xs font-semibold text-amber-700 block">Menunggu</span>
@@ -177,9 +172,7 @@ export const ValidasiJadwalView: React.FC<ValidasiJadwalViewProps> = ({
         </div>
       </Card>
 
-      {/* Control Bar: Tabs, Filter & Search */}
       <Card className="p-3.5 border-border flex flex-col md:flex-row items-center justify-between gap-3">
-        {/* Tabs */}
         <div className="flex items-center gap-1.5 p-1 bg-muted rounded-md w-full md:w-auto">
           <Button
             variant={activeTab === 'PENDING' ? 'brand' : 'ghost'}
@@ -220,7 +213,6 @@ export const ValidasiJadwalView: React.FC<ValidasiJadwalViewProps> = ({
           </Button>
         </div>
 
-        {/* Filters */}
         <div className="flex items-center gap-2.5 w-full md:w-auto">
           <div className="relative flex-1 md:w-56">
             <Search className="size-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
@@ -251,7 +243,6 @@ export const ValidasiJadwalView: React.FC<ValidasiJadwalViewProps> = ({
         </div>
       </Card>
 
-      {/* Proposal Cards List */}
       {filteredProposals.length === 0 ? (
         <Card className="p-12 text-center border-border">
           <div className="size-12 rounded-md bg-muted text-muted-foreground flex items-center justify-center mx-auto mb-3">
@@ -297,7 +288,6 @@ export const ValidasiJadwalView: React.FC<ValidasiJadwalViewProps> = ({
                 }`}
               >
                 <div>
-                  {/* Header card */}
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div>
                       <div className="flex items-center gap-2">
@@ -327,7 +317,6 @@ export const ValidasiJadwalView: React.FC<ValidasiJadwalViewProps> = ({
                     </Badge>
                   </div>
 
-                  {/* Pembina Info */}
                   <div className="flex items-center gap-2.5 py-2 px-3 bg-muted/40 rounded-md mb-3 border border-border">
                     <UserAvatar
                       name={prop.pembinaNama}
@@ -344,7 +333,6 @@ export const ValidasiJadwalView: React.FC<ValidasiJadwalViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Comparison: Lama vs Baru */}
                   <div className="grid grid-cols-2 gap-2 text-xs mb-3">
                     <div className="p-3 rounded-md bg-muted/30 border border-border">
                       <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
@@ -390,7 +378,6 @@ export const ValidasiJadwalView: React.FC<ValidasiJadwalViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Alasan */}
                   <div className="p-3 bg-muted/30 rounded-md border border-border text-xs mb-3">
                     <div className="flex items-center gap-1.5 text-muted-foreground font-semibold text-[11px] mb-1">
                       <FileText className="size-3.5" />
@@ -406,7 +393,6 @@ export const ValidasiJadwalView: React.FC<ValidasiJadwalViewProps> = ({
                     )}
                   </div>
 
-                  {/* Status/Catatan Verifikator if already validated */}
                   {!isPending && (
                     <div className={`p-3 rounded-md border text-xs mb-2 ${
                       isApproved ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900' : 'bg-rose-50/70 border-rose-200 text-rose-900'
@@ -426,7 +412,6 @@ export const ValidasiJadwalView: React.FC<ValidasiJadwalViewProps> = ({
                   )}
                 </div>
 
-                {/* Action Buttons for Pending - Equal 50/50 Width */}
                 {isPending && (
                   <div className="grid grid-cols-2 gap-2.5 pt-3 border-t border-border mt-2">
                     <Button
@@ -457,7 +442,6 @@ export const ValidasiJadwalView: React.FC<ValidasiJadwalViewProps> = ({
         </div>
       )}
 
-      {/* Confirmation Modal */}
       <AnimatePresence>
         {selectedProposal && actionType && (
           <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-4">

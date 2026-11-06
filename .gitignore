@@ -26,10 +26,16 @@ dist-ssr
 # Database files & local storage
 *.db
 *.db-journal
+*.db-shm
+*.db-wal
 *.sqlite
 *.sqlite-journal
 prisma/dev.db
 prisma/dev.db-journal
+
+# Uploads
+backend/uploads/*
+!backend/uploads/.gitkeep
 
 # Editor & System directories
 .vscode/*

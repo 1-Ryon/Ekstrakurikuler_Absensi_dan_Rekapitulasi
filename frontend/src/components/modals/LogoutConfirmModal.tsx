@@ -41,7 +41,6 @@ export const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop with smooth blur */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -52,7 +51,6 @@ export const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({
             aria-hidden="true"
           />
 
-          {/* Modal Container */}
           <motion.div
             role="alertdialog"
             aria-modal="true"
@@ -64,7 +62,6 @@ export const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({
             transition={{ type: 'spring', damping: 25, stiffness: 350 }}
             className="relative w-[92vw] max-w-md bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden z-10"
           >
-            {/* Top Header */}
             <div className="p-6 bg-white border-b border-slate-100 relative">
               <button
                 type="button"
@@ -91,13 +88,11 @@ export const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({
               </div>
             </div>
 
-            {/* Modal Body */}
             <div className="p-6 space-y-4">
               <p id="logout-dialog-desc" className="text-xs text-slate-600 leading-relaxed">
                 Apakah Anda yakin ingin keluar dari sistem? Seluruh sesi dan otentikasi login Anda pada peramban ini akan diakhiri.
               </p>
 
-              {/* User Account Card */}
               {currentUser && (
                 <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center gap-3">
                   <UserAvatar
@@ -128,7 +123,6 @@ export const LogoutConfirmModal: React.FC<LogoutConfirmModalProps> = ({
               </div>
             </div>
 
-            {/* Modal Actions */}
             <div className="p-5 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2.5">
               <button
                 type="button"

@@ -46,7 +46,6 @@ export const EditPembinaModal: React.FC<EditPembinaModalProps> = ({
       setSpesialisasi(pembina.spesialisasi || '');
       setStatusAktif(pembina.statusAktif !== false);
       
-      // Ambil SEMUA eskul yang saat ini dibina oleh pembina ini (Multi-Eskul)
       const coachedIds = eskulList
         .filter(e => e.pembinaId === pembina.id || (pembina.eskulDiampu && pembina.eskulDiampu.some(ed => ed.id === e.id)))
         .map(e => e.id);
@@ -102,7 +101,6 @@ export const EditPembinaModal: React.FC<EditPembinaModalProps> = ({
         onClick={(e) => e.stopPropagation()}
         className="bg-white rounded-lg w-[92vw] max-w-xl p-4 sm:p-6 shadow-xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150 max-h-[92dvh] flex flex-col"
       >
-        {/* Header */}
         <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-100 shrink-0">
           <div className="flex items-center gap-3">
             <UserAvatar name={namaLengkap || pembina.namaLengkap} size="lg" className="ring-2 ring-emerald-500/20" />
@@ -124,7 +122,6 @@ export const EditPembinaModal: React.FC<EditPembinaModalProps> = ({
           </button>
         </div>
 
-        {/* Scrollable Form Body */}
         <form onSubmit={handleSubmit} className="space-y-4 text-xs overflow-y-auto pr-1 flex-1">
           <div>
             <label className="font-semibold text-slate-700 block mb-1">
@@ -207,7 +204,6 @@ export const EditPembinaModal: React.FC<EditPembinaModalProps> = ({
             />
           </div>
 
-          {/* Penugasan Cabang Eskul (Multi-Select) */}
           <div className="p-3.5 bg-slate-50/80 rounded-lg border border-slate-200 space-y-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -242,7 +238,6 @@ export const EditPembinaModal: React.FC<EditPembinaModalProps> = ({
               Centang cabang ekstrakurikuler yang akan dibina oleh {namaLengkap || 'guru ini'}. Pembina dapat mengampu lebih dari 1 cabang eskul sekaligus.
             </p>
 
-            {/* List Eskul */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
               {eskulList.map((e) => {
                 const isSelected = assignedEskulIds.includes(e.id);

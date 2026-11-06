@@ -34,6 +34,11 @@
     --ring: 163 100% 36%;
 
     --radius: 0.5rem;
+
+    /* Framer Motion & CSS Performance Easing */
+    --ease-out-quint: cubic-bezier(.23, 1, .32, 1);
+    --ease-in-out-cubic: cubic-bezier(.645, .045, .355, 1);
+    --ease-out-cubic: cubic-bezier(.33, 1, .68, 1);
   }
 
   .dark {
@@ -98,6 +103,31 @@
   textarea {
     font-family: 'Poppins', sans-serif;
   }
+
+  /* GPU Hardware Acceleration & Smooth Interaction */
+  .card,
+  button,
+  [data-slot="card"] {
+    -webkit-font-smoothing: antialiased;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+}
+
+/* Attendance Scanner Camera Controls (Anti-Mirror & Orientation Standard) */
+.scanner-video-container video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  transition: transform 0.25s ease-out;
+}
+
+.scanner-video-unmirrored video {
+  transform: scaleX(1) !important;
+}
+
+.scanner-video-mirrored video {
+  transform: scaleX(-1) !important;
 }
 
 /* Custom scrollbars */
@@ -125,19 +155,84 @@
   50% { opacity: 0.5; }
 }
 
-/* Print Isolation for Student ID & Attendance Cards */
+/* ==========================================================================
+   Comprehensive Print Optimization & Isolation Protocol
+   ========================================================================== */
 @media print {
   @page {
     size: auto;
     margin: 8mm;
   }
 
-  /* When printing student card in portal, completely isolate and hide #root */
-  body:has(#printable-student-card-area) #root {
+  /* 1. Global Browser & Document Setup */
+  *, *::before, *::after {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 12pt;
+  }
+
+  /* 2. Strict UI Element Suppression (No Navbar, No Sidebar, No Floating UI) */
+  header,
+  aside,
+  nav,
+  [role="banner"],
+  [role="navigation"],
+  .app-header,
+  .app-sidebar,
+  .print-hidden,
+  .no-print,
+  [data-print-hidden="true"],
+  button:not(.allow-print),
+  input,
+  kbd,
+  .fixed:not(.printable-fixed):not(.printable-modal-portal):not(#printable-report-modal-portal):not(#printable-khn-modal-portal):not(.student-card-modal-backdrop),
+  .backdrop-blur-sm:not(.printable-fixed):not(.printable-modal-portal):not(#printable-report-modal-portal):not(#printable-khn-modal-portal):not(.student-card-modal-backdrop),
+  .backdrop-blur-xs:not(.printable-fixed):not(.printable-modal-portal):not(#printable-report-modal-portal):not(#printable-khn-modal-portal):not(.student-card-modal-backdrop) {
     display: none !important;
   }
 
-  body:has(#printable-student-card-area) {
+  /* 3. Global Layout Un-constraining (Prevent Viewport Clipping & Grey Tints) */
+  #root,
+  .app-layout-root,
+  .app-layout-content,
+  main {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: transparent !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    border: none !important;
+    display: block !important;
+  }
+
+  /* 4. Complete Isolation for Portalled Modals (Student Card, KHN Modal, Report Modal) */
+  body:has(#printable-student-card-area) #root,
+  body:has(#printable-khn-modal-portal) #root,
+  body:has(#printable-report-modal-portal) #root,
+  body.has-print-modal-open #root {
+    display: none !important;
+  }
+
+  body:has(#printable-student-card-area),
+  body:has(#printable-khn-modal-portal),
+  body:has(#printable-report-modal-portal),
+  body.has-print-modal-open {
     background: #ffffff !important;
     color: #000000 !important;
     height: auto !important;
@@ -146,25 +241,45 @@
     padding: 0 !important;
   }
 
-  body:has(#printable-student-card-area) .student-card-modal-backdrop {
+  /* Modal Backdrop resets - ensure static block display and zero-margin flow */
+  .student-card-modal-backdrop,
+  #printable-khn-modal-portal,
+  #printable-report-modal-portal,
+  .printable-modal-portal,
+  .printable-fixed {
+    display: block !important;
     position: static !important;
     background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     padding: 0 !important;
     margin: 0 !important;
     overflow: visible !important;
     max-height: none !important;
     height: auto !important;
+    width: 100% !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 
-  body:has(#printable-student-card-area) .student-card-modal-content {
+  /* Modal Content Card resets */
+  .student-card-modal-content,
+  .khn-modal-content,
+  .report-modal-content {
+    display: block !important;
+    position: static !important;
+    transform: none !important;
     border: none !important;
     box-shadow: none !important;
     padding: 0 !important;
-    margin: 0 !important;
+    margin: 0 auto !important;
     max-width: 100% !important;
     max-height: none !important;
     height: auto !important;
     overflow: visible !important;
+    background: transparent !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 
   #printable-student-card-area {
@@ -174,12 +289,41 @@
     overflow: visible !important;
   }
 
-  .print-single-card {
+  /* Table borders in print */
+  #printable-report-modal-portal table,
+  #printable-report-modal-portal th,
+  #printable-report-modal-portal td {
+    border-color: #94a3b8 !important;
+  }
+
+  /* 5. Clean Page Breaks & Document Card Aesthetics */
+  .print-single-card,
+  .print-avoid-break {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
     page-break-after: avoid !important;
     break-after: avoid !important;
+  }
+
+  .print-single-card {
     max-width: 440px !important;
     margin: 0 auto !important;
+  }
+
+  table {
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
   }
 }

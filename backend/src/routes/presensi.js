@@ -4,7 +4,7 @@ import { prisma } from '../config/prisma.js';
 import { getSystemSettings } from './settings.js';
 
 function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371e3; // meters
+  const R = 6371e3;
   const phi1 = (lat1 * Math.PI) / 180;
   const phi2 = (lat2 * Math.PI) / 180;
   const deltaPhi = ((lat2 - lat1) * Math.PI) / 180;
@@ -14,16 +14,11 @@ function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
     Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
     Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c; // distance in meters
+  return R * c;
 }
 
 const router = Router();
 
-// ==========================================
-// LIVE PRESENSI & SCAN VALIDATOR
-// ==========================================
-
-// 1. GET /api/presensi: Daftar log presensi real-time (take 100)
 router.get('/', async (req, res) => {
   try {
     const logs = await prisma.presensi.findMany({
@@ -82,10 +77,11 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 2. POST /api/presensi/scan: Presensi Scan (Anti-Fraud Window Check & Universal Tolerance)
 router.post('/scan', requireRoles('SISWA', 'PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, res) => {
   try {
-    const { qrToken, siswaId, deviceInfo, metode, lat, lng } = req.body;
+    const { qrToken, siswaId, deviceInfo, metode } = req.body;
+    const rawLat = req.body.lat !== undefined ? req.body.lat : req.body.latitude;
+    const rawLng = req.body.lng !== undefined ? req.body.lng : req.body.longitude;
 
     if (!qrToken || !siswaId) {
       return res.status(400).json({
@@ -95,28 +91,56 @@ router.post('/scan', requireRoles('SISWA', 'PEMBINA', 'KOORDINATOR', 'ADMIN'), a
     }
 
     const settings = getSystemSettings();
-    if (settings.isGeofenceActive && lat !== undefined && lng !== undefined) {
-      const parsedLat = Number(lat);
-      const parsedLng = Number(lng);
-      if (!isNaN(parsedLat) && !isNaN(parsedLng)) {
-        const distance = calculateHaversineDistance(
-          parsedLat,
-          parsedLng,
-          settings.schoolLatitude,
-          settings.schoolLongitude
-        );
-        if (distance > settings.geofenceRadius) {
-          return res.status(403).json({
-            success: false,
-            message: `Presensi ditolak: Anda terdeteksi berada di luar area SMK Al Amanah (Jarak: ${Math.round(distance)}m, Maksimal: ${settings.geofenceRadius}m).`,
-          });
-        }
+    if (settings.isGeofenceActive) {
+      if (rawLat === undefined || rawLng === undefined || rawLat === null || rawLng === null) {
+        return res.status(400).json({
+          success: false,
+          message: 'Presensi ditolak: Koordinat GPS lokasi perangkat wajib disertakan saat geofencing aktif.',
+        });
+      }
+      const parsedLat = Number(rawLat);
+      const parsedLng = Number(rawLng);
+      if (isNaN(parsedLat) || isNaN(parsedLng)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Presensi ditolak: Koordinat GPS tidak valid.',
+        });
+      }
+
+      const distance = calculateHaversineDistance(
+        parsedLat,
+        parsedLng,
+        settings.schoolLatitude,
+        settings.schoolLongitude
+      );
+      if (distance > settings.geofenceRadius) {
+        return res.status(403).json({
+          success: false,
+          message: `Presensi ditolak: Anda terdeteksi berada di luar area SMK Al Amanah (Jarak: ${Math.round(distance)}m, Maksimal: ${settings.geofenceRadius}m).`,
+        });
       }
     }
 
     const cleanToken = String(qrToken).trim();
-    let sesiId = null;
 
+    if (cleanToken.startsWith('SMK-AMANAH:')) {
+      const parts = cleanToken.split(':');
+      if (parts.length >= 3) {
+        const tokenWindow = parseInt(parts[2], 10);
+        if (!isNaN(tokenWindow)) {
+          const currentWindow = Math.floor(Date.now() / 15000);
+          const diff = currentWindow - tokenWindow;
+          if (diff > 1 || diff < -1) {
+            return res.status(400).json({
+              success: false,
+              message: 'Kode QR Kedaluwarsa, silakan scan ulang QR terbaru pada layar pembina.',
+            });
+          }
+        }
+      }
+    }
+
+    let sesiId = null;
     if (cleanToken.startsWith('SMK-AMANAH:')) {
       const parts = cleanToken.split(':');
       sesiId = parts[1];
@@ -131,7 +155,6 @@ router.post('/scan', requireRoles('SISWA', 'PEMBINA', 'KOORDINATOR', 'ADMIN'), a
         ? cleanSesiId.replace(/^sesi-/, 'ses-')
         : cleanSesiId;
 
-    // 1. Resolve Siswa first (toleran terhadap sis-01, sis-001, nis, nisn, atau usr-sis-01)
     const cleanSiswaId = String(siswaId).trim();
     const paddedSiswaId = cleanSiswaId.replace(/^sis-(\d+)$/, (_, n) => `sis-${n.padStart(3, '0')}`);
     let siswa = await prisma.siswa.findFirst({
@@ -161,7 +184,6 @@ router.post('/scan', requireRoles('SISWA', 'PEMBINA', 'KOORDINATOR', 'ADMIN'), a
       });
     }
 
-    // 2. Resolve Sesi (toleran terhadap sesi-XX, ses-XX, eskulId, atau tokenAktif)
     let sesi = await prisma.sesiPertemuan.findFirst({
       where: {
         OR: [
@@ -175,7 +197,6 @@ router.post('/scan', requireRoles('SISWA', 'PEMBINA', 'KOORDINATOR', 'ADMIN'), a
       include: { eskul: true },
     });
 
-    // Fallback: jika token demo / tidak cocok langsung, cari sesi eskul yang diikuti siswa
     if (!sesi && siswa?.keanggotaanEskul?.length > 0) {
       const studentEskulIds = siswa.keanggotaanEskul.map(k => k.eskulId);
       sesi = await prisma.sesiPertemuan.findFirst({
@@ -188,7 +209,6 @@ router.post('/scan', requireRoles('SISWA', 'PEMBINA', 'KOORDINATOR', 'ADMIN'), a
       });
     }
 
-    // Fallback umum ke sesi aktif mana pun
     if (!sesi) {
       sesi = await prisma.sesiPertemuan.findFirst({
         where: { status: 'BERLANGSUNG' },
@@ -206,7 +226,6 @@ router.post('/scan', requireRoles('SISWA', 'PEMBINA', 'KOORDINATOR', 'ADMIN'), a
       });
     }
 
-    // Jika sesi sudah dikunci/selesai, tolak presensi baru
     if (sesi.isLocked || sesi.status === 'SELESAI') {
       return res.status(400).json({
         success: false,
@@ -214,7 +233,20 @@ router.post('/scan', requireRoles('SISWA', 'PEMBINA', 'KOORDINATOR', 'ADMIN'), a
       });
     }
 
-    // Jika sesi belum dimulai, aktifkan otomatis menjadi BERLANGSUNG
+    const existing = await prisma.presensi.findUnique({
+      where: {
+        sesiId_siswaId: { sesiId: sesi.id, siswaId: siswa.id },
+      },
+    });
+
+    if (existing && existing.status === 'HADIR') {
+      return res.status(400).json({
+        success: false,
+        isDuplicate: true,
+        message: `Presensi ditolak: Siswa ${siswa.namaLengkap} sudah tercatat HADIR pada sesi ini.`,
+      });
+    }
+
     if (sesi.status === 'BELUM_DIMULAI') {
       await prisma.sesiPertemuan.update({
         where: { id: sesi.id },
@@ -222,11 +254,6 @@ router.post('/scan', requireRoles('SISWA', 'PEMBINA', 'KOORDINATOR', 'ADMIN'), a
       });
       sesi.status = 'BERLANGSUNG';
     }
-
-    // 3. Catat / Update Presensi (Idempotent)
-    const existing = await prisma.presensi.findFirst({
-      where: { sesiId: sesi.id, siswaId: siswa.id },
-    });
 
     let record;
     if (existing) {
@@ -285,36 +312,15 @@ router.post('/scan', requireRoles('SISWA', 'PEMBINA', 'KOORDINATOR', 'ADMIN'), a
   }
 });
 
-// 3. PATCH /api/presensi/:id/status: Koreksi / Dispensasi status presensi
-router.patch('/:id/status', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, res) => {
+async function handleTeacherScan(req, res) {
   try {
-    const { id } = req.params;
-    const { status } = req.body;
+    const { sesiId, studentIdOrNis, nis, siswaId, pembinaId, nilaiKeaktifan, ratingKeaktifan } = req.body;
+    const targetStudentIdentifier = studentIdOrNis || nis || siswaId;
 
-    const updated = await prisma.presensi.update({
-      where: { id },
-      data: {
-        status,
-        metode: 'MANUAL_DISPENSASI',
-      },
-    });
-
-    res.json({ success: true, data: updated });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-// 4. POST /api/presensi/scan-student-card: Pembina scan kartu QR siswa
-router.post('/scan-student-card', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, res) => {
-  try {
-    const { sesiId, studentIdOrNis, pembinaId, nilaiKeaktifan, ratingKeaktifan } = req.body;
-
-    if (!sesiId || !studentIdOrNis) {
-      return res.status(400).json({ success: false, message: 'ID Sesi dan Data QR Siswa wajib disertakan.' });
+    if (!sesiId || !targetStudentIdentifier) {
+      return res.status(400).json({ success: false, message: 'ID Sesi dan Data Identitas/QR Siswa wajib disertakan.' });
     }
 
-    // 1. Resolve Sesi (toleran terhadap ses-XX vs sesi-XX vs eskulId)
     const cleanSesiId = String(sesiId).trim();
     const altSesiId = cleanSesiId.startsWith('ses-')
       ? cleanSesiId.replace(/^ses-/, 'sesi-')
@@ -348,7 +354,13 @@ router.post('/scan-student-card', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'
       return res.status(404).json({ success: false, message: 'Sesi ekstrakurikuler tidak ditemukan.' });
     }
 
-    // Jika sesi sudah dikunci/selesai, tolak presensi baru
+    if (req.user?.role === 'PEMBINA' && sesi.eskul.pembinaId !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Akses ditolak: Anda bukan pembina resmi ekstrakurikuler ini.',
+      });
+    }
+
     if (sesi.isLocked || sesi.status === 'SELESAI') {
       return res.status(400).json({
         success: false,
@@ -356,7 +368,6 @@ router.post('/scan-student-card', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'
       });
     }
 
-    // Jika sesi belum dimulai, aktifkan otomatis menjadi BERLANGSUNG
     if (sesi.status === 'BELUM_DIMULAI') {
       await prisma.sesiPertemuan.update({
         where: { id: sesi.id },
@@ -365,8 +376,7 @@ router.post('/scan-student-card', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'
       sesi.status = 'BERLANGSUNG';
     }
 
-    // 2. Extract & Resolve identitas siswa
-    let cleanStudentId = String(studentIdOrNis).trim();
+    let cleanStudentId = String(targetStudentIdentifier).trim();
     if (cleanStudentId.startsWith('SMK-AMANAH:STUDENT:')) {
       const parts = cleanStudentId.split(':');
       cleanStudentId = parts[2] || parts[3] || cleanStudentId;
@@ -381,8 +391,8 @@ router.post('/scan-student-card', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'
           { id: paddedStudentId },
           { nis: cleanStudentId },
           { nisn: cleanStudentId },
-          { id: String(studentIdOrNis).trim() },
-          { nis: String(studentIdOrNis).trim() },
+          { id: String(targetStudentIdentifier).trim() },
+          { nis: String(targetStudentIdentifier).trim() },
         ],
       },
       include: { kelas: true },
@@ -396,7 +406,6 @@ router.post('/scan-student-card', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'
       });
     }
 
-    // Fallback: jika siswa belum ada di DB SQLite, buat otomatis agar foreign key constraint tidak gagal
     if (!siswa) {
       const defaultKelas = await prisma.kelas.findFirst();
       if (defaultKelas) {
@@ -421,7 +430,6 @@ router.post('/scan-student-card', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'
       return res.status(404).json({ success: false, message: 'Data siswa tidak ditemukan di sistem sekolah.' });
     }
 
-    // 3. Cek apakah sudah absen di sesi ini (Idempotent: update dan respon sukses)
     const existing = await prisma.presensi.findUnique({
       where: {
         sesiId_siswaId: { sesiId: sesi.id, siswaId: siswa.id },
@@ -455,13 +463,13 @@ router.post('/scan-student-card', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'
           namaEskul: sesi.eskul?.namaEskul || 'Ekstrakurikuler',
           waktuScan: `${['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][new Date(updatedExisting.waktuScan).getDay()]}, ${new Date(updatedExisting.waktuScan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })} • ${new Date(updatedExisting.waktuScan).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`,
           status: 'HADIR',
+          metode: 'SCAN_QR_SISWA',
           nilaiKeaktifan: updatedExisting.nilaiKeaktifan || 85,
           ratingKeaktifan: updatedExisting.ratingKeaktifan || 'Baik',
         },
       });
     }
 
-    // 4. Catat presensi baru (Metode 1: SCAN_QR_SISWA)
     const newRecord = await prisma.presensi.create({
       data: {
         sesiId: sesi.id,
@@ -476,7 +484,7 @@ router.post('/scan-student-card', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'
 
     res.status(201).json({
       success: true,
-      message: `Presensi ${siswa.namaLengkap} (${siswa.kelas?.namaKelas || '-'}) berhasil dicatat ke sistem.`,
+      message: `Presensi ${siswa.namaLengkap} (${siswa.kelas?.namaKelas || '-'}) berhasil dicatat ke sistem via Guru Scanner.`,
       data: {
         id: newRecord.id,
         siswaId: siswa.id,
@@ -486,7 +494,7 @@ router.post('/scan-student-card', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'
         avatarUrl: siswa.avatarUrl,
         kelas: siswa.kelas?.namaKelas || '-',
         namaEskul: sesi.eskul?.namaEskul || 'Ekstrakurikuler',
-        waktuScan: `${['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][new Date(newRecord.waktuScan).getDay()]}, ${new Date(newRecord.waktuScan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })} • ${new Date(newRecord.waktuScan).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`,
+        waktuScan: `${['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'][new Date(newRecord.waktuScan).getDay()]}, ${new Date(newRecord.newRecord?.waktuScan || newRecord.waktuScan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })} • ${new Date(newRecord.waktuScan).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`,
         status: 'HADIR',
         metode: 'SCAN_QR_SISWA',
         nilaiKeaktifan: newRecord.nilaiKeaktifan,
@@ -496,15 +504,75 @@ router.post('/scan-student-card', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
+}
+
+router.post('/teacher-scan', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), handleTeacherScan);
+router.post('/scan-student-card', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), handleTeacherScan);
+
+router.patch('/:id/status', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const presensi = await prisma.presensi.findUnique({
+      where: { id },
+      include: { sesi: { include: { eskul: true } } },
+    });
+
+    if (!presensi) {
+      return res.status(404).json({ success: false, message: 'Data presensi tidak ditemukan.' });
+    }
+
+    if (req.user?.role === 'PEMBINA' && presensi.sesi.eskul.pembinaId !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Akses ditolak: Anda bukan pembina resmi ekstrakurikuler ini.',
+      });
+    }
+
+    const updated = await prisma.presensi.update({
+      where: { id },
+      data: {
+        status,
+        metode: 'MANUAL_DISPENSASI',
+      },
+    });
+
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
-// 5. POST /api/presensi/bulk-checklist: Metode 3 - Checklist kehadiran manual oleh pembina
 router.post('/bulk-checklist', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, res) => {
   try {
-    const { sesiId, records, pembinaId } = req.body; // records: [{ siswaId, status: 'HADIR' | 'IZIN' | 'SAKIT' | 'ALPA', keterangan }]
+    const { sesiId, records, pembinaId } = req.body;
 
     if (!sesiId || !records || !Array.isArray(records)) {
       return res.status(400).json({ success: false, message: 'Data checklist presensi tidak valid.' });
+    }
+
+    const sesi = await prisma.sesiPertemuan.findUnique({
+      where: { id: sesiId },
+      include: { eskul: true },
+    });
+
+    if (!sesi) {
+      return res.status(404).json({ success: false, message: 'Sesi pertemuan tidak ditemukan.' });
+    }
+
+    if (req.user?.role === 'PEMBINA' && sesi.eskul.pembinaId !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Akses ditolak: Anda bukan pembina resmi ekstrakurikuler ini.',
+      });
+    }
+
+    if (sesi.isLocked || sesi.status === 'SELESAI') {
+      return res.status(400).json({
+        success: false,
+        message: 'Sesi absensi ini sudah dikunci dan difinalisasi menjadi history resmi.',
+      });
     }
 
     let updatedCount = 0;
@@ -522,23 +590,26 @@ router.post('/bulk-checklist', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), 
 
       if (!siswa) continue;
 
+      const rawStatus = (rec.status || 'HADIR').toUpperCase();
+      const status = rawStatus === 'ALPA' ? 'ALFA' : rawStatus;
+
       await prisma.presensi.upsert({
         where: {
           sesiId_siswaId: { sesiId, siswaId: siswa.id },
         },
         update: {
-          status: rec.status || 'HADIR',
+          status,
           metode: 'MANUAL_CHECKLIST',
           keterangan: rec.keterangan || null,
-          deviceInfo: `Checklist Manual Pembina (${pembinaId || 'Guru'})`,
+          deviceInfo: `Checklist Manual Pembina (${pembinaId || req.user?.namaLengkap || 'Guru'})`,
         },
         create: {
           sesiId,
           siswaId: siswa.id,
-          status: rec.status || 'HADIR',
+          status,
           metode: 'MANUAL_CHECKLIST',
           keterangan: rec.keterangan || null,
-          deviceInfo: `Checklist Manual Pembina (${pembinaId || 'Guru'})`,
+          deviceInfo: `Checklist Manual Pembina (${pembinaId || req.user?.namaLengkap || 'Guru'})`,
         },
       });
       updatedCount++;

@@ -1,6 +1,3 @@
-/**
- * Standardized Response Formatter for SMK Al Amanah Backend
- */
 
 export function sendSuccess(res, data, message = 'Operasi berhasil', statusCode = 200, extra = {}) {
   return res.status(statusCode).json({

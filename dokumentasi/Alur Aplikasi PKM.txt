@@ -1,0 +1,11 @@
+Alur Aplikasi PKM :
+
+CRUD Data
+- Memasukan data Siswa, Guru, Pembina.
+- Pengetesan data yang telah di masukan. contohnya read, update, delete.
+- percobaan login pada setiap data yang telah di masukan sebagai bukti data sudah tersimpan dengan baik dan berfungsi sebagaimana seharusnya
+
+Pengetesan user dan fitur
+- Setelah login dan berhasil, masuk pada pengecekan fungsi dengan backend dan frontend dari fitur fitur setiap user. sebagai contoh melakukan pengubahan data password atau mengubah eskul dari siswa (pada user Koordinator atau admin).
+- cek fitur apakah berfungsi dan menyelesaikan masalah yang ada ? dan apakah tampilannya sesuai dengan data yang ada.
+- melakukan pengecekan antara interaksi user coordinator, pemina, guru, dan siswa dengan fitur fitur yang saling berhubungan

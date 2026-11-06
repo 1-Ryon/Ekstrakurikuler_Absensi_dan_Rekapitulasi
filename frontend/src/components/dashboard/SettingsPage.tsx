@@ -106,7 +106,6 @@ export const SettingsPage: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-8 max-w-4xl">
-      {/* Title */}
       <div>
         <div className="flex items-center gap-2 mb-1">
           <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
@@ -129,7 +128,6 @@ export const SettingsPage: React.FC = () => {
       )}
 
       <form onSubmit={handleSave} className="space-y-6">
-        {/* Card 1: Keamanan Dynamic QR & Anti-Fraud */}
         <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-xs space-y-4">
           <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
             <div className="w-9 h-9 rounded-md bg-emerald-50 text-[#00B884] flex items-center justify-center">
@@ -209,7 +207,6 @@ export const SettingsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Coordinate settings */}
           <div className="pt-2 border-t border-slate-100">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
               <span className="text-xs font-bold text-slate-700">
@@ -258,7 +255,6 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Card 2: Bobot Penilaian Rapor Semester */}
         <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-xs space-y-4">
           <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
             <div className="w-9 h-9 rounded-md bg-amber-50 text-amber-600 flex items-center justify-center">
@@ -326,7 +322,6 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Card 3: Sekolah Profile */}
         <div className="bg-white p-6 rounded-lg border border-slate-200 shadow-xs space-y-4">
           <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
             <div className="w-9 h-9 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -364,7 +359,6 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Submit Button */}
         <div className="flex items-center justify-end gap-3 pt-2">
           <button
             type="submit"

@@ -43,7 +43,6 @@ export const BukaAbsensiModal: React.FC<BukaAbsensiModalProps> = ({
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Suggested quick topics based on eskul category
   const suggestedTopics = React.useMemo(() => {
     if (!eskul) return [];
     if (eskul.kategori === 'Olahraga') {
@@ -82,7 +81,6 @@ export const BukaAbsensiModal: React.FC<BukaAbsensiModalProps> = ({
     ];
   }, [eskul]);
 
-  // Sync state when eskul changes or modal opens
   useEffect(() => {
     if (eskul && isOpen) {
       setJamMulai(eskul.jamMulai || '15:30');
@@ -91,7 +89,6 @@ export const BukaAbsensiModal: React.FC<BukaAbsensiModalProps> = ({
       setErrorMsg('');
       setIsSubmitting(false);
 
-      // Default prefill if empty
       if (!judul) {
         setJudul(`Pertemuan Rutin & Latihan ${eskul.namaEskul}`);
       }
@@ -155,7 +152,6 @@ export const BukaAbsensiModal: React.FC<BukaAbsensiModalProps> = ({
           transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
           className="bg-white rounded-lg w-[92vw] max-w-xl shadow-xl border border-slate-200 overflow-hidden my-auto max-h-[92dvh] flex flex-col"
         >
-          {/* Header */}
           <div className="p-5 sm:p-6 border-b border-slate-100 flex items-start justify-between gap-4">
             <div className="space-y-1.5">
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-md text-[11px] font-semibold">
@@ -179,7 +175,6 @@ export const BukaAbsensiModal: React.FC<BukaAbsensiModalProps> = ({
             </button>
           </div>
 
-          {/* Form Content */}
           <form onSubmit={handleSubmit} className="p-6 space-y-4">
             {errorMsg && (
               <motion.div
@@ -192,7 +187,6 @@ export const BukaAbsensiModal: React.FC<BukaAbsensiModalProps> = ({
               </motion.div>
             )}
 
-            {/* Quick Suggestions Chips */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500">
                 <span className="flex items-center gap-1 text-emerald-600">
@@ -215,7 +209,6 @@ export const BukaAbsensiModal: React.FC<BukaAbsensiModalProps> = ({
               </div>
             </div>
 
-            {/* 1. Judul Pertemuan (WAJIB) */}
             <div className="space-y-1">
               <label className="text-xs font-semibold text-slate-800 flex items-center justify-between">
                 <span>Judul Pertemuan / Topik Hari Ini <span className="text-rose-500">*</span></span>
@@ -237,7 +230,6 @@ export const BukaAbsensiModal: React.FC<BukaAbsensiModalProps> = ({
               </p>
             </div>
 
-            {/* 2. Deskripsi Bahasan & Latihan (WAJIB) */}
             <div className="space-y-1">
               <label className="text-xs font-semibold text-slate-800 flex items-center justify-between">
                 <span>Rincian Bahasan &amp; Materi Latihan <span className="text-rose-500">*</span></span>
@@ -260,7 +252,6 @@ export const BukaAbsensiModal: React.FC<BukaAbsensiModalProps> = ({
               </div>
             </div>
 
-            {/* 3. Detail Waktu & Lokasi */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
@@ -298,7 +289,6 @@ export const BukaAbsensiModal: React.FC<BukaAbsensiModalProps> = ({
               </div>
             </div>
 
-            {/* Footer Buttons */}
             <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
               <button
                 type="button"

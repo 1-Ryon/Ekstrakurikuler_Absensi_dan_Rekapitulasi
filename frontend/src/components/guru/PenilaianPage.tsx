@@ -25,6 +25,7 @@ import {
 import { PenilaianRecord, Eskul, PrestasiLombaRecord, StudentProfile } from '../../types';
 import { api } from '../../services/api';
 import { AddPrestasiModal } from '../modals/AddPrestasiModal';
+import { ConfirmDeleteModal } from '../modals/ConfirmDeleteModal';
 
 interface PenilaianPageProps {
   penilaianList: PenilaianRecord[];
@@ -53,13 +54,14 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [savedSuccessAlert, setSavedSuccessAlert] = useState(false);
 
-  // Prestasi Lomba State
   const [prestasiList, setPrestasiList] = useState<PrestasiLombaRecord[]>([]);
   const [isLoadingPrestasi, setIsLoadingPrestasi] = useState(false);
   const [isAddPrestasiModalOpen, setIsAddPrestasiModalOpen] = useState(false);
   const [prestasiSearch, setPrestasiSearch] = useState('');
   const [prestasiEskulFilter, setPrestasiEskulFilter] = useState('ALL');
   const [prestasiTingkatFilter, setPrestasiTingkatFilter] = useState('ALL');
+  const [deletingPrestasi, setDeletingPrestasi] = useState<{ id: string; namaLomba: string } | null>(null);
+  const [isDeletingPrestasi, setIsDeletingPrestasi] = useState(false);
 
   const fetchPrestasi = async () => {
     setIsLoadingPrestasi(true);
@@ -69,7 +71,6 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
         setPrestasiList(data);
       }
     } catch {
-      // fallback
     } finally {
       setIsLoadingPrestasi(false);
     }
@@ -79,22 +80,24 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
     fetchPrestasi();
   }, []);
 
-  const handleDeletePrestasi = async (id: string, namaLomba: string) => {
-    if (!window.confirm(`Hapus catatan prestasi "${namaLomba}"? Poin bonus siswa akan disesuaikan kembali.`)) return;
+  const executeDeletePrestasi = async () => {
+    if (!deletingPrestasi) return;
+    setIsDeletingPrestasi(true);
     try {
-      await api.deletePrestasi(id);
-      setPrestasiList(prev => prev.filter(p => p.id !== id));
-      // Refresh rekap nilai if available
+      await api.deletePrestasi(deletingPrestasi.id);
+      setPrestasiList(prev => prev.filter(p => p.id !== deletingPrestasi.id));
       try {
         const updatedPenilaian = await api.getPenilaian();
         if (Array.isArray(updatedPenilaian)) {
           setRecords(updatedPenilaian);
         }
       } catch {
-        // ignore
       }
+      setDeletingPrestasi(null);
     } catch (err: any) {
       alert(err.message || 'Gagal menghapus data prestasi.');
+    } finally {
+      setIsDeletingPrestasi(false);
     }
   };
 
@@ -133,7 +136,6 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
     selectedPredikats.length;
 
   const calculateFinalGrade = (kehadiran: number, keaktifan: number, kinerja: number) => {
-    // Kehadiran 40%, Keaktifan 30%, Kinerja 30%
     const score = (kehadiran * 0.4) + (keaktifan * 0.3) + (kinerja * 0.3);
     const rounded = Math.round(score * 10) / 10;
 
@@ -224,7 +226,6 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Title & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -278,7 +279,6 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
         </div>
       </div>
 
-      {/* Sub-Tab Navigation Bar */}
       <div className="flex border-b border-slate-200 gap-2">
         <button
           onClick={() => setActiveSubTab('rapor')}
@@ -319,7 +319,6 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
 
       {activeSubTab === 'rapor' && (
         <>
-          {/* Formula & Weighting Banner */}
           <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs text-slate-700">
         <div className="flex items-center gap-2.5">
           <Calculator className="size-4 text-[#00B884] shrink-0" />
@@ -336,7 +335,6 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
       <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-xs space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="relative flex-1 max-w-md">
@@ -351,7 +349,6 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Unified Filter Button */}
             <button
               onClick={() => setIsFilterModalOpen(true)}
               className={`flex items-center gap-2 px-3.5 py-2 rounded-md text-xs font-semibold border transition-all cursor-pointer ${
@@ -375,7 +372,6 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
           </div>
         </div>
 
-        {/* Active Filter Chips */}
         {activeFiltersCount > 0 && (
           <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 text-xs">
             <span className="text-slate-400 text-[11px] font-medium">Filter Aktif:</span>
@@ -424,7 +420,6 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
         )}
       </div>
 
-      {/* Filter Modal Window (Multi-Choice) */}
       <AnimatePresence>
         {isFilterModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in">
@@ -434,7 +429,6 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               className="bg-white rounded-lg p-6 w-full max-w-lg shadow-xl border border-slate-200 relative space-y-5"
             >
-              {/* Header */}
               <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div className="flex items-center gap-3">
                   <div className="size-9 rounded-md bg-emerald-50 border border-emerald-200 text-[#00B884] flex items-center justify-center">
@@ -453,9 +447,7 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
                 </button>
               </div>
 
-              {/* Options */}
               <div className="space-y-4">
-                {/* 1. Ekstrakurikuler (Multi-select) */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
@@ -505,7 +497,6 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
                   </div>
                 </div>
 
-                {/* 2. Kelas (Multi-select) */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
@@ -555,7 +546,6 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
                   </div>
                 </div>
 
-                {/* 3. Predikat Nilai (Multi-select) */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
@@ -606,7 +596,6 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="flex items-center justify-between pt-4 border-t border-slate-100">
                 <button
                   type="button"
@@ -633,7 +622,6 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Form Assessment Table */}
       <div className="bg-white rounded-lg border border-slate-200 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -652,20 +640,17 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
             <tbody className="divide-y divide-slate-100 text-sm">
               {filteredRecords.map((item) => (
                 <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                  {/* Siswa */}
                   <td className="py-3.5 px-4">
                     <div className="font-bold text-slate-800">{item.namaSiswa}</div>
                     <div className="text-xs text-slate-400 font-mono">{item.nisn} • {item.kelas}</div>
                   </td>
 
-                  {/* Eskul */}
                   <td className="py-3.5 px-4">
                     <span className="px-2.5 py-1 bg-emerald-50 text-[#00B884] text-xs font-semibold rounded-full border border-emerald-100">
                       {item.namaEskul}
                     </span>
                   </td>
 
-                  {/* Nilai Kehadiran Input */}
                   <td className="py-3 px-3 text-center">
                     <input
                       type="number"
@@ -677,7 +662,6 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
                     />
                   </td>
 
-                  {/* Nilai Keaktifan Input */}
                   <td className="py-3 px-3 text-center">
                     <input
                       type="number"
@@ -689,7 +673,6 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
                     />
                   </td>
 
-                  {/* Nilai Kinerja Input */}
                   <td className="py-3 px-3 text-center">
                     <input
                       type="number"
@@ -701,14 +684,12 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
                     />
                   </td>
 
-                  {/* Nilai Akhir (Calculated) */}
                   <td className="py-3 px-3 text-center">
                     <span className="text-base font-extrabold text-slate-800">
                       {item.nilaiAkhir}
                     </span>
                   </td>
 
-                  {/* Predikat */}
                   <td className="py-3 px-3 text-center">
                     <span className={`inline-block w-8 h-8 rounded-full font-extrabold text-sm leading-8 text-center ${
                       item.predikat === 'A'
@@ -723,7 +704,6 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
                     </span>
                   </td>
 
-                  {/* Catatan Naratif */}
                   <td className="py-3 px-4">
                     <textarea
                       rows={2}
@@ -739,7 +719,6 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
           </table>
         </div>
 
-        {/* Footer info */}
         <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
           <span>{filteredRecords.length} Nilai Siswa Terdaftar untuk Semester Ganjil</span>
           <span className="font-semibold text-slate-700">Format Nilai Terintegrasi e-Rapor</span>
@@ -748,10 +727,8 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
         </>
       )}
 
-      {/* SUB-TAB 2: PRESTASI & KEJUARAAN LOMBA */}
       {activeSubTab === 'prestasi' && (
         <div className="space-y-6">
-          {/* KPI Bento Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs flex items-center gap-3.5">
               <div className="w-11 h-11 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-[#00B884]">
@@ -800,7 +777,6 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
             </div>
           </div>
 
-          {/* Filter & Search Bar */}
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="relative flex-1 max-w-md">
               <Search className="size-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -814,7 +790,6 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5">
-              {/* Eskul Filter */}
               <select
                 value={prestasiEskulFilter}
                 onChange={(e) => setPrestasiEskulFilter(e.target.value)}
@@ -826,7 +801,6 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
                 ))}
               </select>
 
-              {/* Tingkat Filter */}
               <select
                 value={prestasiTingkatFilter}
                 onChange={(e) => setPrestasiTingkatFilter(e.target.value)}
@@ -854,7 +828,6 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
             </div>
           </div>
 
-          {/* Prestasi Table Card */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
@@ -958,7 +931,7 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
                           </td>
                           <td className="py-3.5 px-4 text-center">
                             <button
-                              onClick={() => handleDeletePrestasi(item.id, item.namaLomba)}
+                              onClick={() => setDeletingPrestasi({ id: item.id, namaLomba: item.namaLomba })}
                               title="Hapus Prestasi"
                               className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                             >
@@ -991,7 +964,6 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
         </div>
       )}
 
-      {/* Add Prestasi Modal */}
       <AddPrestasiModal
         isOpen={isAddPrestasiModalOpen}
         onClose={() => setIsAddPrestasiModalOpen(false)}
@@ -1002,6 +974,17 @@ export const PenilaianPage: React.FC<PenilaianPageProps> = ({
           fetchPrestasi();
         }}
         defaultEskulId={selectedEskuls[0] || ''}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={!!deletingPrestasi}
+        onClose={() => setDeletingPrestasi(null)}
+        onConfirm={executeDeletePrestasi}
+        isLoading={isDeletingPrestasi}
+        title="Hapus Rekap Prestasi Lomba"
+        itemName={deletingPrestasi?.namaLomba}
+        itemType="Prestasi & Juara Lomba"
+        description="Apakah Anda yakin ingin menghapus catatan prestasi lomba ini? Poin bonus Kurikulum Merdeka siswa terkait akan dihitung ulang secara otomatis."
       />
     </div>
   );

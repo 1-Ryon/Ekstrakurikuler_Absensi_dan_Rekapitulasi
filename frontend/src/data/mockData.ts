@@ -212,7 +212,6 @@ export const INITIAL_SESSIONS: SesiPertemuan[] = [];
 export const INITIAL_JADWAL_PROPOSALS: PengajuanJadwal[] = [];
 
 export const INITIAL_STUDENTS: StudentProfile[] = [
-  // 10 Siswa Spesifik yang Diberikan Pengguna (Dengan NIM Sungguhan)
   {
     id: 'sis-001',
     username: '241011400049',
@@ -423,7 +422,6 @@ export const INITIAL_PRESENSI_LOG: PresensiRecord[] = [];
 
 export const INITIAL_PENILAIAN: PenilaianRecord[] = [];
 
-// Data Jadwal & Distribusi Eskul Mingguan (Senin - Minggu)
 export const WEEKLY_SCHEDULE_DAYS = [
   { dayIndex: 0, dayName: 'Senin' as const, shortDay: 'SEN' as const, jumlahEskul: 0, kehadiranPercent: 90, isToday: false, keterangan: 'Tidak Ada Kegiatan Terjadwal', eskulList: [] },
   { dayIndex: 1, dayName: 'Selasa' as const, shortDay: 'SEL' as const, jumlahEskul: 0, kehadiranPercent: 90, isToday: false, keterangan: 'Tidak Ada Kegiatan Terjadwal', eskulList: [] },
@@ -434,7 +432,6 @@ export const WEEKLY_SCHEDULE_DAYS = [
   { dayIndex: 6, dayName: 'Minggu' as const, shortDay: 'MIN' as const, jumlahEskul: 0, kehadiranPercent: 90, isToday: false, keterangan: 'Tidak Ada Kegiatan Terjadwal', eskulList: [] },
 ];
 
-// Data point grafik mingguan kehadiran (tetap kompatibel)
 export const WEEKLY_ATTENDANCE_DATA = WEEKLY_SCHEDULE_DAYS.map(d => ({
   dayIndex: d.dayIndex,
   label: `${d.dayName} (${d.jumlahEskul} Eskul)`,

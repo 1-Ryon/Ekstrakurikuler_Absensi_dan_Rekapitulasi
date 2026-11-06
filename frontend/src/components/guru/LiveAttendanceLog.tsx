@@ -20,10 +20,18 @@ import {
   Calendar,
   Filter,
   X,
-  HeartPulse
+  HeartPulse,
+  Play,
+  ZoomIn,
+  Eye,
+  MapPin,
+  Camera,
+  ExternalLink,
+  ChevronDown
 } from 'lucide-react';
 import { PresensiRecord, SesiPertemuan, StudentProfile, Eskul, User } from '../../types';
 import { UserAvatar } from '../common/UserAvatar';
+import { StartAttendanceModal } from '../modals/StartAttendanceModal';
 import { api } from '../../services/api';
 import {
   Card,
@@ -53,6 +61,7 @@ interface LiveAttendanceLogProps {
   currentUser?: User;
   onUpdateStatus?: (id: string, newStatus: PresensiRecord['status']) => void;
   onRefresh: () => void;
+  onUpdateSessionStatus?: (status: SesiPertemuan['status']) => void;
 }
 
 interface StudentChecklistItem {
@@ -79,27 +88,23 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
   currentUser,
   onUpdateStatus,
   onRefresh,
+  onUpdateSessionStatus,
 }) => {
-  // Main View: 'CHECKLIST_WORKFLOW' (Presensi Langsung 4-Tahap) vs 'RIWAYAT_LOG' (Riwayat & Ekspor CSV)
   const [mainView, setMainView] = useState<'CHECKLIST_WORKFLOW' | 'RIWAYAT_LOG'>('CHECKLIST_WORKFLOW');
 
-  // Stepper inside Checklist: 1 = Hadir, 2 = Keaktifan, 3 = Izin/Sakit/Telat, 4 = Review & Kunci
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
 
-  // Active Session Selection
   const [selectedSessionId, setSelectedSessionId] = useState<string>(rawCurrentSession?.id || sessions[0]?.id || '');
   const activeSession = useMemo(() => {
     return sessions.find(s => s.id === selectedSessionId) || rawCurrentSession || sessions[0];
   }, [sessions, selectedSessionId, rawCurrentSession]);
 
-  // Students enrolled in this eskul
   const enrolledStudents = useMemo(() => {
     if (!activeSession) return students.slice(0, 15);
     const filtered = students.filter(s => s.enrolledEskulIds?.includes(activeSession.eskulId));
     return filtered.length > 0 ? filtered : students.slice(0, 15);
   }, [students, activeSession]);
 
-  // Attendance Checklist Map
   const [checklistMap, setChecklistMap] = useState<Record<string, StudentChecklistItem>>({});
 
   useEffect(() => {
@@ -138,20 +143,60 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
 
   const isSessionLocked = activeSession?.isLocked || activeSession?.status === 'SELESAI';
 
-  // Modals
   const [isHolidayModalOpen, setIsHolidayModalOpen] = useState(false);
+  const [isStartAttendanceModalOpen, setIsStartAttendanceModalOpen] = useState(false);
   const [holidayReason, setHolidayReason] = useState('Hari Libur Nasional / Tanggal Merah');
   const [isLockModalOpen, setIsLockModalOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [isReopening, setIsReopening] = useState(false);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [previewPhotoData, setPreviewPhotoData] = useState<{
+    url: string;
+    title: string;
+    eskul: string;
+    pembina: string;
+    tanggal?: string;
+    jam?: string;
+    lokasi?: string;
+    deskripsi?: string;
+  } | null>(null);
 
   const showToast = (text: string, type: 'success' | 'error' = 'success') => {
     setToastMessage({ text, type });
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  // Tahap 1 Handlers: Toggle Hadir
+  const handleReopenSession = async () => {
+    if (!activeSession) return;
+    if (!activeSession.fotoKegiatan) {
+      setIsStartAttendanceModalOpen(true);
+      return;
+    }
+    setIsReopening(true);
+    try {
+      await api.updateSessionStatus(activeSession.id, 'BERLANGSUNG', { isLocked: false });
+      if (onUpdateSessionStatus) {
+        onUpdateSessionStatus('BERLANGSUNG');
+      }
+      onRefresh();
+      showToast('Sesi absensi dibuka kembali untuk pencatatan kehadiran.', 'success');
+    } catch (err: any) {
+      showToast(err?.message || 'Gagal membuka kembali sesi absensi.', 'error');
+    } finally {
+      setIsReopening(false);
+    }
+  };
+
   const handleToggleHadir = (studentId: string) => {
+    if (activeSession?.status === 'BELUM_DIMULAI') {
+      setIsStartAttendanceModalOpen(true);
+      showToast('Mulai sesi absensi dan unggah foto kegiatan terlebih dahulu.', 'error');
+      return;
+    }
+    if (isSessionLocked) {
+      showToast('Sesi sudah selesai dan terkunci.', 'error');
+      return;
+    }
     setChecklistMap(prev => {
       const curr = prev[studentId];
       if (!curr) return prev;
@@ -169,6 +214,15 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
   };
 
   const handleMarkAllHadir = () => {
+    if (activeSession?.status === 'BELUM_DIMULAI') {
+      setIsStartAttendanceModalOpen(true);
+      showToast('Mulai sesi absensi dan unggah foto kegiatan terlebih dahulu.', 'error');
+      return;
+    }
+    if (isSessionLocked) {
+      showToast('Sesi sudah selesai dan terkunci.', 'error');
+      return;
+    }
     setChecklistMap(prev => {
       const next = { ...prev };
       Object.keys(next).forEach(k => {
@@ -179,7 +233,6 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
     showToast('Seluruh siswa ditandai Hadir.', 'success');
   };
 
-  // Tahap 2: Rating Keaktifan Tombol Skor
   const ratingOptions = [
     { label: 'Luar Biasa', score: 98, color: 'bg-emerald-600 text-white' },
     { label: 'Sangat Baik', score: 92, color: 'bg-teal-600 text-white' },
@@ -211,7 +264,6 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
     showToast(`Semua siswa hadir disetel nilai keaktifan ${score} (${label}).`, 'success');
   };
 
-  // Tahap 3: Update Non-Hadir (Izin, Sakit, Telat, Alpa)
   const handleSetNonHadirStatus = (siswaId: string, status: 'HADIR' | 'IZIN' | 'SAKIT' | 'ALFA', isTelat = false) => {
     setChecklistMap(prev => ({
       ...prev,
@@ -236,7 +288,6 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
     }));
   };
 
-  // Tahap 4: Final Submit & Kunci Sesi
   const handleFinalizeAndLock = async () => {
     if (!activeSession) return;
     setActionLoading(true);
@@ -271,7 +322,6 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
     }
   };
 
-  // Handle Mark Holiday
   const handleConfirmHoliday = async () => {
     if (!activeSession || !holidayReason.trim()) return;
     setActionLoading(true);
@@ -292,7 +342,6 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
     }
   };
 
-  // Riwayat Tab State: Search, Filter Hari, Filter Tanggal, Filter Status
   const [searchTerm, setSearchTerm] = useState('');
   const [filterHari, setFilterHari] = useState<string>('SEMUA');
   const [filterTanggal, setFilterTanggal] = useState<string>('');
@@ -379,7 +428,6 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
 
   return (
     <div className="space-y-6 pb-8 animate-in fade-in-50 duration-300">
-      {/* Toast Alert */}
       {toastMessage && (
         <div className={`fixed top-4 right-4 z-50 px-4 py-2.5 rounded-lg shadow-lg border text-xs font-semibold flex items-center gap-2 animate-in fade-in slide-in-from-top-2 ${
           toastMessage.type === 'success' 
@@ -391,7 +439,6 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
         </div>
       )}
 
-      {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -413,7 +460,6 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
           </p>
         </div>
 
-        {/* View Mode Switcher */}
         <div className="flex items-center gap-1.5 bg-muted/60 p-1 rounded-lg border border-border">
           <Button
             variant={mainView === 'CHECKLIST_WORKFLOW' ? 'brand' : 'ghost'}
@@ -435,8 +481,18 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
       </div>
 
       {mainView === 'CHECKLIST_WORKFLOW' ? (
+        !activeSession ? (
+          <Card className="p-8 text-center flex flex-col items-center justify-center shadow-xs">
+            <div className="size-16 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-[#00B884] flex items-center justify-center mb-4">
+              <UsersRound className="size-8" />
+            </div>
+            <h3 className="text-base font-bold text-foreground">Belum Ada Sesi Presensi Aktif Hari Ini</h3>
+            <p className="text-xs text-muted-foreground mt-1 max-w-md">
+              Belum ada sesi ekstrakurikuler binaan Anda yang aktif untuk dicatat kehadirannya secara langsung.
+            </p>
+          </Card>
+        ) : (
         <div className="space-y-6">
-          {/* Stepper Navigation */}
           <Card className="p-1.5 bg-muted/40">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <button
@@ -511,55 +567,348 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
             </div>
           </Card>
 
-          {/* Sesi Picker & Action Controls */}
           <Card>
-            <CardContent className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-xs font-semibold text-foreground shrink-0">Sesi Latihan:</span>
-                <div className="flex items-center gap-2 overflow-x-auto">
-                  {sessions.map((sess) => (
+            <CardContent className="p-4 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-border/50">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-foreground">Sesi Latihan Hari Ini:</span>
+                  <Badge variant="outline" className="text-[11px] font-semibold text-muted-foreground">
+                    {sessions.length} Sesi Terjadwal
+                  </Badge>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  {activeSession?.status === 'BELUM_DIMULAI' ? (
                     <Button
-                      key={sess.id}
-                      variant={activeSession?.id === sess.id ? 'brand' : 'outline'}
+                      variant="brand"
                       size="sm"
-                      onClick={() => {
-                        setSelectedSessionId(sess.id);
-                        if (onSelectSession) onSelectSession(sess);
-                      }}
-                      className="h-8 text-xs shrink-0"
+                      onClick={() => setIsStartAttendanceModalOpen(true)}
+                      className="h-8 text-xs font-semibold gap-1.5 shadow-xs"
                     >
-                      {sess.namaEskul} ({sess.jamMulai} WIB)
+                      <Play className="size-3.5 fill-current" />
+                      <span>Mulai Sesi Absensi</span>
                     </Button>
-                  ))}
+                  ) : !isSessionLocked ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsLockModalOpen(true)}
+                      className="h-8 text-xs font-semibold gap-1.5 text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700 hover:bg-amber-500/10"
+                    >
+                      <Lock className="size-3.5" />
+                      <span>Kunci & Selesaikan</span>
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleReopenSession}
+                      disabled={isReopening}
+                      className="h-8 text-xs font-semibold gap-1.5 text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-500/10"
+                    >
+                      <RefreshCw className={`size-3.5 ${isReopening ? 'animate-spin' : ''}`} />
+                      <span>Buka Ulang Absensi</span>
+                    </Button>
+                  )}
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleMarkAllHadir}
+                    disabled={isSessionLocked || activeSession?.status === 'BELUM_DIMULAI'}
+                    className="h-8 text-xs font-medium"
+                  >
+                    Tandai Semua Hadir
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsHolidayModalOpen(true)}
+                    disabled={isSessionLocked}
+                    className="h-8 text-xs font-medium gap-1.5 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 hover:bg-amber-500/10"
+                  >
+                    <CalendarOff className="size-4" />
+                    <span>Tandai Libur</span>
+                  </Button>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleMarkAllHadir}
-                  className="h-8 text-xs font-medium"
-                >
-                  Tandai Semua Hadir
-                </Button>
+              {/* Mobile / Android / iOS View: Dropdown Selector */}
+              <div className="block md:hidden w-full pt-1">
+                <label htmlFor="mobile-session-select" className="block text-[11px] font-semibold text-muted-foreground mb-1.5">
+                  Pilih Sesi Latihan:
+                </label>
+                <div className="relative">
+                  <select
+                    id="mobile-session-select"
+                    value={activeSession?.id || ''}
+                    onChange={(e) => {
+                      const selected = sessions.find((s) => s.id === e.target.value);
+                      if (selected) {
+                        setSelectedSessionId(selected.id);
+                        if (onSelectSession) onSelectSession(selected);
+                      }
+                    }}
+                    className="w-full appearance-none bg-background text-foreground text-xs font-semibold py-2.5 pl-3.5 pr-9 rounded-lg border border-border shadow-2xs focus:outline-none focus:ring-2 focus:ring-[#00B884] focus:border-[#00B884] transition-all cursor-pointer"
+                  >
+                    {sessions.map((sess) => (
+                      <option key={sess.id} value={sess.id}>
+                        {sess.namaEskul} ({sess.jamMulai} WIB) {sess.status === 'BERLANGSUNG' ? '• [Aktif]' : sess.status === 'BELUM_DIMULAI' ? '• [Belum Mulai]' : '• [Selesai]'}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground">
+                    <ChevronDown className="size-4" />
+                  </div>
+                </div>
+              </div>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsHolidayModalOpen(true)}
-                  className="h-8 text-xs font-medium gap-1.5 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800 hover:bg-amber-500/10"
-                >
-                  <CalendarOff className="size-4" />
-                  <span>Tandai Libur</span>
-                </Button>
+              {/* Desktop / Large Screen View: Horizontal Button Tabs */}
+              <div className="hidden md:flex items-center gap-2 overflow-x-auto pb-1 pt-0.5 no-scrollbar">
+                {sessions.map((sess) => (
+                  <Button
+                    key={sess.id}
+                    variant={activeSession?.id === sess.id ? 'brand' : 'outline'}
+                    size="sm"
+                    onClick={() => {
+                      setSelectedSessionId(sess.id);
+                      if (onSelectSession) onSelectSession(sess);
+                    }}
+                    className={`h-8 text-xs shrink-0 transition-all ${
+                      activeSession?.id === sess.id ? 'shadow-xs font-semibold' : ''
+                    }`}
+                  >
+                    {sess.namaEskul} ({sess.jamMulai} WIB)
+                  </Button>
+                ))}
               </div>
             </CardContent>
           </Card>
 
-          {/* ========================================================================= */}
-          {/* TAHAP 1: CHECKLIST SISWA HADIR                                           */}
-          {/* ========================================================================= */}
+          {activeSession?.status === 'BELUM_DIMULAI' && (
+            <Card className="p-4 bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/50">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-start sm:items-center gap-3">
+                  <div className="size-9 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-400 flex items-center justify-center shrink-0">
+                    <AlertCircle className="size-5" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-amber-900 dark:text-amber-200 flex items-center gap-2">
+                      <span>Presensi Sesi Belum Dimulai</span>
+                      <span className="text-[11px] font-normal text-amber-700 dark:text-amber-300">
+                        • {activeSession?.namaEskul} ({activeSession?.pembinaNama || 'Pembina'})
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">
+                      Untuk memulai absensi murid, pembina wajib mengunggah foto dokumentasi kegiatan hari ini dan mengisi judul/materi latihan.
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  variant="brand"
+                  size="sm"
+                  onClick={() => setIsStartAttendanceModalOpen(true)}
+                  className="gap-1.5 shrink-0 font-bold"
+                >
+                  <Play className="size-3.5 fill-current" />
+                  <span>Mulai Sesi Absensi Sekarang</span>
+                </Button>
+              </div>
+            </Card>
+          )}
+
+          {activeSession && activeSession.status !== 'BELUM_DIMULAI' && (
+            <Card className={`border shadow-xs overflow-hidden ${
+              activeSession.status === 'BERLANGSUNG' 
+                ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800/60' 
+                : 'bg-card border-border'
+            }`}>
+              {/* Header Bar Jurnal Kegiatan */}
+              <div className="p-3.5 sm:p-4 border-b border-border/60 bg-muted/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  {activeSession.status === 'BERLANGSUNG' ? (
+                    <Badge variant="success" className="text-[10px] py-0.5 px-2 font-bold flex items-center gap-1.5">
+                      <span className="size-1.5 rounded-full bg-emerald-300 animate-ping" />
+                      <span>SESI AKTIF BERLANGSUNG</span>
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[10px] py-0.5 px-2 font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <Lock className="size-3 text-slate-500" />
+                      <span>SESI SELESAI &amp; TERKUNCI</span>
+                    </Badge>
+                  )}
+
+                  <span className="text-xs font-bold text-foreground">
+                    {activeSession.namaEskul}
+                  </span>
+
+                  <span className="text-muted-foreground text-xs">•</span>
+
+                  <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                    <Clock className="size-3 text-muted-foreground" />
+                    <span>{activeSession.jamMulai} - {activeSession.jamSelesai} WIB</span>
+                  </span>
+
+                  {activeSession.lokasi && (
+                    <>
+                      <span className="text-muted-foreground text-xs">•</span>
+                      <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <MapPin className="size-3 text-muted-foreground" />
+                        <span>{activeSession.lokasi}</span>
+                      </span>
+                    </>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 bg-background/80 border border-border/60 px-2.5 py-1 rounded-md text-xs">
+                    <UserAvatar name={activeSession.pembinaNama || 'Pembina'} className="size-5 text-[10px]" />
+                    <span className="text-[11px] text-muted-foreground">Pembina:</span>
+                    <span className="font-semibold text-foreground text-[11px]">{activeSession.pembinaNama || 'Guru Pembina'}</span>
+                  </div>
+
+                  {activeSession.status === 'BERLANGSUNG' ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsLockModalOpen(true)}
+                      className="h-7 text-xs font-semibold gap-1.5 border-emerald-300 text-emerald-800 hover:bg-emerald-100 dark:border-emerald-700 dark:text-emerald-200"
+                    >
+                      <Lock className="size-3" />
+                      <span>Kunci &amp; Selesaikan</span>
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleReopenSession}
+                      disabled={isReopening}
+                      className="h-7 text-xs font-semibold gap-1.5 border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40"
+                    >
+                      <RefreshCw className={`size-3 ${isReopening ? 'animate-spin' : ''}`} />
+                      <span>Buka Ulang Absensi</span>
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Body Jurnal Kegiatan: Judul, Rincian Materi, dan Foto Dokumentasi (Isi Foto Kedua) */}
+              <div className="p-4 sm:p-5">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                  {/* Left Column: Topic & Description */}
+                  <div className="lg:col-span-8 space-y-3.5">
+                    <div>
+                      <div className="text-[10px] font-bold text-primary uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                        <FileText className="size-3.5" />
+                        <span>Topik / Judul Kegiatan Hari Ini</span>
+                      </div>
+                      <h3 className="text-base sm:text-lg font-black text-foreground tracking-tight leading-snug">
+                        {activeSession.judul || activeSession.materi || 'Latihan Rutin Ekstrakurikuler'}
+                      </h3>
+                    </div>
+
+                    <div>
+                      <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1">
+                        Rincian Materi &amp; Deskripsi Latihan
+                      </div>
+                      <p className="text-xs sm:text-sm text-foreground/90 whitespace-pre-line leading-relaxed bg-background/80 p-3 rounded-md border border-border/60">
+                        {activeSession.deskripsi || activeSession.materi || 'Pertemuan dan latihan rutin ekstrakurikuler SMK Al Amanah.'}
+                      </p>
+                    </div>
+
+                    <div className="pt-2 flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                      <span className="font-semibold text-foreground">Status Kehadiran Sesi:</span>
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold text-[11px]">
+                        {hadirStudents.length} / {enrolledStudents.length} Siswa Hadir
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 font-medium text-[11px]">
+                        {nonHadirStudents.length} Dispensasi / Belum Hadir
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-semibold text-[11px]">
+                        Rata-rata Nilai Keaktifan: {avgKeaktifan}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Documentation Photo Preview */}
+                  <div className="lg:col-span-4 flex flex-col justify-between">
+                    <div>
+                      <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2 flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <Camera className="size-3.5 text-primary" />
+                          <span>Foto Bukti / Dokumentasi Latihan</span>
+                        </span>
+                        {activeSession.fotoKegiatan && (
+                          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950 px-1.5 py-0.2 rounded border border-emerald-300">
+                            Terverifikasi
+                          </span>
+                        )}
+                      </div>
+
+                      {activeSession.fotoKegiatan ? (
+                        <div
+                          onClick={() => setPreviewPhotoData({
+                            url: activeSession.fotoKegiatan!,
+                            title: activeSession.judul || activeSession.materi || 'Dokumentasi Latihan',
+                            eskul: activeSession.namaEskul,
+                            pembina: activeSession.pembinaNama || 'Pembina',
+                            tanggal: activeSession.tanggal,
+                            jam: `${activeSession.jamMulai} - ${activeSession.jamSelesai} WIB`,
+                            lokasi: activeSession.lokasi,
+                            deskripsi: activeSession.deskripsi || activeSession.materi,
+                          })}
+                          className="relative group rounded-lg overflow-hidden border-2 border-emerald-500/30 cursor-pointer shadow-sm hover:shadow-md transition-all bg-black/5"
+                        >
+                          <img
+                            src={activeSession.fotoKegiatan}
+                            alt="Foto Dokumentasi Sesi"
+                            className="w-full h-36 sm:h-40 object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1 text-white text-xs font-bold">
+                            <ZoomIn className="size-6 text-white" />
+                            <span>Klik untuk Perbesar Foto</span>
+                          </div>
+                          <div className="absolute bottom-1.5 right-1.5 bg-black/70 backdrop-blur-xs text-white text-[10px] font-medium px-2 py-0.5 rounded">
+                            Buka Foto Penuh
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="h-36 sm:h-40 rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center p-4 text-center bg-muted/20 text-muted-foreground">
+                          <Camera className="size-8 text-muted-foreground/60 mb-1.5" />
+                          <span className="text-xs font-semibold">Belum Ada Foto Dokumentasi</span>
+                          <span className="text-[10px] mt-0.5 text-muted-foreground/80">Foto dokumentasi latihan bersifat opsional saat mulai sesi.</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {activeSession.fotoKegiatan && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPreviewPhotoData({
+                          url: activeSession.fotoKegiatan!,
+                          title: activeSession.judul || activeSession.materi || 'Dokumentasi Latihan',
+                          eskul: activeSession.namaEskul,
+                          pembina: activeSession.pembinaNama || 'Pembina',
+                          tanggal: activeSession.tanggal,
+                          jam: `${activeSession.jamMulai} - ${activeSession.jamSelesai} WIB`,
+                          lokasi: activeSession.lokasi,
+                          deskripsi: activeSession.deskripsi || activeSession.materi,
+                        })}
+                        className="mt-2.5 w-full h-8 text-xs font-semibold gap-1.5 border-emerald-300 text-emerald-800 dark:border-emerald-700 dark:text-emerald-200"
+                      >
+                        <Eye className="size-3.5" />
+                        <span>Lihat Dokumentasi Kegiatan Lengkap</span>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
+
           {currentStep === 1 && (
             <div className="space-y-6">
               <Card className="overflow-hidden">
@@ -627,7 +976,6 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
                 </div>
               </Card>
 
-              {/* Bottom Bar: Lanjut ke Tahap 2 */}
               <Card className="p-4 flex items-center justify-between">
                 <span className="text-xs text-muted-foreground font-medium">
                   Selesai menandai kehadiran? Lanjutkan untuk memberikan nilai keaktifan lapangan.
@@ -645,9 +993,6 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
             </div>
           )}
 
-          {/* ========================================================================= */}
-          {/* TAHAP 2: NILAI KEAKTIFAN LAPANGAN (RATING TOMBOL SKOR)                     */}
-          {/* ========================================================================= */}
           {currentStep === 2 && (
             <Card className="p-6 space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-5">
@@ -711,7 +1056,6 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
                         </div>
                       </div>
 
-                      {/* 4 Score Buttons */}
                       <div className="grid grid-cols-4 gap-1.5 pt-2 border-t border-border">
                         {ratingOptions.map((opt) => {
                           const isSelected = s.nilaiKeaktifan === opt.score;
@@ -737,7 +1081,6 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
                 </div>
               )}
 
-              {/* Navigation Bar */}
               <div className="pt-4 border-t border-border flex items-center justify-between">
                 <Button
                   variant="outline"
@@ -761,9 +1104,6 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
             </Card>
           )}
 
-          {/* ========================================================================= */}
-          {/* TAHAP 3: SIAPA YANG TIDAK HADIR, TELAT, IZIN, ATAU SAKIT                 */}
-          {/* ========================================================================= */}
           {currentStep === 3 && (
             <Card className="p-6 space-y-6">
               <div className="border-b border-border pb-5">
@@ -798,7 +1138,6 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
                           </div>
                         </div>
 
-                        {/* Status Buttons */}
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <Button
                             variant={s.status === 'IZIN' ? 'brand' : 'outline'}
@@ -835,7 +1174,6 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
                         </div>
                       </div>
 
-                      {/* Reason Input */}
                       <div className="pt-2 border-t border-border flex items-center gap-2">
                         <span className="text-[11px] font-semibold text-muted-foreground shrink-0">Keterangan:</span>
                         <Input
@@ -851,7 +1189,6 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
                 )}
               </div>
 
-              {/* Navigation Bar */}
               <div className="pt-4 border-t border-border flex items-center justify-between">
                 <Button
                   variant="outline"
@@ -875,9 +1212,6 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
             </Card>
           )}
 
-          {/* ========================================================================= */}
-          {/* TAHAP 4: REVIEW REKAPITULASI & FINAL SUBMIT KUNCI LOG PRESENSI            */}
-          {/* ========================================================================= */}
           {currentStep === 4 && (
             <Card className="p-6 space-y-6">
               <div className="border-b border-border pb-5">
@@ -890,7 +1224,6 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
                 </p>
               </div>
 
-              {/* Metrics Overview */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="p-4 rounded-lg bg-muted/40 border border-border">
                   <div className="text-[11px] font-semibold text-muted-foreground">Hadir</div>
@@ -920,7 +1253,6 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
                 </div>
               </div>
 
-              {/* Summary Table */}
               <Card className="overflow-hidden">
                 <div className="max-h-72 overflow-y-auto">
                   <Table>
@@ -982,7 +1314,6 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
                 </div>
               </Card>
 
-              {/* Navigation & Final Submit */}
               <div className="pt-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3">
                 <Button
                   variant="outline"
@@ -1008,14 +1339,12 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
             </Card>
           )}
         </div>
+        )
       ) : (
-        /* RIWAYAT LOG & EKSPOR DATA CSV */
         <div className="space-y-6">
-          {/* Filter Bar */}
           <Card>
             <CardContent className="p-4 sm:p-5 space-y-3.5">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                {/* Search Bar */}
                 <div className="relative flex-1">
                   <Search className="size-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
                   <Input
@@ -1027,7 +1356,6 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
                   />
                 </div>
 
-                {/* Action: Ekspor CSV */}
                 <Button
                   variant="brand"
                   size="sm"
@@ -1039,14 +1367,12 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
                 </Button>
               </div>
 
-              {/* Filter Row */}
               <div className="flex items-center gap-2.5 flex-wrap pt-2 border-t border-border">
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-semibold mr-1">
                   <Filter className="size-3.5 text-primary" />
                   <span>Filter Log:</span>
                 </div>
 
-                {/* Filter Hari Dropdown */}
                 <select
                   value={filterHari}
                   onChange={(e) => setFilterHari(e.target.value)}
@@ -1062,7 +1388,6 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
                   <option value="Minggu">Minggu</option>
                 </select>
 
-                {/* Filter Tanggal Input */}
                 <div className="relative flex items-center">
                   <Calendar className="size-3.5 text-muted-foreground absolute left-2.5 pointer-events-none" />
                   <Input
@@ -1074,7 +1399,6 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
                   />
                 </div>
 
-                {/* Filter Status Kehadiran */}
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
@@ -1087,7 +1411,6 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
                   <option value="ALPA">Alpa</option>
                 </select>
 
-                {/* Reset Filter Button */}
                 {isFilterActive && (
                   <Button
                     variant="ghost"
@@ -1196,7 +1519,6 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
         </div>
       )}
 
-      {/* MODAL: Tandai Hari Libur */}
       {isHolidayModalOpen && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-xs flex items-center justify-center p-4">
           <Card className="max-w-md w-full p-6 shadow-xl space-y-4">
@@ -1244,7 +1566,6 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
         </div>
       )}
 
-      {/* MODAL: Konfirmasi Kunci & Submit Presensi */}
       {isLockModalOpen && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-xs flex items-center justify-center p-4">
           <Card className="max-w-md w-full p-6 shadow-xl space-y-4">
@@ -1284,6 +1605,95 @@ export const LiveAttendanceLog: React.FC<LiveAttendanceLogProps> = ({
               </Button>
             </div>
           </Card>
+        </div>
+      )}
+
+      <StartAttendanceModal
+        isOpen={isStartAttendanceModalOpen}
+        onClose={() => setIsStartAttendanceModalOpen(false)}
+        session={activeSession}
+        onStartSuccess={(updated) => {
+          if (onSelectSession) onSelectSession(updated);
+          onRefresh();
+          showToast('Sesi absensi berhasil dimulai dengan foto dan materi kegiatan!', 'success');
+        }}
+      />
+
+      {/* Modal Pratinjau Foto Dokumentasi Kegiatan (Bisa Dilihat Koordinator / Admin) */}
+      {previewPhotoData && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setPreviewPhotoData(null)}
+        >
+          <div 
+            className="bg-card text-foreground rounded-xl border border-border shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-border flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                  Bukti Dokumentasi Latihan Resmi
+                </span>
+                <h3 className="text-sm font-bold text-foreground">
+                  {previewPhotoData.eskul} {previewPhotoData.tanggal ? `• ${previewPhotoData.tanggal}` : ''}
+                </h3>
+              </div>
+              <button
+                onClick={() => setPreviewPhotoData(null)}
+                className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-black/5">
+              <div className="bg-black/80 rounded-lg overflow-hidden flex items-center justify-center border border-border shadow-inner">
+                <img
+                  src={previewPhotoData.url}
+                  alt={previewPhotoData.title}
+                  className="max-h-[50vh] w-auto max-w-full object-contain mx-auto"
+                />
+              </div>
+
+              <div className="space-y-2 p-3 bg-muted/30 rounded-lg border border-border/60 text-xs">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground block">Topik / Judul:</span>
+                  <span className="font-bold text-foreground text-sm">{previewPhotoData.title}</span>
+                </div>
+                {previewPhotoData.deskripsi && (
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground block">Rincian Materi:</span>
+                    <p className="text-muted-foreground whitespace-pre-line leading-relaxed">{previewPhotoData.deskripsi}</p>
+                  </div>
+                )}
+                <div className="pt-1.5 border-t border-border/50 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                  <span>Guru Pembina: <strong className="text-foreground">{previewPhotoData.pembina}</strong></span>
+                  {previewPhotoData.jam && <span>Jadwal: <strong className="text-foreground">{previewPhotoData.jam}</strong></span>}
+                  {previewPhotoData.lokasi && <span>Lokasi: <strong className="text-foreground">{previewPhotoData.lokasi}</strong></span>}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3 border-t border-border bg-muted/20 flex items-center justify-between">
+              <a
+                href={previewPhotoData.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs font-semibold text-primary hover:underline flex items-center gap-1.5"
+              >
+                <ExternalLink className="size-3.5" />
+                <span>Buka Gambar Ukuran Asli</span>
+              </a>
+              <Button
+                variant="brand"
+                size="sm"
+                onClick={() => setPreviewPhotoData(null)}
+                className="h-8 text-xs font-semibold"
+              >
+                Tutup Pratinjau
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>

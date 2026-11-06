@@ -4,7 +4,7 @@ export interface User {
   id: string;
   username: string;
   namaLengkap: string;
-  nomorInduk: string; // NIP atau NISN
+  nomorInduk: string;
   role: Role;
   avatarUrl: string;
   spesialisasi?: string;
@@ -59,11 +59,12 @@ export interface Siswa {
   statusAktif: boolean;
   enrolledEskulIds: string[];
   kehadiranRataRata: number;
+  email?: string;
+  noHp?: string;
 }
 
-// Kompatibilitas StudentProfile dengan User lama
 export interface StudentProfile extends Siswa {
-  nomorInduk: string; // alias dari NIS
+  nomorInduk: string;
   role: Role;
 }
 
@@ -98,8 +99,9 @@ export interface SesiPertemuan {
   judul?: string;
   deskripsi?: string;
   materi?: string;
+  fotoKegiatan?: string;
   tokenAktif: string;
-  tokenExpiresAt: number; // timestamp
+  tokenExpiresAt: number;
   status: 'BELUM_DIMULAI' | 'BERLANGSUNG' | 'SELESAI' | 'LIBUR';
   isLibur?: boolean;
   alasanLibur?: string;
@@ -202,9 +204,9 @@ export interface PenilaianRecord {
   kelas: string;
   semester: 1 | 2;
   tahunAjaran: string;
-  nilaiKehadiran: number; // bobot 40%
-  nilaiKeaktifan: number; // bobot 30%
-  nilaiKinerja: number;    // bobot 30%
+  nilaiKehadiran: number;
+  nilaiKeaktifan: number;
+  nilaiKinerja: number;
   nilaiAkhir: number;
   predikat: 'A' | 'B' | 'C' | 'D';
   catatan: string;
@@ -254,5 +256,4 @@ export interface PrestasiLombaRecord {
   keterangan?: string;
   diverifikasi: boolean;
 }
-
 

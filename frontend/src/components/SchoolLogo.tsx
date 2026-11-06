@@ -27,7 +27,6 @@ export const SchoolLogo: React.FC<SchoolLogoProps> = ({
 
   return (
     <div className={`flex items-center gap-3 ${className}`}>
-      {/* Official SMK Al-Amanah Logo from assets */}
       <div className={`relative ${currentSize.icon} flex-shrink-0 flex items-center justify-center`}>
         <img
           src={schoolLogoImg}

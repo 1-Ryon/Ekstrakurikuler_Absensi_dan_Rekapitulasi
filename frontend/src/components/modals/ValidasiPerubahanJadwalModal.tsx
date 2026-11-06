@@ -98,7 +98,6 @@ export const ValidasiPerubahanJadwalModal: React.FC<ValidasiPerubahanJadwalModal
           transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
           className="bg-white rounded-lg w-[92vw] max-w-2xl shadow-xl border border-slate-200 overflow-hidden my-auto flex flex-col max-h-[90dvh]"
         >
-          {/* Header */}
           <div className="p-6 border-b border-slate-100 bg-white shrink-0">
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1">
@@ -123,7 +122,6 @@ export const ValidasiPerubahanJadwalModal: React.FC<ValidasiPerubahanJadwalModal
               </button>
             </div>
 
-            {/* Tab switch */}
             <div className="flex items-center gap-1.5 mt-4 p-1 bg-slate-100 rounded-md w-fit">
               <button
                 type="button"
@@ -157,7 +155,6 @@ export const ValidasiPerubahanJadwalModal: React.FC<ValidasiPerubahanJadwalModal
             </div>
           </div>
 
-          {/* List Content */}
           <div className="p-6 overflow-y-auto flex-1 space-y-4">
             {errorMsg && (
               <div className="p-3 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 font-medium">
@@ -187,7 +184,6 @@ export const ValidasiPerubahanJadwalModal: React.FC<ValidasiPerubahanJadwalModal
                     key={prop.id}
                     className="p-4 sm:p-5 rounded-lg border border-slate-200 bg-white hover:border-slate-300 transition-all shadow-xs space-y-3"
                   >
-                    {/* Header Item */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
                       <div>
                         <div className="flex items-center gap-2">
@@ -222,9 +218,7 @@ export const ValidasiPerubahanJadwalModal: React.FC<ValidasiPerubahanJadwalModal
                       </div>
                     </div>
 
-                    {/* Side-by-Side comparison */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1 text-xs">
-                      {/* Old */}
                       <div className="p-3 rounded-md bg-slate-50 border border-slate-200 text-slate-600 space-y-1">
                         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Jadwal Lama</div>
                         <div className="font-bold text-slate-800">Hari {prop.hariLama}</div>
@@ -232,7 +226,6 @@ export const ValidasiPerubahanJadwalModal: React.FC<ValidasiPerubahanJadwalModal
                         <div className="truncate text-slate-500">{prop.lokasiLama}</div>
                       </div>
 
-                      {/* New */}
                       <div className="p-3 rounded-md bg-emerald-50/70 border border-emerald-200 text-emerald-900 space-y-1">
                         <div className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider flex items-center justify-between">
                           <span>Jadwal Baru Diusulkan</span>
@@ -247,13 +240,11 @@ export const ValidasiPerubahanJadwalModal: React.FC<ValidasiPerubahanJadwalModal
                       </div>
                     </div>
 
-                    {/* Alasan */}
                     <div className="p-3 bg-slate-50 rounded-md border border-slate-200 text-xs">
                       <div className="font-semibold text-slate-700 mb-0.5">Alasan Permohonan:</div>
                       <p className="text-slate-600 italic leading-relaxed">"{prop.alasan}"</p>
                     </div>
 
-                    {/* Catatan Koordinator if exists */}
                     {prop.catatanKoordinator && (
                       <div className="p-3 bg-teal-50/60 rounded-md border border-teal-200 text-xs text-teal-900">
                         <div className="font-semibold flex items-center gap-1.5 mb-0.5">
@@ -264,7 +255,6 @@ export const ValidasiPerubahanJadwalModal: React.FC<ValidasiPerubahanJadwalModal
                       </div>
                     )}
 
-                    {/* Action Buttons for Pending - Equal 50/50 Width */}
                     {prop.status === 'MENUNGGU_VALIDASI' && (
                       <div className="grid grid-cols-2 gap-2.5 pt-2 border-t border-slate-100">
                         <button
@@ -291,7 +281,6 @@ export const ValidasiPerubahanJadwalModal: React.FC<ValidasiPerubahanJadwalModal
               </div>
             )}
 
-            {/* Action Dialog Confirmation Modal */}
             {selectedProposal && actionType && (
               <div className="p-4 rounded-lg border border-[#00B884]/40 bg-emerald-50/30 space-y-3 mt-4">
                 <div className="flex items-center justify-between">
@@ -371,7 +360,6 @@ export const ValidasiPerubahanJadwalModal: React.FC<ValidasiPerubahanJadwalModal
             )}
           </div>
 
-          {/* Footer */}
           <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 shrink-0">
             <span>Login sebagai: <strong>{currentUser.namaLengkap}</strong> ({currentUser.role})</span>
             <button

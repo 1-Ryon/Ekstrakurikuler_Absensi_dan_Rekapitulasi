@@ -13,7 +13,9 @@ import {
   ChevronRight, 
   Building2, 
   QrCode,
-  UserCheck
+  UserCheck,
+  Camera,
+  Play
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PEMBINA_LIST, INITIAL_ESKUL_LIST, INITIAL_STUDENTS, INITIAL_SESSIONS } from '../../data/mockData';
@@ -55,7 +57,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onNavigate,
   onOpenSession,
 }) => {
-  // 1. Data Fallback & Normalization
   const effectiveEskulList = useMemo(() => {
     return eskulList || [];
   }, [eskulList]);
@@ -73,15 +74,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     return sessions || [];
   }, [sessions]);
 
-  // 2. Real Date & Day Calculation (0: Senin, ..., 6: Minggu)
   const jsDay = new Date().getDay();
   const todayIndex = jsDay === 0 ? 6 : jsDay - 1;
   const todayDayName = DAY_NAMES[todayIndex];
 
-  // Selected Day Index for inspector
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(todayIndex);
 
-  // 3. Dynamic Weekly Schedule from effectiveEskulList
   const attendanceBase = [96, 94, 91, 95, 90, 97, 88];
 
   const weeklySchedule = useMemo(() => {
@@ -121,7 +119,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const maxEskulCount = Math.max(...weeklySchedule.map(d => d.jumlahEskul), 4);
   const totalWeeklySessions = weeklySchedule.reduce((acc, d) => acc + d.jumlahEskul, 0);
 
-  // Puncak kegiatan
   const peakDays = useMemo(() => {
     const active = [...weeklySchedule].filter(d => d.jumlahEskul > 0).sort((a, b) => b.jumlahEskul - a.jumlahEskul);
     if (active.length === 0) return 'Belum ada jadwal eskul terjadwal';
@@ -130,7 +127,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     return topDays.map(d => `${d.dayName} (${d.jumlahEskul} Eskul)`).join(' & ');
   }, [weeklySchedule]);
 
-  // Total Siswa Enrolled
   const enrolledStudentsCount = useMemo(() => {
     return effectiveStudents.filter(s => s.enrolledEskulIds && s.enrolledEskulIds.length > 0).length;
   }, [effectiveStudents]);
@@ -140,14 +136,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     return Math.round((enrolledStudentsCount / effectiveStudents.length) * 100);
   }, [effectiveStudents, enrolledStudentsCount]);
 
-  // Today Active Sesi
   const todayActiveSessionsCount = useMemo(() => {
-    const runningSessions = effectiveSessions.filter(s => s.status === 'BERLANGSUNG');
+    const todayYmd = new Date().toISOString().slice(0, 10);
+    const runningSessions = effectiveSessions.filter(s => s.status === 'BERLANGSUNG' && (s.tanggal ? s.tanggal === todayYmd : true));
     if (runningSessions.length > 0) return runningSessions.length;
     return todaySchedule.jumlahEskul;
   }, [effectiveSessions, todaySchedule]);
 
-  // Category breakdown
   const categoryStats = useMemo(() => {
     const total = effectiveEskulList.length || 1;
     const counts: Record<string, number> = {
@@ -173,7 +168,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     ];
   }, [effectiveEskulList]);
 
-  // Facility Groups: Dynamic aggregation from actual 'lokasi' entered by Coordinator
   const facilityGroups = useMemo(() => {
     const locationMap = new Map<string, { eskuls: string[]; days: Set<string>; count: number }>();
 
@@ -202,7 +196,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }));
   }, [effectiveEskulList]);
 
-  // Schedule Collision Check based on day & location
   const scheduleCollisionInfo = useMemo(() => {
     const dayLocationMap = new Map<string, string[]>();
     let collisionCount = 0;
@@ -226,7 +219,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     };
   }, [effectiveEskulList]);
 
-  // Helper: Kategori badge color mapping (Harmonized to SMK Al Amanah Brand Palette)
   const getCategoryColor = (kategori: string) => {
     switch (kategori) {
       case 'Olahraga':
@@ -244,7 +236,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  // Helper: Get Pembina avatar by name
   const getPembinaAvatar = (name: string): string => {
     const match = effectivePembinaList.find((p: any) => 
       (p.namaLengkap || '').toLowerCase().includes(name.toLowerCase()) || 
@@ -261,7 +252,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   return (
     <div className="space-y-5 sm:space-y-6 pb-12">
-      {/* Title & Top Action Buttons */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -279,7 +269,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         <div className="flex items-center gap-2 sm:gap-2.5 self-stretch sm:self-auto flex-wrap">
 
-          {/* + Tambah Eskul */}
           <Button
             variant="brand"
             size="sm"
@@ -290,7 +279,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <span>Tambah Eskul</span>
           </Button>
 
-          {/* Impor Data Siswa */}
           <Button
             variant="outline"
             size="sm"
@@ -303,7 +291,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       </div>
 
-      {/* Action Center for Pending Verifications (Clean semantic Cards, no gradient slop) */}
       {(pendingProposalsCount > 0 || pendingPendaftaranCount > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
           {pendingProposalsCount > 0 && (
@@ -362,9 +349,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
-      {/* 4 Stat Cards Grid: Eskul, Siswa, Guru Pembina, Sesi Hari Ini */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {/* Card 1: Total Ekstrakurikuler */}
         <Card
           onClick={() => onNavigate('eskul')}
           className="cursor-pointer hover:border-[#00B884] transition-colors rounded-lg flex flex-col justify-between"
@@ -387,7 +372,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </CardContent>
         </Card>
 
-        {/* Card 2: Total Siswa Terdaftar */}
         <Card
           onClick={() => onNavigate('siswa')}
           className="cursor-pointer hover:border-slate-300 transition-colors rounded-lg flex flex-col justify-between"
@@ -408,7 +392,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </CardContent>
         </Card>
 
-        {/* Card 3: Total Guru Pembina */}
         <Card
           onClick={() => onNavigate('pembina')}
           className="cursor-pointer hover:border-slate-300 transition-colors rounded-lg flex flex-col justify-between"
@@ -431,7 +414,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </CardContent>
         </Card>
 
-        {/* Card 4: Sesi Eskul Hari Ini */}
         <Card
           onClick={() => onNavigate('dynamic-qr')}
           className="cursor-pointer hover:border-slate-300 transition-colors rounded-lg flex flex-col justify-between"
@@ -455,9 +437,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </Card>
       </div>
 
-      {/* ========================================================================= */}
-      {/* SEBARAN JADWAL ESKUL MINGGUAN (SENIN — MINGGU) DENGAN GRAFIK 2 MODE        */}
-      {/* ========================================================================= */}
       <Card className="rounded-lg shadow-xs space-y-6 p-5 sm:p-6">
         <WeeklyScheduleChart
           weeklySchedule={weeklySchedule}
@@ -469,9 +448,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           onOpenAddEskul={onOpenAddEskul}
         />
 
-        {/* ========================================================================= */}
-        {/* PANEL INSPEKTOR: DAFTAR ESKUL & GURU PEMBINA HARI TERPILIH                */}
-        {/* ========================================================================= */}
         <AnimatePresence mode="wait">
           <motion.div
             key={selectedDay.dayIndex}
@@ -517,7 +493,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </Button>
             </div>
 
-            {/* Eskul & Pembina Cards for Selected Day */}
             {selectedDay.eskulList.length === 0 ? (
               <div className="py-8 px-4 text-center rounded-lg bg-slate-50 border border-dashed border-border space-y-2">
                 <div className="size-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
@@ -542,21 +517,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
                 {selectedDay.eskulList.map((item) => {
+                  const matchedSession = effectiveSessions.find(s => s.eskulId === item.id);
                   return (
                     <Card
                       key={item.id}
                       className="p-4 rounded-lg border-border hover:border-emerald-300 transition-all flex flex-col justify-between space-y-3"
                     >
                       <div>
-                        <Badge variant="outline" className={`mb-1.5 text-[10px] ${getCategoryColor(item.kategori)}`}>
-                          {item.kategori}
-                        </Badge>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <Badge variant="outline" className={`text-[10px] ${getCategoryColor(item.kategori)}`}>
+                            {item.kategori}
+                          </Badge>
+                          {matchedSession?.status === 'BERLANGSUNG' && (
+                            <Badge variant="success" className="text-[10px] py-0 px-1.5 flex items-center gap-1 font-bold">
+                              <span className="size-1.5 rounded-full bg-emerald-400 animate-ping" />
+                              <span>BERLANGSUNG</span>
+                            </Badge>
+                          )}
+                          {matchedSession?.status === 'SELESAI' && (
+                            <Badge variant="outline" className="text-[10px] py-0 px-1.5 bg-slate-100 text-slate-700 font-semibold">
+                              SELESAI
+                            </Badge>
+                          )}
+                        </div>
                         <h4 className="text-sm font-bold text-slate-900 truncate">
                           {item.namaEskul}
                         </h4>
                       </div>
 
-                      {/* PEMBINA BERTUGAS */}
                       <div className="p-2.5 rounded-md bg-slate-50 border border-border flex items-center gap-2.5">
                         <UserAvatar
                           name={item.pembinaNama}
@@ -571,6 +559,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           </h5>
                         </div>
                       </div>
+
+                      {/* Info Kegiatan & Dokumentasi Terkini jika Ada Sesi */}
+                      {matchedSession && (matchedSession.judul || matchedSession.fotoKegiatan) && (
+                        <div className="p-2.5 rounded-md bg-emerald-50/70 border border-emerald-200/80 flex items-center gap-2.5">
+                          {matchedSession.fotoKegiatan ? (
+                            <img
+                              src={matchedSession.fotoKegiatan}
+                              alt="Dokumentasi"
+                              className="size-10 rounded object-cover border border-emerald-300 shrink-0"
+                            />
+                          ) : (
+                            <div className="size-8 rounded bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                              <Camera className="size-4" />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <span className="text-[9px] uppercase font-bold text-emerald-800 block truncate">
+                              Topik Kegiatan Hari Ini:
+                            </span>
+                            <div className="text-xs font-bold text-slate-900 truncate">
+                              {matchedSession.judul || matchedSession.materi || 'Latihan Rutin'}
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       <div className="space-y-1.5 text-xs text-slate-600">
                         <div className="flex items-center gap-2 text-slate-500">
@@ -589,6 +602,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           <Users className="size-3.5 text-[#00B884]" />
                           <span>{item.jumlahSiswa || item.kuota} / {item.kuota} Siswa</span>
                         </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => onNavigate('live-presensi')}
+                          className="h-7 px-2 text-[11px] text-[#00B884] hover:text-[#009e70] hover:bg-emerald-50 gap-1 font-semibold"
+                        >
+                          <span>Pantau Presensi</span>
+                          <ChevronRight className="size-3" />
+                        </Button>
                       </div>
                     </Card>
                   );
@@ -599,9 +621,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </AnimatePresence>
       </Card>
 
-      {/* Bottom Section: 2 Columns (Daftar Seluruh Pembina & Kategori/Fasilitas) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
-        {/* Left Card: "Daftar Guru Pembina Eskul" */}
         <Card className="rounded-lg shadow-xs flex flex-col justify-between">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <div>
@@ -653,7 +673,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </CardFooter>
         </Card>
 
-        {/* Right Card: Sebaran Kategori & Pemanfaatan Fasilitas Sekolah */}
         <Card className="rounded-lg shadow-xs flex flex-col justify-between">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <div>
@@ -676,7 +695,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </CardHeader>
 
           <CardContent className="space-y-4">
-            {/* Pemanfaatan Fasilitas Ruang / Lokasi */}
             {facilityGroups.length === 0 ? (
               <div className="p-4 rounded-md bg-slate-50 border border-dashed border-border text-center text-xs text-muted-foreground">
                 Belum ada lokasi latihan yang diisi oleh Koordinator pada Kelola Eskul.
@@ -700,7 +718,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
             )}
 
-            {/* Mini Kategori Progress Bars */}
             <div className="space-y-2 pt-1 border-t border-border text-xs">
               {categoryStats.map((cat, idx) => (
                 <div key={idx} className="flex justify-between text-slate-600">

@@ -21,7 +21,6 @@ import {
 
 const API_BASE_URL = '/api';
 
-// Helper for fetch with timeout and automatic authorization context
 async function fetchWithFallback<T>(url: string, options?: RequestInit, fallbackData?: T): Promise<T> {
   try {
     const controller = new AbortController();
@@ -39,7 +38,6 @@ async function fetchWithFallback<T>(url: string, options?: RequestInit, fallback
         const parsed = JSON.parse(userSession);
         userRole = parsed?.role || '';
       } catch {
-        // ignore parse error
       }
     }
 
@@ -61,7 +59,6 @@ async function fetchWithFallback<T>(url: string, options?: RequestInit, fallback
         const errJson = await res.json();
         if (errJson && errJson.message) errorMsg = errJson.message;
       } catch {
-        // ignore json parse error
       }
       throw new Error(errorMsg);
     }
@@ -75,10 +72,8 @@ async function fetchWithFallback<T>(url: string, options?: RequestInit, fallback
 }
 
 export const api = {
-  // Stats
   getDashboardStats: () => fetchWithFallback<any>('/stats/dashboard', undefined, null),
 
-  // Auth
   login: async (username: string, password: string) => {
     const res = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
@@ -91,8 +86,53 @@ export const api = {
     }
     return data;
   },
+  getMe: async () => {
+    const authToken = typeof window !== 'undefined'
+      ? (sessionStorage.getItem('al_amanah_auth_token') || localStorage.getItem('al_amanah_auth_token'))
+      : null;
+    if (!authToken) throw new Error('Tidak ada token autentikasi.');
+    const res = await fetch(`${API_BASE_URL}/auth/me`, {
+      headers: { 'Authorization': `Bearer ${authToken}` },
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.message || 'Sesi kedaluwarsa.');
+    return data.user;
+  },
+  updateProfile: async (data: { email?: string; noHp?: string }) => {
+    const authToken = typeof window !== 'undefined'
+      ? (sessionStorage.getItem('al_amanah_auth_token') || localStorage.getItem('al_amanah_auth_token'))
+      : null;
+    if (!authToken) throw new Error('Tidak ada token autentikasi.');
+    const res = await fetch(`${API_BASE_URL}/auth/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
+      },
+      body: JSON.stringify(data),
+    });
+    const result = await res.json();
+    if (!res.ok || !result.success) throw new Error(result.message || 'Gagal memperbarui profil kontak.');
+    return result;
+  },
+  uploadFile: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const authToken = typeof window !== 'undefined'
+      ? (sessionStorage.getItem('al_amanah_auth_token') || localStorage.getItem('al_amanah_auth_token'))
+      : null;
+    const res = await fetch(`${API_BASE_URL}/upload`, {
+      method: 'POST',
+      headers: {
+        ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}),
+      },
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.message || 'Gagal mengunggah berkas.');
+    return data;
+  },
 
-  // Eskul
   getEskul: () => fetchWithFallback<Eskul[]>('/eskul', undefined, INITIAL_ESKUL_LIST),
   createEskul: (eskul: Omit<Eskul, 'id' | 'jumlahSiswa'>) =>
     fetchWithFallback<Eskul>('/eskul', {
@@ -107,7 +147,6 @@ export const api = {
   deleteEskul: (id: string) =>
     fetchWithFallback<{ success: boolean }>(`/eskul/${id}`, { method: 'DELETE' }),
 
-  // Pembina
   getPembina: () => fetchWithFallback<Guru[]>('/pembina', undefined, []),
   createPembina: (data: {
     namaLengkap: string;
@@ -125,7 +164,6 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
-  // Guru & Wali Kelas
   getGuru: (params?: { isWaliKelas?: boolean; isPembina?: boolean }) => {
     let query = '';
     if (params?.isWaliKelas) query = '?isWaliKelas=true';
@@ -176,7 +214,6 @@ export const api = {
       body: JSON.stringify({ rows }),
     }),
 
-  // Kelas & Wali Kelas
   getKelas: () => fetchWithFallback<Kelas[]>('/kelas', undefined, []),
   createKelas: (data: { namaKelas: string; tingkat?: number; jurusan?: string; waliKelasId?: string }) =>
     fetchWithFallback<Kelas>('/kelas', {
@@ -198,20 +235,28 @@ export const api = {
       body: JSON.stringify({ waliKelasId }),
     }),
 
-  // Students & Import (NIS + Template Password al_amanah_<last 3 digits>)
   getStudents: () => fetchWithFallback<StudentProfile[]>('/students', undefined, INITIAL_STUDENTS),
   assignEskul: (studentId: string, eskulIds: string[]) =>
     fetchWithFallback<{ success: boolean }>('/students/assign', {
       method: 'POST',
       body: JSON.stringify({ studentId, eskulIds }),
     }),
-  importStudents: (rows: Array<{ nis: string; nisn?: string; namaLengkap: string; kelas: string; jenisKelamin?: string; noHp?: string }>) =>
+  importStudents: (rows: Array<{ nis: string; nisn?: string; namaLengkap: string; kelas: string; jenisKelamin?: string; noHp?: string; email?: string }>) =>
     fetchWithFallback<{ success: boolean; count: number; sampleCredentials?: any[] }>('/students/import', {
       method: 'POST',
       body: JSON.stringify({ rows }),
     }),
+  updateStudent: (studentId: string, data: any) =>
+    fetchWithFallback<{ success: boolean; data: any }>(`/students/${studentId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  batchUpdateStudentClass: (studentIds: string[], targetKelasId: string) =>
+    fetchWithFallback<{ success: boolean; count: number; message: string }>('/students/batch-update-class', {
+      method: 'POST',
+      body: JSON.stringify({ studentIds, targetKelasId }),
+    }),
 
-  // Sessions & Dynamic QR
   getTodaySessions: () => fetchWithFallback<SesiPertemuan[]>('/sessions/today', undefined, INITIAL_SESSIONS),
   createSession: (data: {
     eskulId: string;
@@ -223,6 +268,7 @@ export const api = {
     judul: string;
     deskripsi: string;
     materi?: string;
+    fotoKegiatan?: string;
   }) =>
     fetchWithFallback<SesiPertemuan>('/sessions', {
       method: 'POST',
@@ -232,13 +278,17 @@ export const api = {
     fetchWithFallback<{ success: boolean; token: string; expiresAt: number }>(`/sessions/${sessionId}/token`, {
       method: 'POST',
     }),
-  updateSessionStatus: (sessionId: string, status: string, additionalData?: { judul?: string; deskripsi?: string; materi?: string }) =>
+  updateSessionStatus: (sessionId: string, status: string, additionalData?: { judul?: string; deskripsi?: string; materi?: string; fotoKegiatan?: string; isLocked?: boolean }) =>
     fetchWithFallback<SesiPertemuan>(`/sessions/${sessionId}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status, ...(additionalData || {}) }),
     }),
+  startAttendanceSession: (sessionId: string, data: { judul: string; deskripsi: string; materi?: string; fotoKegiatan?: string }) =>
+    fetchWithFallback<{ success: boolean; message: string; data: SesiPertemuan }>(`/sessions/${sessionId}/start-attendance`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
 
-  // Permohonan Perubahan Jadwal (Pembina & Koordinator)
   getJadwalProposals: (params?: { pembinaId?: string; status?: string; eskulId?: string }) => {
     const query = new URLSearchParams();
     if (params?.pembinaId) query.append('pembinaId', params.pembinaId);
@@ -278,7 +328,6 @@ export const api = {
       }
     ),
 
-  // Presensi & Scan
   getPresensiLogs: () => fetchWithFallback<PresensiRecord[]>('/presensi', undefined, INITIAL_PRESENSI_LOG),
   scanPresensi: (qrToken: string, siswaId: string, deviceInfo?: string, metode?: string, lat?: number, lng?: number) =>
     fetchWithFallback<{ success: boolean; message: string; data: { namaSiswa: string; namaEskul: string } }>('/presensi/scan', {
@@ -334,7 +383,6 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
-  // Penilaian Rapor
   getPenilaian: () => fetchWithFallback<PenilaianRecord[]>('/penilaian', undefined, INITIAL_PENILAIAN),
   savePenilaian: (items: PenilaianRecord[]) =>
     fetchWithFallback<{ success: boolean; message?: string; data?: any }>('/penilaian', {
@@ -342,7 +390,6 @@ export const api = {
       body: JSON.stringify({ items }),
     }),
 
-  // Pendaftaran Siswa Eskul (4-Stage Lifecycle)
   getPendaftaran: (params?: { eskulId?: string; status?: string; siswaId?: string }) => {
     const query = new URLSearchParams();
     if (params?.eskulId) query.append('eskulId', params.eskulId);
@@ -377,7 +424,6 @@ export const api = {
       body: JSON.stringify({ pendaftaranIds, aksi, catatanKoordinator, koordinatorId }),
     }),
 
-  // Prestasi & Perlombaan Siswa
   getPrestasi: (params?: { eskulId?: string; siswaId?: string }) => {
     const query = new URLSearchParams();
     if (params?.eskulId) query.append('eskulId', params.eskulId);
@@ -404,14 +450,12 @@ export const api = {
     fetchWithFallback<{ success: boolean; message: string; data?: any }>(`/prestasi/${id}`, {
       method: 'DELETE',
     }),
-  // Kelola Keanggotaan & Kick Member (Pembina)
   kickMember: (eskulId: string, siswaId: string, alasan?: string) =>
     fetchWithFallback<{ success: boolean; message: string; data?: any }>(`/eskul/${eskulId}/kick-member`, {
       method: 'POST',
       body: JSON.stringify({ siswaId, alasan }),
     }),
 
-  // Pengaturan Sistem & Geofencing GPS
   getSettings: () =>
     fetchWithFallback<{
       schoolName: string;

@@ -23,8 +23,19 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
+  React.useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('has-print-modal-open');
+      return () => {
+        document.body.classList.remove('has-print-modal-open');
+      };
+    }
+  }, [isOpen]);
+
   const handlePrint = () => {
-    window.print();
+    requestAnimationFrame(() => {
+      window.print();
+    });
   };
 
   const studentsToRender = isBatchMode ? allStudents : (student ? [student] : []);
@@ -32,13 +43,12 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({
   return createPortal(
     <div
       onClick={onClose}
-      className="student-card-modal-backdrop fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+      className="student-card-modal-backdrop printable-fixed printable-modal-portal fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto print:static print:block print:p-0 print:m-0 print:bg-transparent print:w-full print:h-auto print:overflow-visible"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="student-card-modal-content bg-white rounded-lg w-[94vw] max-w-4xl p-4 sm:p-7 shadow-xl border border-slate-200/90 max-h-[92dvh] flex flex-col animate-in fade-in zoom-in-95 duration-200"
+        className="student-card-modal-content bg-white rounded-lg w-[94vw] max-w-4xl p-4 sm:p-7 shadow-xl border border-slate-200/90 max-h-[92dvh] flex flex-col animate-in fade-in zoom-in-95 duration-200 print:max-w-none print:w-full print:p-0 print:m-0 print:border-none print:shadow-none print:max-h-none print:overflow-visible print:block print:bg-transparent"
       >
-        {/* Modal Controls (Hidden on print) */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-200 shrink-0 print:hidden">
           <div className="flex items-center gap-2.5">
             <div className="size-9 rounded-md bg-emerald-50 text-[#00B884] flex items-center justify-center border border-emerald-100">
@@ -75,9 +85,7 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({
           </div>
         </div>
 
-        {/* Printable Cards Area */}
         <div id="printable-student-card-area" className="my-4 overflow-y-auto flex-1 pr-1">
-          {/* Instructions Banner (hidden on print) */}
           <div className="bg-emerald-50/90 border border-emerald-200 p-3 rounded-lg mb-4 flex items-center justify-between gap-3 text-xs text-emerald-900 print:hidden">
             <div className="flex items-center gap-2.5">
               <Smartphone className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -87,7 +95,6 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({
             </div>
           </div>
 
-          {/* Cards Grid */}
           <div className={`${isBatchMode ? 'grid gap-6 grid-cols-1 md:grid-cols-2' : 'max-w-md mx-auto print-single-card'}`}>
             {studentsToRender.map((stu) => {
               const enrolledEskuls = eskulList.filter((e) => stu.enrolledEskulIds && stu.enrolledEskulIds.includes(e.id));
@@ -99,10 +106,8 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({
                   className="bg-white rounded-lg border-2 border-emerald-700/40 shadow-sm p-4 sm:p-5 flex flex-col justify-between relative overflow-hidden break-inside-avoid print:border-emerald-700 print:shadow-none print-single-card"
                   style={{ minHeight: '280px' }}
                 >
-                  {/* Top Color Accent Stripe */}
                   <div className="absolute top-0 left-0 right-0 h-1.5 bg-[#00B884]" />
 
-                  {/* Card Header: Official School Header */}
                   <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-3 pt-1">
                     <div className="flex items-center gap-2.5">
                       <img 
@@ -130,9 +135,7 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Card Body: Student Info (Clean Text without Image) + QR Code */}
                   <div className="flex items-center gap-3.5 my-auto">
-                    {/* Left: Metadata */}
                     <div className="flex-1 min-w-0">
                       <div className="mb-2">
                         <h5 className="font-bold text-base text-slate-900 leading-tight truncate">
@@ -156,7 +159,6 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({
                           </strong>
                         </div>
 
-                        {/* Ekstrakurikuler yang Diikuti (Clean plain text without green badges) */}
                         <div className="pt-1.5 border-t border-slate-100 mt-2">
                           <span className="text-[9px] text-slate-400 uppercase font-bold block mb-0.5">
                             Ekstrakurikuler Terdaftar:
@@ -171,7 +173,6 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Right: High-Resolution Clean QR Code */}
                     <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-2xs flex flex-col items-center shrink-0">
                       <QRCodeSVG
                         value={studentQrPayload}
@@ -185,7 +186,6 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Card Footer: Official Watermark (Clean without shield icon) */}
                   <div className="mt-3 pt-2 border-t border-slate-200 flex items-center justify-between text-[9px] text-slate-500">
                     <div className="font-medium text-slate-600">
                       <span>Sistem Presensi Resmi SMK Al Amanah</span>
@@ -200,7 +200,6 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({
           </div>
         </div>
 
-        {/* Modal Bottom footer */}
         <div className="pt-3 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 print:hidden shrink-0">
           <span>Format resmi siap cetak untuk kartu fisik (ukuran ID Card) atau tampilan layar ponsel.</span>
           <button

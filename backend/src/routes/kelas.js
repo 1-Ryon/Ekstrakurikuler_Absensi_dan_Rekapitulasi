@@ -4,7 +4,6 @@ import { requireRoles } from '../middlewares/auth.js';
 
 const router = Router();
 
-// GET /api/kelas
 router.get('/', async (req, res) => {
   try {
     const kelasList = await prisma.kelas.findMany({
@@ -25,7 +24,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/kelas
 router.post('/', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   try {
     const { namaKelas, tingkat, jurusan, waliKelasId } = req.body;
@@ -44,7 +42,6 @@ router.post('/', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   }
 });
 
-// PATCH /api/kelas/:id/walikelas
 router.patch('/:id/walikelas', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   try {
     const { waliKelasId } = req.body;
@@ -59,7 +56,6 @@ router.patch('/:id/walikelas', requireRoles('ADMIN', 'KOORDINATOR'), async (req,
   }
 });
 
-// PUT /api/kelas/:id
 router.put('/:id', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   try {
     const { namaKelas, tingkat, jurusan, waliKelasId } = req.body;
@@ -85,7 +81,6 @@ router.put('/:id', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   }
 });
 
-// DELETE /api/kelas/:id
 router.delete('/:id', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   try {
     await prisma.kelas.delete({

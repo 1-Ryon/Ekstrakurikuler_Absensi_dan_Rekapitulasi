@@ -1,0 +1,5 @@
+{
+  "watch": ["src"],
+  "ext": "js,json",
+  "ignore": ["prisma/*", "*.db*", "uploads/*", "test/*", "node_modules/*"]
+}

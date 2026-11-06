@@ -84,7 +84,6 @@ export const AddPembinaModal: React.FC<AddPembinaModalProps> = ({
         onClick={(e) => e.stopPropagation()}
         className="bg-white rounded-lg w-[92vw] max-w-xl p-4 sm:p-6 shadow-xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150 max-h-[92dvh] flex flex-col"
       >
-        {/* Header */}
         <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-100 shrink-0">
           <div className="flex items-center gap-3">
             {namaLengkap ? (
@@ -112,7 +111,6 @@ export const AddPembinaModal: React.FC<AddPembinaModalProps> = ({
           </button>
         </div>
 
-        {/* Scrollable Form Body */}
         <form onSubmit={handleSubmit} className="space-y-4 text-xs overflow-y-auto pr-1 flex-1">
           <div>
             <label className="font-semibold text-slate-700 block mb-1">
@@ -184,7 +182,6 @@ export const AddPembinaModal: React.FC<AddPembinaModalProps> = ({
             </div>
           </div>
 
-          {/* Penugasan Cabang Eskul (Multi-Select) */}
           <div className="p-3.5 bg-slate-50/80 rounded-lg border border-slate-200 space-y-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -219,7 +216,6 @@ export const AddPembinaModal: React.FC<AddPembinaModalProps> = ({
               Pilih satu atau lebih cabang ekstrakurikuler yang akan langsung ditugaskan kepada pembina baru ini.
             </p>
 
-            {/* List Eskul */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-44 overflow-y-auto pr-1">
               {eskulList.map((e) => {
                 const isSelected = assignedEskulIds.includes(e.id);
@@ -268,7 +264,6 @@ export const AddPembinaModal: React.FC<AddPembinaModalProps> = ({
             </div>
           </div>
 
-          {/* Akun Kredensial Preview */}
           <div className="p-3 bg-blue-50/80 border border-blue-200 rounded-md text-[11px]">
             <div className="flex items-center gap-1.5 font-semibold text-blue-900 mb-1">
               <ShieldCheck className="w-3.5 h-3.5 text-blue-700" />

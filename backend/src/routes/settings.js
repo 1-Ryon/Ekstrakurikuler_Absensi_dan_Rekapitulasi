@@ -46,7 +46,6 @@ export function saveSystemSettings(newSettings) {
   }
 }
 
-// GET /api/settings
 router.get('/', (req, res) => {
   try {
     const settings = getSystemSettings();
@@ -56,7 +55,6 @@ router.get('/', (req, res) => {
   }
 });
 
-// PUT /api/settings (Admin / Koordinator only)
 router.put('/', requireRoles('ADMIN', 'KOORDINATOR'), (req, res) => {
   try {
     const updated = saveSystemSettings(req.body);

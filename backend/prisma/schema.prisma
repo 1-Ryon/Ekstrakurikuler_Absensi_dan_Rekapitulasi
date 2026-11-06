@@ -9,14 +9,14 @@ datasource db {
 
 model Admin {
   id           String    @id @default(uuid())
-  username     String    @unique // 'admin', 'admin.it'
+  username     String    @unique
   passwordHash String    @default("admin123")
   namaLengkap  String    @default("Administrator Sistem")
   nomorInduk   String?   @default("ADM-001")
   email        String?   @default("admin@smk-alamanah.sch.id")
   noHp         String?
   avatarUrl    String    @default("https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=160&auto=format&fit=crop&q=80")
-  role         String    @default("ADMIN") // 'ADMIN'
+  role         String    @default("ADMIN")
   statusAktif  Boolean   @default(true)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
@@ -26,23 +26,22 @@ model Admin {
 
 model Guru {
   id           String    @id @default(uuid())
-  username     String    @unique // 'koordinator', 'ahmad.futsal', 'abdul.jabbar', 'walikelas'
+  username     String    @unique
   passwordHash String    @default("pembina123")
   nip          String?   @unique
   namaLengkap  String
-  jenisKelamin String    @default("L") // 'L' | 'P'
+  jenisKelamin String    @default("L")
   noHp         String?
   email        String?
-  spesialisasi String?   // Contoh: 'Koordinator Ekstrakurikuler Utama', 'Pembina Futsal & Olahraga', 'Guru IT'
+  spesialisasi String?
   avatarUrl    String    @default("https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=160&auto=format&fit=crop&q=80")
-  role         String    @default("PEMBINA") // 'KOORDINATOR' | 'PEMBINA' | 'WALI_KELAS'
+  role         String    @default("PEMBINA")
   isPembina    Boolean   @default(true)
   isWaliKelas  Boolean   @default(false)
   statusAktif  Boolean   @default(true)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  // Relations
   eskulDiampu               Eskul[]
   kelasWali                 Kelas[]
   sesiDibuat                SesiPertemuan[]
@@ -58,14 +57,13 @@ model Guru {
 
 model Kelas {
   id          String   @id @default(uuid())
-  namaKelas   String   @unique // Contoh: 'X RPL 1', 'XI TKJ 2', 'XII BDP 1'
-  tingkat     Int      @default(10) // 10, 11, 12
+  namaKelas   String   @unique
+  tingkat     Int      @default(10)
   jurusan     String   @default("RPL")
   waliKelasId String?
   waliKelas   Guru?    @relation(fields: [waliKelasId], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
 
-  // Relations
   siswaList   Siswa[]
 
   @@index([waliKelasId])
@@ -74,23 +72,23 @@ model Kelas {
 
 model Siswa {
   id           String    @id @default(uuid())
-  nis          String    @unique // Nomor Induk Siswa (juga sebagai username login)
-  nisn         String?   @unique // Nomor Induk Siswa Nasional
-  passwordHash String    @default("siswa123") // Formula default: al_amanah_<last3digits>
+  nis          String    @unique
+  nisn         String?   @unique
+  passwordHash String    @default("siswa123")
   namaLengkap  String
-  jenisKelamin String    @default("L") // 'L' | 'P'
+  jenisKelamin String    @default("L")
   kelasId      String
   kelas        Kelas     @relation(fields: [kelasId], references: [id], onDelete: Restrict)
+  email        String?
   noHp         String?
   noHpOrtu     String?
   alamat       String?
   avatarUrl    String    @default("https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=160&auto=format&fit=crop&q=80")
-  statusSiswa  String    @default("AKTIF") // 'AKTIF' | 'LULUS' | 'PINDAH'
+  statusSiswa  String    @default("AKTIF")
   statusAktif  Boolean   @default(true)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  // Relations
   keanggotaanEskul AnggotaEskul[]
   pendaftaranEskul PendaftaranEskul[]
   presensiList     Presensi[]
@@ -105,20 +103,19 @@ model Siswa {
 model Eskul {
   id                  String            @id @default(uuid())
   namaEskul           String            @unique
-  kategori            String            @default("Olahraga") // 'Olahraga' | 'Teknologi' | 'Seni & Budaya' | 'Keagamaan' | 'Kepemimpinan'
+  kategori            String            @default("Olahraga")
   pembinaId           String
   pembina             Guru              @relation(fields: [pembinaId], references: [id], onDelete: Restrict)
-  jadwalHari          String            // 'Senin', 'Kamis', dst.
-  jamMulai            String            // '15:30'
-  jamSelesai          String            // '17:00'
-  lokasi              String            // 'Plaza Upacara SMK Al Amanah'
+  jadwalHari          String
+  jamMulai            String
+  jamSelesai          String
+  lokasi              String
   kuota               Int               @default(40)
-  status              String            @default("Aktif") // 'Aktif' | 'Non-Aktif'
+  status              String            @default("Aktif")
   deskripsi           String?
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
 
-  // Relations
   anggota             AnggotaEskul[]
   pendaftaranList     PendaftaranEskul[]
   sesiList            SesiPertemuan[]
@@ -136,8 +133,8 @@ model AnggotaEskul {
   eskulId          String
   siswaId          String
   tahunAjaran      String   @default("2026/2027")
-  jabatan          String   @default("ANGGOTA") // 'ANGGOTA' | 'KETUA' | 'WAKIL' | 'SEKRETARIS'
-  status           String   @default("AKTIF") // 'AKTIF' | 'ALUMNI' | 'KELUAR'
+  jabatan          String   @default("ANGGOTA")
+  status           String   @default("AKTIF")
   tanggalBergabung DateTime @default(now())
 
   eskul            Eskul    @relation(fields: [eskulId], references: [id], onDelete: Cascade)
@@ -154,7 +151,7 @@ model PendaftaranEskul {
   eskulId            String
   siswaId            String
   tahunAjaran        String    @default("2026/2027")
-  status             String    @default("MENUNGGU_SELEKSI") // 'MENUNGGU_SELEKSI' | 'DITERIMA_PEMBINA' | 'MENUNGGU_VALIDASI_KOORDINATOR' | 'RESMI_TERDAFTAR' | 'DITOLAK'
+  status             String    @default("MENUNGGU_SELEKSI")
   alasanDaftar       String?   @default("Berminat mengembangkan minat dan bakat")
   catatanPembina     String?
   catatanKoordinator String?
@@ -178,16 +175,17 @@ model SesiPertemuan {
   id             String     @id @default(uuid())
   eskulId        String
   pembuatId      String?
-  tanggal        String     // Format YYYY-MM-DD
+  tanggal        String
   jamMulai       String     @default("15:30")
   jamSelesai     String     @default("17:00")
   lokasi         String?
-  judul          String?    // Judul pertemuan / topik latihan utama
-  deskripsi      String?    // Deskripsi rincian: hari ini membahas apa dan latihan apa
-  materi         String?    // Agenda / materi latihan
+  judul          String?
+  deskripsi      String?
+  materi         String?
+  fotoKegiatan   String?
   tokenAktif     String?
   tokenExpiresAt DateTime?
-  status         String     @default("BERLANGSUNG") // 'BELUM_DIMULAI' | 'BERLANGSUNG' | 'SELESAI' | 'LIBUR'
+  status         String     @default("BERLANGSUNG")
   isLibur        Boolean    @default(false)
   alasanLibur    String?
   isLocked       Boolean    @default(false)
@@ -209,11 +207,11 @@ model Presensi {
   sesiId          String
   siswaId         String
   waktuScan       DateTime      @default(now())
-  status          String        @default("HADIR") // 'HADIR' | 'IZIN' | 'SAKIT' | 'ALFA'
-  metode          String        @default("DYNAMIC_QR") // 'DYNAMIC_QR' | 'SCAN_QR_SISWA' | 'MANUAL_CHECKLIST'
+  status          String        @default("HADIR")
+  metode          String        @default("DYNAMIC_QR")
   keterangan      String?
   nilaiKeaktifan  Float?        @default(85.0)
-  ratingKeaktifan String?       @default("Sangat Baik") // 'Kurang' | 'Cukup' | 'Baik' | 'Sangat Baik'
+  ratingKeaktifan String?       @default("Sangat Baik")
   buktiSurat      String?
   deviceInfo      String?
 
@@ -232,15 +230,15 @@ model Penilaian {
   eskulId           String
   siswaId           String
   penilaiId         String?
-  semester          Int      @default(1) // 1 atau 2
+  semester          Int      @default(1)
   tahunAjaran       String   @default("2026/2027")
-  nilaiKehadiran    Float    @default(90.0) // bobot 40% (akumulasi otomatis)
-  nilaiKeaktifan    Float    @default(85.0) // bobot 25% (rating keaktifan 1-5 di lapangan)
-  ratingKeaktifan   String   @default("Sangat Baik") // 'Kurang' | 'Cukup' | 'Baik' | 'Sangat Baik'
-  nilaiKinerja      Float    @default(85.0) // bobot 25%
-  poinPrestasi      Float    @default(0.0)  // bobot 10% (bonus perolehan juara lomba eksternal)
+  nilaiKehadiran    Float    @default(90.0)
+  nilaiKeaktifan    Float    @default(85.0)
+  ratingKeaktifan   String   @default("Sangat Baik")
+  nilaiKinerja      Float    @default(85.0)
+  poinPrestasi      Float    @default(0.0)
   nilaiAkhir        Float    @default(87.0)
-  predikat          String   @default("A")  // 'A' | 'B' | 'C' | 'D'
+  predikat          String   @default("A")
   capaianKompetensi String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -259,15 +257,15 @@ model PrestasiLomba {
   id              String   @id @default(uuid())
   eskulId         String
   siswaId         String
-  namaLomba       String   // e.g. "Kejuaraan Futsal Pelajar Kota Tangsel 2026"
-  penyelenggara   String?  // e.g. "Dispora Kota Tangerang Selatan"
-  tingkat         String   @default("KOTA") // 'KOTA' | 'PROVINSI' | 'NASIONAL' | 'INTERNASIONAL'
-  peringkat       String   @default("JUARA_1") // 'JUARA_1' | 'JUARA_2' | 'JUARA_3' | 'HARAPAN_1' | 'FINALIS'
+  namaLomba       String
+  penyelenggara   String?
+  tingkat         String   @default("KOTA")
+  peringkat       String   @default("JUARA_1")
   tanggal         DateTime @default(now())
   tahunAjaran     String   @default("2026/2027")
   semester        Int      @default(1)
-  buktiSertifikat String?  // URL atau path berkas piagam
-  poinTambahan    Float    @default(10.0) // Bonus nilai yang otomatis mendongkrak nilai akhir rapor
+  buktiSertifikat String?
+  poinTambahan    Float    @default(10.0)
   keterangan      String?
   diverifikasi    Boolean  @default(true)
   createdAt       DateTime @default(now())
@@ -293,10 +291,10 @@ model PengajuanJadwal {
   jamMulaiBaru       String
   jamSelesaiBaru     String
   lokasiBaru         String?
-  jenisPerubahan     String    @default("PERMANEN") // 'PERMANEN' | 'SEMENTARA'
+  jenisPerubahan     String    @default("PERMANEN")
   tanggalEfektif     String?
   alasan             String
-  status             String    @default("MENUNGGU_VALIDASI") // 'MENUNGGU_VALIDASI' | 'DISETUJUI' | 'DITOLAK'
+  status             String    @default("MENUNGGU_VALIDASI")
   catatanKoordinator String?
   diverifikasiOlehId String?
   diverifikasiPada   DateTime?

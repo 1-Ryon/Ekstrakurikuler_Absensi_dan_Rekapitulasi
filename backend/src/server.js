@@ -1,11 +1,6 @@
-/**
- * Entry point for SMK Al Amanah Backend Server
- * Modular Architecture with Separation of Concerns
- */
 import dotenv from 'dotenv';
 dotenv.config();
 
-// Auto-fallback jika teman kelompok clone tanpa file .env sama sekali (Zero-config)
 if (!process.env.DATABASE_URL) {
   process.env.DATABASE_URL = 'file:./dev.db';
 }
@@ -30,7 +25,21 @@ const server = app.listen(PORT, HOST, () => {
   console.log(`📡 [API] REST Endpoints siap melayani sistem presensi & penilaian (Modular Architecture).`);
 });
 
-// Re-exports for test compatibility and backward compatibility
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n❌ [PORT IN USE] Port ${PORT} sedang dipakai oleh proses lain (background node/server).`);
+    console.error(`💡 Solusi: Jalankan 'npm run kill:port' untuk menghentikan proses lama secara otomatis.\n`);
+  } else {
+    console.error('[SERVER ERROR]:', err);
+  }
+});
+
+process.on('SIGTERM', () => {
+  server.close(() => {
+    console.log('[BACKEND] Server ditutup dengan aman.');
+  });
+});
+
 export {
   app,
   server,

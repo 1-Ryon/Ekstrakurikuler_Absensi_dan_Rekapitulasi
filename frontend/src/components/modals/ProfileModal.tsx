@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   ShieldCheck, 
@@ -10,15 +10,18 @@ import {
   Building2, 
   CheckCircle2, 
   KeyRound, 
-  Calendar, 
   Award,
-  Layers,
   LogOut,
-  BadgeCheck
+  BadgeCheck,
+  Edit2,
+  Check,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import { User, Role } from '../../types';
 import { UserAvatar } from '../common/UserAvatar';
 import { SchoolLogo } from '../SchoolLogo';
+import { api } from '../../services/api';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -26,6 +29,7 @@ interface ProfileModalProps {
   currentUser?: User | null;
   currentRole: Role;
   onLogout?: () => void;
+  onUpdateCurrentUser?: (updatedUser: User) => void;
 }
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({
@@ -34,17 +38,39 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   currentUser,
   currentRole,
   onLogout,
+  onUpdateCurrentUser,
 }) => {
+  const [isEditingContact, setIsEditingContact] = useState(false);
+  const [emailInput, setEmailInput] = useState('');
+  const [noHpInput, setNoHpInput] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [contactSuccessMsg, setContactSuccessMsg] = useState<string | null>(null);
+  const [contactErrorMsg, setContactErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (currentUser) {
+      setEmailInput(currentUser.email || '');
+      setNoHpInput(currentUser.noHp || '');
+    }
+    setIsEditingContact(false);
+    setContactSuccessMsg(null);
+    setContactErrorMsg(null);
+  }, [currentUser, isOpen]);
+
   if (!isOpen) return null;
 
   const role = currentUser?.role || currentRole;
-  const namaLengkap = currentUser?.namaLengkap || 'Administrator Sistem';
+  const isSiswa = role === 'SISWA';
+  const namaLengkap = currentUser?.namaLengkap || (isSiswa ? 'Peserta Didik' : 'Administrator Sistem');
   const username = currentUser?.username || 'admin';
-  const nomorInduk = currentUser?.nomorInduk || 'ADM-ALAMANAH-01';
-  const spesialisasi = currentUser?.spesialisasi || (role === 'ADMIN' ? 'Super Administrator & Pengelola Sistem IT PKM' : 'Staf SMK Al Amanah');
-  const email = currentUser?.email || `${username.toLowerCase()}@smk-alamanah.sch.id`;
-  const noHp = currentUser?.noHp || '0812-3456-7890';
+  const nomorInduk = currentUser?.nomorInduk || (isSiswa ? username : 'ADM-ALAMANAH-01');
   const statusAktif = currentUser?.statusAktif ?? true;
+
+  const userSubtitle = isSiswa
+    ? `Peserta Didik SMK Al Amanah • ${currentUser?.kelas || 'Kelas Belum Ditentukan'}`
+    : role === 'ADMIN'
+      ? (currentUser?.spesialisasi || 'Super Administrator & Pengelola Sistem IT PKM')
+      : (currentUser?.spesialisasi || 'Tenaga Pendidik / Staf SMK Al Amanah');
 
   const getRoleBadge = (r: Role) => {
     switch (r) {
@@ -94,6 +120,31 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const roleInfo = getRoleBadge(role);
   const RoleIcon = roleInfo.icon;
 
+  const handleSaveContact = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    setContactErrorMsg(null);
+    setContactSuccessMsg(null);
+
+    try {
+      const res = await api.updateProfile({
+        email: emailInput.trim(),
+        noHp: noHpInput.trim(),
+      });
+
+      if (res && res.user && onUpdateCurrentUser) {
+        onUpdateCurrentUser(res.user);
+      }
+      setIsEditingContact(false);
+      setContactSuccessMsg('Kontak akun berhasil disimpan dan disinkronkan!');
+      setTimeout(() => setContactSuccessMsg(null), 3500);
+    } catch (err: any) {
+      setContactErrorMsg(err.message || 'Gagal menyimpan kontak akun.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div
       onClick={onClose}
@@ -101,10 +152,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-lg w-[92vw] max-w-2xl shadow-xl border border-slate-200 max-h-[92dvh] flex flex-col animate-in fade-in zoom-in-95 duration-200 overflow-hidden"
+        className="bg-white rounded-xl w-[92vw] max-w-2xl shadow-xl border border-slate-200 max-h-[92dvh] flex flex-col animate-in fade-in zoom-in-95 duration-200 overflow-hidden"
       >
         
-        {/* Modal Header */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-100 bg-slate-50/50">
           <div className="flex items-center gap-3">
             <SchoolLogo size="sm" showText={false} />
@@ -113,7 +163,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 Detail Profil Akun Pengguna
               </h3>
               <p className="text-[11px] text-slate-500">
-                Absensi Estrakurikuler SMK Al-Amanah
+                Absensi Ekstrakurikuler SMK Al-Amanah
               </p>
             </div>
           </div>
@@ -126,19 +176,17 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           </button>
         </div>
 
-        {/* Modal Body */}
         <div className="p-6 overflow-y-auto space-y-6">
           
-          {/* Hero Profile Card */}
-          <div className="relative overflow-hidden bg-slate-900 rounded-lg p-5 text-white border border-slate-800">
+          <div className="relative overflow-hidden bg-slate-50/90 rounded-lg p-5 text-slate-800 border border-slate-200 shadow-xs">
             <div className="relative flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
               <div className="relative shrink-0">
                 <UserAvatar
                   name={namaLengkap}
-                  className="w-16 h-16 sm:w-20 sm:h-20 ring-2 ring-emerald-500/30 text-xl font-bold"
+                  className="w-16 h-16 sm:w-20 sm:h-20 ring-2 ring-slate-200 text-xl font-bold bg-white"
                 />
                 {statusAktif && (
-                  <span className="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 border-2 border-slate-900 rounded-full flex items-center justify-center">
+                  <span className="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full flex items-center justify-center shadow-xs">
                     <CheckCircle2 className="w-3 h-3 text-white" />
                   </span>
                 )}
@@ -146,30 +194,30 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                  <h4 className="text-base sm:text-lg font-bold text-white truncate">
+                  <h4 className="text-base sm:text-lg font-bold text-slate-800 truncate">
                     {namaLengkap}
                   </h4>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#00B884] text-white">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#00B884] text-white shadow-xs">
                     <BadgeCheck className="w-3 h-3" />
                     {roleInfo.label}
                   </span>
                 </div>
 
-                <p className="text-xs text-slate-300 font-mono mt-0.5">
+                <p className="text-xs text-slate-500 font-mono mt-0.5">
                   @{username}
                 </p>
 
-                <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-                  {spesialisasi}
+                <p className="text-xs text-slate-600 mt-1.5 leading-relaxed font-medium">
+                  {userSubtitle}
                 </p>
 
-                <div className="mt-3 flex flex-wrap items-center justify-center sm:justify-start gap-3 text-[11px] text-slate-300">
-                  <span className="flex items-center gap-1.5 bg-white/10 px-2.5 py-1 rounded-md">
-                    <Building2 className="w-3.5 h-3.5 text-emerald-400" />
+                <div className="mt-3 flex flex-wrap items-center justify-center sm:justify-start gap-2.5 text-[11px] text-slate-600">
+                  <span className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-md border border-slate-200 shadow-xs">
+                    <Building2 className="w-3.5 h-3.5 text-emerald-600" />
                     SMK Al Amanah Kota Tangerang Selatan
                   </span>
-                  <span className="flex items-center gap-1.5 bg-white/10 px-2.5 py-1 rounded-md">
-                    <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-md border border-slate-200 shadow-xs">
+                    <KeyRound className="w-3.5 h-3.5 text-amber-500" />
                     Status: {statusAktif ? 'Aktif Terverifikasi' : 'Non-Aktif'}
                   </span>
                 </div>
@@ -177,19 +225,17 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             </div>
           </div>
 
-          {/* Detailed Data Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             
-            {/* Box 1: Informasi Identitas */}
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-600 pb-2 border-b border-slate-200/60">
                 <RoleIcon className="w-4 h-4 text-emerald-600" />
-                <span>Identitas & Kepegawaian</span>
+                <span>{isSiswa ? 'Identitas Peserta Didik' : 'Identitas & Kepegawaian'}</span>
               </div>
               
-              <div className="space-y-2 text-xs">
+              <div className="space-y-2.5 text-xs">
                 <div>
-                  <span className="text-slate-400 block text-[10px]">Nomor Induk (NIP / NISN)</span>
+                  <span className="text-slate-400 block text-[10px]">{isSiswa ? 'Nomor Induk Siswa (NIS / NISN)' : 'Nomor Induk (NIP / ADM)'}</span>
                   <span className="font-semibold text-slate-800 font-mono">{nomorInduk}</span>
                 </div>
                 <div>
@@ -197,50 +243,177 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                   <span className="font-semibold text-slate-800">{roleInfo.label}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block text-[10px]">Jabatan / Bidang Tugas</span>
-                  <span className="font-semibold text-slate-800">{spesialisasi}</span>
+                  <span className="text-slate-400 block text-[10px]">{isSiswa ? 'Status Akademik' : 'Jabatan / Bidang Tugas'}</span>
+                  <span className="font-semibold text-slate-800">
+                    {isSiswa ? 'Peserta Didik Aktif' : (currentUser?.spesialisasi || 'Staf SMK Al Amanah')}
+                  </span>
                 </div>
                 {currentUser?.kelas && (
                   <div>
-                    <span className="text-slate-400 block text-[10px]">Kelas Binaan / Rombel</span>
-                    <span className="font-semibold text-slate-800">{currentUser.kelas}</span>
+                    <span className="text-slate-400 block text-[10px]">{isSiswa ? 'Kelas / Rombel Siswa' : 'Kelas Binaan'}</span>
+                    <span className="inline-block font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-[11px] font-mono mt-0.5">
+                      {currentUser.kelas}
+                    </span>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Box 2: Kontak & Akses */}
             <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-600 pb-2 border-b border-slate-200/60">
-                <Mail className="w-4 h-4 text-blue-500" />
-                <span>Kontak & Akun</span>
+              <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                  <Mail className="w-4 h-4 text-blue-500" />
+                  <span>Kontak & Akun</span>
+                </div>
+                {!isEditingContact && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmailInput(currentUser?.email || '');
+                      setNoHpInput(currentUser?.noHp || '');
+                      setIsEditingContact(true);
+                    }}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer"
+                  >
+                    <Edit2 className="w-3 h-3" />
+                    <span>{currentUser?.email || currentUser?.noHp ? 'Ubah Kontak' : '+ Tambah Kontak'}</span>
+                  </button>
+                )}
               </div>
               
-              <div className="space-y-2 text-xs">
-                <div>
-                  <span className="text-slate-400 block text-[10px]">Email Resmi</span>
-                  <span className="font-semibold text-slate-800">{email}</span>
+              {contactSuccessMsg && (
+                <div className="p-2 bg-emerald-50 border border-emerald-200 rounded text-emerald-800 text-[11px] flex items-center gap-1.5 animate-in fade-in">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>{contactSuccessMsg}</span>
                 </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px]">Nomor WhatsApp / HP</span>
-                  <span className="font-semibold text-slate-800">{noHp}</span>
+              )}
+
+              {contactErrorMsg && (
+                <div className="p-2 bg-rose-50 border border-rose-200 rounded text-rose-800 text-[11px] flex items-center gap-1.5 animate-in fade-in">
+                  <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                  <span>{contactErrorMsg}</span>
                 </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px]">Tipe Login Akun</span>
-                  <span className="font-semibold text-slate-800">Autentikasi Terenkripsi (Hash)</span>
+              )}
+
+              {isEditingContact ? (
+                <form onSubmit={handleSaveContact} className="space-y-3 text-xs pt-1">
+                  <div>
+                    <label className="text-slate-500 block text-[10px] font-medium mb-1">
+                      Email Resmi / Aktif
+                    </label>
+                    <div className="relative">
+                      <Mail className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type="email"
+                        value={emailInput}
+                        onChange={(e) => setEmailInput(e.target.value)}
+                        placeholder="contoh@smk-alamanah.sch.id"
+                        className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500 text-slate-800 shadow-2xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-slate-500 block text-[10px] font-medium mb-1">
+                      Nomor WhatsApp / HP
+                    </label>
+                    <div className="relative">
+                      <Phone className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type="tel"
+                        value={noHpInput}
+                        onChange={(e) => setNoHpInput(e.target.value)}
+                        placeholder="Contoh: 081234567890"
+                        className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500 text-slate-800 font-mono shadow-2xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200/50">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditingContact(false);
+                        setEmailInput(currentUser?.email || '');
+                        setNoHpInput(currentUser?.noHp || '');
+                        setContactErrorMsg(null);
+                      }}
+                      disabled={isSaving}
+                      className="px-2.5 py-1 text-xs border border-slate-200 bg-white text-slate-600 rounded hover:bg-slate-100 transition-colors cursor-pointer"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSaving}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
+                    >
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          <span>Menyimpan...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-3 h-3" />
+                          <span>Simpan Kontak</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="space-y-2.5 text-xs">
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">Email Resmi</span>
+                    {currentUser?.email ? (
+                      <span className="font-semibold text-slate-800 break-all">{currentUser.email}</span>
+                    ) : (
+                      <div className="flex items-center gap-1 text-slate-400 italic text-[11px] mt-0.5">
+                        <span>Belum diatur</span>
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingContact(true)}
+                          className="text-emerald-600 hover:underline not-italic font-medium ml-1 cursor-pointer"
+                        >
+                          + Tambah
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">Nomor WhatsApp / HP</span>
+                    {currentUser?.noHp ? (
+                      <span className="font-semibold text-slate-800 font-mono">{currentUser.noHp}</span>
+                    ) : (
+                      <div className="flex items-center gap-1 text-slate-400 italic text-[11px] mt-0.5">
+                        <span>Belum diatur</span>
+                        <button
+                          type="button"
+                          onClick={() => setIsEditingContact(true)}
+                          className="text-emerald-600 hover:underline not-italic font-medium ml-1 cursor-pointer"
+                        >
+                          + Tambah
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">Tipe Login Akun</span>
+                    <span className="font-semibold text-slate-800">Autentikasi Terenkripsi (Hash)</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">Status Otoritas</span>
+                    <span className="inline-block font-semibold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded text-[11px]">
+                      Diizinkan Akses Penuh Sesuai Peran
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-slate-400 block text-[10px]">Status Otoritas</span>
-                  <span className="inline-block font-semibold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded text-[11px]">
-                    Diizinkan Akses Penuh Sesuai Peran
-                  </span>
-                </div>
-              </div>
+              )}
             </div>
 
           </div>
 
-          {/* Box 3: Deskripsi Otoritas & Fitur Peran */}
           <div className="p-4 rounded-lg border border-slate-200 bg-emerald-50/40 text-xs space-y-1.5">
             <div className="font-semibold text-emerald-900 flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
@@ -250,10 +423,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               {roleInfo.desc}
             </p>
           </div>
-
         </div>
 
-        {/* Modal Footer */}
         <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
           <button
             onClick={onClose}

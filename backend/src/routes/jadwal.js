@@ -4,7 +4,12 @@ import { requireRoles } from '../middlewares/auth.js';
 
 const router = Router();
 
-// GET /api/jadwal-proposals
+function timeToMinutes(timeStr) {
+  if (!timeStr) return 0;
+  const [h, m] = timeStr.replace('.', ':').split(':').map((x) => parseInt(x, 10) || 0);
+  return h * 60 + m;
+}
+
 router.get('/', async (req, res) => {
   try {
     const { pembinaId, status, eskulId } = req.query;
@@ -67,8 +72,11 @@ router.get('/', async (req, res) => {
       status: item.status,
       catatanKoordinator: item.catatanKoordinator,
       diverifikasiOlehId: item.diverifikasiOlehId,
-      diverifikasiOlehNama: item.diverifikasiOleh?.namaLengkap || null,
+      diverifikasiOlehNama: item.diverifikasiOleh?.namaLengkap || (item.status !== 'MENUNGGU_VALIDASI' ? 'Administrator Sistem' : null),
       diverifikasiPada: item.diverifikasiPada,
+      verifikatorId: item.diverifikasiOlehId,
+      verifikatorNama: item.diverifikasiOleh?.namaLengkap || (item.status !== 'MENUNGGU_VALIDASI' ? 'Administrator Sistem' : null),
+      verifiedAt: item.diverifikasiPada,
       createdAt: item.createdAt,
     }));
 
@@ -78,7 +86,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/jadwal-proposals
 router.post('/', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, res) => {
   try {
     const {
@@ -111,6 +118,46 @@ router.post('/', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, re
       return res.status(404).json({ success: false, message: 'Data eskul tidak ditemukan.' });
     }
 
+    if (req.user?.role === 'PEMBINA' && eskul.pembinaId !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: `Akses ditolak: Anda bukan pembina resmi ekstrakurikuler ${eskul.namaEskul}.`,
+      });
+    }
+
+    const cleanHariBaru = hariBaru.trim();
+    const cleanJamMulai = jamMulaiBaru.trim();
+    const cleanJamSelesai = jamSelesaiBaru.trim();
+    const cleanLokasi = (lokasiBaru ? lokasiBaru.trim() : eskul.lokasi).trim();
+
+    const proposedStartMin = timeToMinutes(cleanJamMulai);
+    const proposedEndMin = timeToMinutes(cleanJamSelesai);
+
+    const otherEskuls = await prisma.eskul.findMany({
+      where: {
+        id: { not: eskulId },
+        status: 'Aktif',
+        jadwalHari: { equals: cleanHariBaru },
+      },
+    });
+
+    const conflictingEskul = otherEskuls.find((other) => {
+      const isSameLocation = other.lokasi && other.lokasi.trim().toLowerCase() === cleanLokasi.toLowerCase();
+      if (!isSameLocation) return false;
+
+      const otherStartMin = timeToMinutes(other.jamMulai);
+      const otherEndMin = timeToMinutes(other.jamSelesai);
+
+      return proposedStartMin < otherEndMin && proposedEndMin > otherStartMin;
+    });
+
+    if (conflictingEskul) {
+      return res.status(400).json({
+        success: false,
+        message: `Konflik Jadwal: Lokasi '${cleanLokasi}' pada hari ${cleanHariBaru} (${cleanJamMulai} - ${cleanJamSelesai}) sudah digunakan oleh ekstrakurikuler '${conflictingEskul.namaEskul}' (${conflictingEskul.jamMulai} - ${conflictingEskul.jamSelesai}).`,
+      });
+    }
+
     let validPembinaId = pembinaId;
     const guruCheck = await prisma.guru.findUnique({ where: { id: pembinaId } });
     if (!guruCheck) {
@@ -125,10 +172,10 @@ router.post('/', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, re
         jamMulaiLama: eskul.jamMulai,
         jamSelesaiLama: eskul.jamSelesai,
         lokasiLama: eskul.lokasi,
-        hariBaru: hariBaru.trim(),
-        jamMulaiBaru: jamMulaiBaru.trim(),
-        jamSelesaiBaru: jamSelesaiBaru.trim(),
-        lokasiBaru: lokasiBaru ? lokasiBaru.trim() : eskul.lokasi,
+        hariBaru: cleanHariBaru,
+        jamMulaiBaru: cleanJamMulai,
+        jamSelesaiBaru: cleanJamSelesai,
+        lokasiBaru: cleanLokasi,
         jenisPerubahan: jenisPerubahan || 'PERMANEN',
         tanggalEfektif: tanggalEfektif || null,
         alasan: alasan.trim(),
@@ -169,7 +216,6 @@ router.post('/', requireRoles('PEMBINA', 'KOORDINATOR', 'ADMIN'), async (req, re
   }
 });
 
-// PATCH /api/jadwal-proposals/:id/validate
 router.patch('/:id/validate', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   try {
     const { id } = req.params;
@@ -203,45 +249,58 @@ router.patch('/:id/validate', requireRoles('ADMIN', 'KOORDINATOR'), async (req, 
       });
     }
 
-    let updatedEskul = null;
-
-    if (effectiveStatus === 'DISETUJUI') {
-      updatedEskul = await prisma.eskul.update({
-        where: { id: proposal.eskulId },
-        data: {
-          jadwalHari: proposal.hariBaru,
-          jamMulai: proposal.jamMulaiBaru,
-          jamSelesai: proposal.jamSelesaiBaru,
-          lokasi: proposal.lokasiBaru || proposal.lokasiLama || undefined,
-        },
-      });
-    }
-
     let validVerifikatorId = null;
     if (koordinatorId) {
       const koorCheck = await prisma.guru.findUnique({ where: { id: koordinatorId } });
-      if (koorCheck) {
-        validVerifikatorId = koordinatorId;
-      } else {
-        const defaultKoor = await prisma.guru.findFirst({ where: { role: 'KOORDINATOR' } });
-        validVerifikatorId = defaultKoor?.id || null;
-      }
+      if (koorCheck) validVerifikatorId = koorCheck.id;
+    }
+    if (!validVerifikatorId && req.user?.id) {
+      const userGuruCheck = await prisma.guru.findUnique({ where: { id: req.user.id } });
+      if (userGuruCheck) validVerifikatorId = userGuruCheck.id;
+    }
+    if (!validVerifikatorId && req.user?.role === 'ADMIN') {
+      const defaultKoor = await prisma.guru.findFirst({ where: { role: 'KOORDINATOR', statusAktif: true } });
+      if (defaultKoor) validVerifikatorId = defaultKoor.id;
     }
 
-    const updatedProposal = await prisma.pengajuanJadwal.update({
-      where: { id },
-      data: {
-        status: effectiveStatus,
-        catatanKoordinator: catatanKoordinator ? catatanKoordinator.trim() : (effectiveStatus === 'DISETUJUI' ? 'Disetujui oleh Koordinator' : 'Ditolak oleh Koordinator'),
-        diverifikasiOlehId: validVerifikatorId,
-        diverifikasiPada: new Date(),
-      },
-      include: {
-        eskul: true,
-        pembina: { select: { namaLengkap: true, avatarUrl: true } },
-        diverifikasiOleh: { select: { namaLengkap: true } },
-      },
+    const result = await prisma.$transaction(async (tx) => {
+      let updatedEskul = null;
+
+      if (effectiveStatus === 'DISETUJUI' && proposal.jenisPerubahan === 'PERMANEN') {
+        updatedEskul = await tx.eskul.update({
+          where: { id: proposal.eskulId },
+          data: {
+            jadwalHari: proposal.hariBaru,
+            jamMulai: proposal.jamMulaiBaru,
+            jamSelesai: proposal.jamSelesaiBaru,
+            lokasi: proposal.lokasiBaru || proposal.lokasiLama || undefined,
+          },
+        });
+      }
+
+      const updatedProposal = await tx.pengajuanJadwal.update({
+        where: { id },
+        data: {
+          status: effectiveStatus,
+          catatanKoordinator: catatanKoordinator
+            ? catatanKoordinator.trim()
+            : (effectiveStatus === 'DISETUJUI'
+                ? (req.user?.role === 'ADMIN' ? 'Disetujui oleh Administrator Sistem' : 'Disetujui oleh Koordinator')
+                : (req.user?.role === 'ADMIN' ? 'Ditolak oleh Administrator Sistem' : 'Ditolak oleh Koordinator')),
+          diverifikasiOlehId: validVerifikatorId,
+          diverifikasiPada: new Date(),
+        },
+        include: {
+          eskul: true,
+          pembina: { select: { namaLengkap: true, avatarUrl: true } },
+          diverifikasiOleh: { select: { namaLengkap: true } },
+        },
+      });
+
+      return { updatedProposal, updatedEskul };
     });
+
+    const { updatedProposal, updatedEskul } = result;
 
     res.json({
       success: true,
@@ -267,8 +326,13 @@ router.patch('/:id/validate', requireRoles('ADMIN', 'KOORDINATOR'), async (req, 
         alasan: updatedProposal.alasan,
         status: updatedProposal.status,
         catatanKoordinator: updatedProposal.catatanKoordinator,
-        diverifikasiOlehNama: updatedProposal.diverifikasiOleh?.namaLengkap || 'Koordinator Eskul',
+        diverifikasiOlehId: updatedProposal.diverifikasiOlehId,
+        diverifikasiOlehNama: updatedProposal.diverifikasiOleh?.namaLengkap || (req.user?.namaLengkap || 'Administrator Sistem'),
         diverifikasiPada: updatedProposal.diverifikasiPada,
+        verifikatorId: updatedProposal.diverifikasiOlehId,
+        verifikatorNama: updatedProposal.diverifikasiOleh?.namaLengkap || (req.user?.namaLengkap || 'Administrator Sistem'),
+        verifiedAt: updatedProposal.diverifikasiPada,
+        updatedEskul,
       },
       updatedEskul,
     });

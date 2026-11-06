@@ -1,6 +1,5 @@
 import tailwindcssAnimate from 'tailwindcss-animate';
 
-/** @type {import('tailwindcss').Config} */
 export default {
   darkMode: ['class'],
   content: [
@@ -56,7 +55,7 @@ export default {
           200: '#8ee5ca',
           300: '#53d2ae',
           400: '#23b98f',
-          500: '#00b884', // Primary emerald matching school theme
+          500: '#00b884',
           600: '#009e70',
           700: '#007e5b',
           800: '#056349',
