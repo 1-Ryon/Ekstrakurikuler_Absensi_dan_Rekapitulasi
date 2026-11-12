@@ -91,7 +91,13 @@ router.post('/scan', requireRoles('SISWA', 'PEMBINA', 'KOORDINATOR', 'ADMIN'), a
     }
 
     const settings = getSystemSettings();
-    if (settings.isGeofenceActive) {
+    const isGeofenceActive =
+      settings.isGeofenceActive === true ||
+      settings.isGeofenceActive === 'true' ||
+      settings.isGeofenceActive === 1 ||
+      settings.isGeofenceActive === '1';
+
+    if (isGeofenceActive) {
       if (rawLat === undefined || rawLng === undefined || rawLat === null || rawLng === null) {
         return res.status(400).json({
           success: false,

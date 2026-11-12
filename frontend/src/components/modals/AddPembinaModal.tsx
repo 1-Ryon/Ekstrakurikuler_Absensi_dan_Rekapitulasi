@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, UserPlus, ShieldCheck, Mail, Phone, Award, Volleyball, Check, Sparkles } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { X, UserPlus, ShieldCheck, Mail, Phone, Award, Volleyball, Check, Sparkles, Search } from 'lucide-react';
 import { Eskul } from '../../types';
 import { UserAvatar } from '../common/UserAvatar';
 
@@ -32,6 +32,33 @@ export const AddPembinaModal: React.FC<AddPembinaModalProps> = ({
   const [email, setEmail] = useState('');
   const [spesialisasi, setSpesialisasi] = useState('');
   const [assignedEskulIds, setAssignedEskulIds] = useState<string[]>([]);
+  const [eskulSearch, setEskulSearch] = useState('');
+  const [selectedKategoriFilter, setSelectedKategoriFilter] = useState('ALL');
+
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    eskulList.forEach(e => {
+      if (e.kategori) set.add(e.kategori);
+    });
+    return Array.from(set);
+  }, [eskulList]);
+
+  const filteredEskuls = useMemo(() => {
+    const q = eskulSearch.trim().toLowerCase();
+    return eskulList.filter((e) => {
+      const matchSearch =
+        !q ||
+        e.namaEskul.toLowerCase().includes(q) ||
+        (e.kategori && e.kategori.toLowerCase().includes(q)) ||
+        (e.jadwalHari && e.jadwalHari.toLowerCase().includes(q)) ||
+        (e.pembinaNama && e.pembinaNama.toLowerCase().includes(q));
+
+      const matchKategori =
+        selectedKategoriFilter === 'ALL' || e.kategori === selectedKategoriFilter;
+
+      return matchSearch && matchKategori;
+    });
+  }, [eskulList, eskulSearch, selectedKategoriFilter]);
 
   if (!isOpen) return null;
 
@@ -49,7 +76,12 @@ export const AddPembinaModal: React.FC<AddPembinaModalProps> = ({
   };
 
   const handleSelectAllEskul = () => {
-    setAssignedEskulIds(eskulList.map(e => e.id));
+    if (eskulSearch.trim() || selectedKategoriFilter !== 'ALL') {
+      const combined = Array.from(new Set([...assignedEskulIds, ...filteredEskuls.map(e => e.id)]));
+      setAssignedEskulIds(combined);
+    } else {
+      setAssignedEskulIds(eskulList.map(e => e.id));
+    }
   };
 
   const handleClearAllEskul = () => {
@@ -216,8 +248,62 @@ export const AddPembinaModal: React.FC<AddPembinaModalProps> = ({
               Pilih satu atau lebih cabang ekstrakurikuler yang akan langsung ditugaskan kepada pembina baru ini.
             </p>
 
+            {/* Searchbar & Category Filter */}
+            <div className="space-y-2">
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={eskulSearch}
+                  onChange={(e) => setEskulSearch(e.target.value)}
+                  placeholder="Cari cabang eskul (contoh: Futsal, Tari, Web Club, Basket)..."
+                  className="w-full pl-8 pr-7 py-1.5 bg-white border border-slate-200 rounded-md text-xs placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500 text-slate-800 font-medium"
+                />
+                {eskulSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setEskulSearch('')}
+                    className="w-4 h-4 text-slate-400 hover:text-slate-600 absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center cursor-pointer"
+                    title="Hapus pencarian"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              {categories.length > 1 && (
+                <div className="flex items-center gap-1 overflow-x-auto pb-1 text-[10px] no-scrollbar">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedKategoriFilter('ALL')}
+                    className={`px-2 py-0.5 rounded-full border transition-all cursor-pointer whitespace-nowrap ${
+                      selectedKategoriFilter === 'ALL'
+                        ? 'bg-emerald-600 text-white border-emerald-600 font-semibold shadow-2xs'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    Semua ({eskulList.length})
+                  </button>
+                  {categories.map((kat) => (
+                    <button
+                      key={kat}
+                      type="button"
+                      onClick={() => setSelectedKategoriFilter(kat)}
+                      className={`px-2 py-0.5 rounded-full border transition-all cursor-pointer whitespace-nowrap ${
+                        selectedKategoriFilter === kat
+                          ? 'bg-emerald-600 text-white border-emerald-600 font-semibold shadow-2xs'
+                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {kat}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-44 overflow-y-auto pr-1">
-              {eskulList.map((e) => {
+              {filteredEskuls.map((e) => {
                 const isSelected = assignedEskulIds.includes(e.id);
 
                 return (
@@ -261,6 +347,23 @@ export const AddPembinaModal: React.FC<AddPembinaModalProps> = ({
                   </button>
                 );
               })}
+
+              {filteredEskuls.length === 0 && (
+                <div className="col-span-full py-5 text-center text-xs text-slate-500 border border-dashed border-slate-200 rounded-md bg-white">
+                  <Search className="w-5 h-5 text-slate-300 mx-auto mb-1" />
+                  <span>Tidak ada cabang eskul yang cocok dengan "{eskulSearch}".</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEskulSearch('');
+                      setSelectedKategoriFilter('ALL');
+                    }}
+                    className="block mx-auto text-emerald-600 text-[11px] font-semibold mt-1 hover:underline cursor-pointer"
+                  >
+                    Reset Pencarian
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

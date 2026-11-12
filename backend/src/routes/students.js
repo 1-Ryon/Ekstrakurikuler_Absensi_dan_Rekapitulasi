@@ -49,6 +49,128 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.post('/', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
+  try {
+    const isBatch = Array.isArray(req.body.students) || Array.isArray(req.body);
+    const studentList = isBatch
+      ? (Array.isArray(req.body.students) ? req.body.students : req.body)
+      : [req.body];
+
+    if (studentList.length === 0) {
+      return res.status(400).json({ success: false, message: 'Data siswa wajib diisi.' });
+    }
+
+    const createdList = [];
+
+    for (const item of studentList) {
+      const rawNis = String(item.nis || item.nomorInduk || '').trim();
+      const rawNama = String(item.namaLengkap || '').trim();
+      const rawKelas = String(item.kelas || 'X RPL 1').trim();
+      const rawJk = String(item.jenisKelamin || 'L').toUpperCase().startsWith('P') ? 'P' : 'L';
+
+      if (!rawNis || !rawNama) continue;
+
+      let targetKelasId = item.kelasId;
+      if (!targetKelasId && rawKelas) {
+        const kelasRecord = await prisma.kelas.upsert({
+          where: { namaKelas: rawKelas },
+          update: {},
+          create: {
+            namaKelas: rawKelas,
+            tingkat: parseInt(rawKelas.replace(/[^0-9]/g, ''), 10) || 10,
+            jurusan: rawKelas.split(' ')[1] || 'Umum',
+          },
+        });
+        targetKelasId = kelasRecord.id;
+      }
+
+      if (!targetKelasId) {
+        const defaultKelas = await prisma.kelas.findFirst();
+        targetKelasId = defaultKelas?.id;
+      }
+
+      const defaultPassword = getStudentDefaultPassword(rawNis);
+
+      const siswa = await prisma.siswa.upsert({
+        where: { nis: rawNis },
+        update: {
+          namaLengkap: rawNama,
+          kelasId: targetKelasId,
+          jenisKelamin: rawJk,
+          nisn: item.nisn ? String(item.nisn).trim() : rawNis,
+          noHp: item.noHp ? String(item.noHp).trim() : null,
+          email: item.email ? String(item.email).trim() : null,
+          statusAktif: true,
+        },
+        create: {
+          nis: rawNis,
+          nisn: item.nisn ? String(item.nisn).trim() : rawNis,
+          passwordHash: hashPassword(defaultPassword),
+          namaLengkap: rawNama,
+          kelasId: targetKelasId,
+          jenisKelamin: rawJk,
+          noHp: item.noHp ? String(item.noHp).trim() : null,
+          email: item.email ? String(item.email).trim() : null,
+          statusSiswa: 'AKTIF',
+          statusAktif: true,
+        },
+        include: {
+          kelas: true,
+        },
+      });
+
+      if (Array.isArray(item.eskulIds) && item.eskulIds.length > 0) {
+        for (const eskulId of item.eskulIds) {
+          await prisma.anggotaEskul.upsert({
+            where: {
+              eskulId_siswaId_tahunAjaran: {
+                eskulId,
+                siswaId: siswa.id,
+                tahunAjaran: '2026/2027',
+              },
+            },
+            update: { status: 'AKTIF' },
+            create: {
+              eskulId,
+              siswaId: siswa.id,
+              tahunAjaran: '2026/2027',
+              status: 'AKTIF',
+              jabatan: 'ANGGOTA',
+            },
+          });
+        }
+      }
+
+      createdList.push({
+        ...siswa,
+        defaultPassword,
+      });
+    }
+
+    if (createdList.length === 0) {
+      return res.status(400).json({ success: false, message: 'Tidak ada data siswa yang valid untuk disimpan.' });
+    }
+
+    if (isBatch || createdList.length > 1) {
+      return res.status(201).json({
+        success: true,
+        data: createdList,
+        count: createdList.length,
+        message: `Berhasil menambahkan ${createdList.length} siswa baru ke dalam sistem.`,
+      });
+    }
+
+    return res.status(201).json({
+      success: true,
+      data: createdList[0],
+      message: `Siswa "${createdList[0].namaLengkap}" (${createdList[0].nis}) berhasil didaftarkan ke kelas ${createdList[0].kelas?.namaKelas || '-'}.`,
+      defaultPassword: createdList[0].defaultPassword,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 router.post('/import', requireRoles('ADMIN', 'KOORDINATOR'), async (req, res) => {
   try {
     const { rows } = req.body;

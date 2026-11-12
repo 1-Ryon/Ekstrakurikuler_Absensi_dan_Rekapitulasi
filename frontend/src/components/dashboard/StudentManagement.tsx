@@ -27,13 +27,18 @@ import {
   ExternalLink,
   ChevronDown,
   GraduationCap,
-  Loader2
+  Loader2,
+  ArrowRight,
+  Circle,
+  Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { StudentProfile, Eskul, Role, Kelas } from '../../types';
 import { api } from '../../services/api';
 import { StudentCardModal } from '../modals/StudentCardModal';
+import { AddStudentModal } from '../modals/AddStudentModal';
 import { UserAvatar } from '../common/UserAvatar';
+import { cn } from '../../lib/utils';
 import {
   Card,
   CardHeader,
@@ -50,6 +55,67 @@ import {
   TableRow,
   TableCell,
 } from '../ui';
+
+interface JurusanDef {
+  code: string;
+  name: string;
+  aliases: string[];
+}
+
+export const KNOWN_JURUSANS: JurusanDef[] = [
+  { code: 'RPL', name: 'Rekayasa Perangkat Lunak', aliases: ['rpl', 'rekayasa perangkat lunak', 'pplg', 'perangkat lunak'] },
+  { code: 'TKJ', name: 'Teknik Komputer & Jaringan', aliases: ['tkj', 'teknik komputer', 'jaringan', 'tjkt'] },
+  { code: 'AKL', name: 'Akuntansi Keuangan Lembaga', aliases: ['akl', 'akuntansi', 'keuangan'] },
+  { code: 'OTKP', name: 'Otomatisasi Tata Kelola Perkantoran', aliases: ['otkp', 'mplb', 'perkantoran', 'tata kelola'] },
+  { code: 'BDP', name: 'Bisnis Daring & Pemasaran', aliases: ['bdp', 'bisnis daring', 'pemasaran', 'bd'] },
+  { code: 'DKV', name: 'Desain Komunikasi Visual', aliases: ['dkv', 'desain komunikasi'] },
+  { code: 'ANIMASI', name: 'Animasi', aliases: ['animasi'] },
+  { code: 'KULINER', name: 'Kuliner / Tata Boga', aliases: ['kuliner', 'tata boga', 'boga'] },
+  { code: 'PERHOTELAN', name: 'Perhotelan', aliases: ['perhotelan', 'hotel'] },
+  { code: 'FARMASI', name: 'Farmasi', aliases: ['farmasi'] },
+];
+
+export const extractJurusanInfo = (k?: Partial<Kelas>, namaKelasStr?: string): { code: string; name: string } => {
+  const rawJurusan = (k?.jurusan || '').trim().toLowerCase();
+  const rawNama = (namaKelasStr || k?.namaKelas || '').trim().toLowerCase();
+  const tokens = rawNama.toUpperCase().split(/[\s-]+/);
+
+  for (const item of KNOWN_JURUSANS) {
+    if (tokens.includes(item.code)) {
+      return { code: item.code, name: item.name };
+    }
+    for (const alias of item.aliases) {
+      if (rawJurusan.includes(alias)) {
+        return { code: item.code, name: item.name };
+      }
+    }
+  }
+
+  // Format like "X SIJA 1", second token is the department code
+  if (tokens.length >= 2) {
+    const roman = ['X', 'XI', 'XII', '10', '11', '12'];
+    if (roman.includes(tokens[0]) && tokens[1]) {
+      return { code: tokens[1], name: k?.jurusan || tokens[1] };
+    }
+  }
+
+  const fallback = k?.jurusan?.trim() || 'Umum';
+  return { code: fallback.toUpperCase(), name: fallback };
+};
+
+export const extractTingkatNumber = (k?: Partial<Kelas>, namaKelasStr?: string): number => {
+  const str = (namaKelasStr || k?.namaKelas || '').trim().toUpperCase();
+  if (str.startsWith('XII') || str.startsWith('12')) return 12;
+  if (str.startsWith('XI') || str.startsWith('11')) return 11;
+  if (str.startsWith('X') || str.startsWith('10')) return 10;
+  if (k?.tingkat) {
+    if (k.tingkat === 1 || k.tingkat === 10) return 10;
+    if (k.tingkat === 2 || k.tingkat === 11) return 11;
+    if (k.tingkat === 3 || k.tingkat === 12) return 12;
+    return k.tingkat;
+  }
+  return 10;
+};
 
 interface StudentManagementProps {
   students: StudentProfile[];
@@ -98,14 +164,151 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
   const [cardModalStudent, setCardModalStudent] = useState<StudentProfile | null>(null);
   const [isBatchCardModalOpen, setIsBatchCardModalOpen] = useState(false);
   const [batchModalStudents, setBatchModalStudents] = useState<StudentProfile[]>([]);
+  const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
 
   const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
   const [targetKelasId, setTargetKelasId] = useState('');
   const [isPromoting, setIsPromoting] = useState(false);
   const [promoteSuccessMsg, setPromoteSuccessMsg] = useState<string | null>(null);
   const [promoteErrorMsg, setPromoteErrorMsg] = useState<string | null>(null);
+  const [promoteSearchQuery, setPromoteSearchQuery] = useState('');
+  const [promoteTingkatMode, setPromoteTingkatMode] = useState<'NEXT' | 'ALL'>('NEXT');
+
+  const selectedStudents = useMemo(() => {
+    return students.filter((s) => selectedStudentIds.includes(s.id));
+  }, [students, selectedStudentIds]);
+
+  const promotionAnalysis = useMemo(() => {
+    if (selectedStudents.length === 0) {
+      return {
+        hasMixedJurusan: false,
+        jurusanCode: 'RPL',
+        jurusanName: 'Rekayasa Perangkat Lunak',
+        hasMixedTingkat: false,
+        currentTingkat: 10,
+        targetTingkat: 11,
+        classesInSameJurusan: [] as Kelas[],
+        classesInTargetTingkat: [] as Kelas[],
+        isAlreadyMaxTingkat: false,
+        studentSummary: '',
+        distinctJurusanCodes: [] as string[],
+      };
+    }
+
+    const studentInfoList = selectedStudents.map((s) => {
+      let matchedKelas = kelasList.find((k) => k.id === s.kelasId);
+      if (!matchedKelas && s.kelas) {
+        matchedKelas = kelasList.find(
+          (k) => k.namaKelas.trim().toLowerCase() === s.kelas.trim().toLowerCase()
+        );
+      }
+      const jInfo = extractJurusanInfo(matchedKelas, s.kelas);
+      const tingkat = extractTingkatNumber(matchedKelas, s.kelas);
+      return {
+        student: s,
+        kelas: matchedKelas,
+        namaKelas: s.kelas || matchedKelas?.namaKelas || 'Tanpa Kelas',
+        jurusanCode: jInfo.code,
+        jurusanName: jInfo.name,
+        tingkat,
+      };
+    });
+
+    const distinctJurusanCodes = Array.from(new Set(studentInfoList.map((i) => i.jurusanCode)));
+    const hasMixedJurusan = distinctJurusanCodes.length > 1;
+
+    const distinctTingkats = Array.from(new Set(studentInfoList.map((i) => i.tingkat)));
+    const hasMixedTingkat = distinctTingkats.length > 1;
+
+    const currentJurusanCode = distinctJurusanCodes[0] || 'RPL';
+    const currentJurusanName = studentInfoList[0]?.jurusanName || currentJurusanCode;
+    const currentTingkat = distinctTingkats[0] || 10;
+    const targetTingkat = currentTingkat < 12 ? currentTingkat + 1 : 12;
+
+    // Filter ALL classes from kelasList to strictly those with the same jurusan!
+    const classesInSameJurusan = kelasList.filter((k) => {
+      const kJurusan = extractJurusanInfo(k, k.namaKelas);
+      return kJurusan.code === currentJurusanCode;
+    });
+
+    // Sub-filter to classes strictly at the incremented tingkat (e.g. 11 when coming from 10)
+    const classesInTargetTingkat = classesInSameJurusan.filter((k) => {
+      const kTingkat = extractTingkatNumber(k, k.namaKelas);
+      return kTingkat === targetTingkat;
+    });
+
+    const firstStudent = studentInfoList[0];
+    const studentSummary =
+      studentInfoList.length === 1
+        ? `${firstStudent.student.namaLengkap} (${firstStudent.namaKelas})`
+        : `${studentInfoList.length} Siswa (${firstStudent.namaKelas}${studentInfoList.some(s => s.namaKelas !== firstStudent.namaKelas) ? ', dkk' : ''})`;
+
+    return {
+      studentInfoList,
+      hasMixedJurusan,
+      distinctJurusanCodes,
+      jurusanCode: currentJurusanCode,
+      jurusanName: currentJurusanName,
+      hasMixedTingkat,
+      distinctTingkats,
+      currentTingkat,
+      targetTingkat,
+      classesInSameJurusan,
+      classesInTargetTingkat,
+      isAlreadyMaxTingkat: currentTingkat >= 12,
+      studentSummary,
+    };
+  }, [selectedStudents, kelasList]);
+
+  const filteredTargetClasses = useMemo(() => {
+    if (promotionAnalysis.hasMixedJurusan) return [];
+
+    const baseList =
+      promoteTingkatMode === 'NEXT' && promotionAnalysis.classesInTargetTingkat.length > 0
+        ? promotionAnalysis.classesInTargetTingkat
+        : promotionAnalysis.classesInSameJurusan;
+
+    const q = promoteSearchQuery.trim().toLowerCase();
+    if (!q) return baseList;
+
+    return baseList.filter((k) => {
+      const matchName = k.namaKelas.toLowerCase().includes(q);
+      const matchJurusan = k.jurusan.toLowerCase().includes(q);
+      const matchWali = k.waliKelas?.namaLengkap?.toLowerCase().includes(q);
+      const matchTingkat = String(extractTingkatNumber(k, k.namaKelas)).includes(q);
+      return matchName || matchJurusan || matchWali || matchTingkat;
+    });
+  }, [promotionAnalysis, promoteTingkatMode, promoteSearchQuery]);
+
+  const selectedTargetKelas = useMemo(() => {
+    return kelasList.find((k) => k.id === targetKelasId);
+  }, [kelasList, targetKelasId]);
+
+  const handleOpenPromoteModal = () => {
+    setPromoteSearchQuery('');
+    setPromoteTingkatMode('NEXT');
+    setPromoteErrorMsg(null);
+    setPromoteSuccessMsg(null);
+
+    const initialList =
+      promotionAnalysis.classesInTargetTingkat.length > 0
+        ? promotionAnalysis.classesInTargetTingkat
+        : promotionAnalysis.classesInSameJurusan;
+
+    if (initialList.length > 0 && !promotionAnalysis.hasMixedJurusan) {
+      setTargetKelasId(initialList[0].id);
+    } else {
+      setTargetKelasId('');
+    }
+
+    setIsPromoteModalOpen(true);
+  };
 
   const handleBatchPromoteClass = async () => {
+    if (promotionAnalysis.hasMixedJurusan) {
+      setPromoteErrorMsg('Siswa terpilih berasal dari jurusan berbeda. Kenaikan kelas harus dilakukan per rombel/jurusan yang sama.');
+      return;
+    }
     if (!targetKelasId) {
       setPromoteErrorMsg('Silakan pilih kelas tujuan terlebih dahulu.');
       return;
@@ -304,16 +507,29 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
           </Button>
 
           {isKoordinator && (
-            <Button
-              type="button"
-              variant="brand"
-              size="sm"
-              onClick={onAddStudent}
-              className="gap-2 font-semibold"
-            >
-              <UserPlus className="size-4" />
-              <span>Impor / Tambah Siswa</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="brand"
+                size="sm"
+                onClick={() => setIsAddStudentModalOpen(true)}
+                className="gap-1.5 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+              >
+                <UserPlus className="size-4" />
+                <span>+ Tambah Siswa</span>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onAddStudent}
+                className="gap-1.5 font-medium border-slate-300 text-slate-700 hover:bg-slate-100 cursor-pointer"
+                title="Impor data siswa banyak sekaligus melalui file Excel atau CSV"
+              >
+                <FileSpreadsheet className="size-4 text-emerald-600" />
+                <span>Impor Spreadsheet</span>
+              </Button>
+            </div>
           )}
         </div>
       </div>
@@ -1006,12 +1222,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  setTargetKelasId(kelasList[0]?.id || '');
-                  setPromoteErrorMsg(null);
-                  setPromoteSuccessMsg(null);
-                  setIsPromoteModalOpen(true);
-                }}
+                onClick={handleOpenPromoteModal}
                 className="gap-1.5 h-7 px-3 text-xs bg-white text-slate-800 hover:bg-slate-100 border-slate-300"
               >
                 <GraduationCap className="size-3.5 text-emerald-600" />
@@ -1330,11 +1541,12 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-xl w-[92vw] max-w-md shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+            className="bg-white rounded-xl w-[92vw] max-w-lg shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]"
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 bg-slate-50 shrink-0">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-emerald-100 text-emerald-700 rounded-lg">
+                <div className="p-2 bg-emerald-100 text-emerald-700 rounded-lg shrink-0">
                   <GraduationCap className="size-5" />
                 </div>
                 <div>
@@ -1342,7 +1554,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                     Naik Kelas / Promosi Rombel
                   </h3>
                   <p className="text-[11px] text-slate-500">
-                    Perbarui tingkat rombel belajar siswa terpilih
+                    Perbarui tingkat rombel belajar siswa terpilih sesuai jurusan asal
                   </p>
                 </div>
               </div>
@@ -1356,17 +1568,56 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
               </button>
             </div>
 
-            <div className="p-5 space-y-4">
-              <div className="p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-lg text-xs space-y-1">
-                <span className="font-bold text-emerald-950 flex items-center gap-1.5">
-                  <CheckCircle2 className="size-3.5 text-emerald-600" />
-                  <span>{selectedStudentIds.length} Siswa Terpilih</span>
-                </span>
-                <p className="text-emerald-800 text-[11px] leading-relaxed">
+            {/* Content Body */}
+            <div className="p-5 space-y-3.5 overflow-y-auto flex-1">
+              {/* Selected Students & Current Level Info Card */}
+              <div className="p-3 bg-emerald-50/70 border border-emerald-200/80 rounded-lg text-xs space-y-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <span className="font-bold text-emerald-950 flex items-center gap-1.5">
+                    <CheckCircle2 className="size-3.5 text-emerald-600 shrink-0" />
+                    <span>{selectedStudentIds.length} Siswa Terpilih</span>
+                  </span>
+                  {!promotionAnalysis.hasMixedJurusan && (
+                    <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-100/90 px-2 py-0.5 rounded-full border border-emerald-200 shrink-0">
+                      Jurusan: {promotionAnalysis.jurusanCode} ({promotionAnalysis.jurusanName})
+                    </span>
+                  )}
+                </div>
+
+                {!promotionAnalysis.hasMixedJurusan && (
+                  <div className="flex items-center gap-1.5 text-[11px] text-emerald-900 font-medium flex-wrap pt-0.5">
+                    <span>Kelas Asal: <strong>{promotionAnalysis.studentSummary}</strong></span>
+                    <span className="text-emerald-400">•</span>
+                    <span className="inline-flex items-center gap-1">
+                      <span>Tingkat {promotionAnalysis.currentTingkat}</span>
+                      <ArrowRight className="size-3 text-emerald-600 inline shrink-0" />
+                      <span className="font-bold text-emerald-950">Target: Tingkat {promotionAnalysis.targetTingkat}</span>
+                    </span>
+                  </div>
+                )}
+
+                <p className="text-emerald-800/85 text-[11px] leading-relaxed pt-1 border-t border-emerald-200/50">
                   Riwayat absensi per sesi latihan, presensi QR lampau, dan nilai rapor (KHN) siswa pada semester sebelumnya tetap tersimpan permanen dan tidak akan hilang.
                 </p>
               </div>
 
+              {/* Mixed Jurusan Error Warning */}
+              {promotionAnalysis.hasMixedJurusan && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs space-y-1.5 text-rose-900">
+                  <div className="flex items-center gap-1.5 font-bold text-rose-950">
+                    <AlertCircle className="size-4 text-rose-600 shrink-0" />
+                    <span>Peringatan: Terdeteksi Jurusan Berbeda!</span>
+                  </div>
+                  <p className="text-[11px] text-rose-800 leading-relaxed">
+                    Siswa yang Anda pilih berasal dari jurusan yang berbeda ({promotionAnalysis.distinctJurusanCodes.join(', ')}). Sesuai aturan akademik, kenaikan rombel hanya dapat dilakukan untuk siswa dalam satu lingkup jurusan yang sama.
+                  </p>
+                  <p className="text-[11px] font-semibold text-rose-900">
+                    Silakan batalkan dan centang siswa dari satu jurusan yang sama (misal: hanya siswa RPL).
+                  </p>
+                </div>
+              )}
+
+              {/* Success & Error Messages */}
               {promoteSuccessMsg && (
                 <div className="p-2.5 bg-emerald-100 border border-emerald-300 rounded text-emerald-900 text-xs font-semibold flex items-center gap-2">
                   <Check className="size-4 text-emerald-700 shrink-0" />
@@ -1381,27 +1632,166 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                 </div>
               )}
 
-              <div>
-                <label className="text-xs font-semibold text-slate-700 block mb-1.5">
-                  Pilih Kelas Tujuan Baru:
-                </label>
-                <select
-                  value={targetKelasId}
-                  onChange={(e) => setTargetKelasId(e.target.value)}
-                  disabled={isPromoting}
-                  className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 font-medium"
-                >
-                  <option value="">-- Pilih Kelas Tujuan --</option>
-                  {kelasList.map((k) => (
-                    <option key={k.id} value={k.id}>
-                      {k.namaKelas} (Tingkat {k.tingkat || 10} - {k.jurusan})
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* Target Class Selection Section */}
+              {!promotionAnalysis.hasMixedJurusan && (
+                <div className="space-y-2 pt-1">
+                  {/* Header & Filter Toggle */}
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="text-xs font-semibold text-slate-700 block">
+                      Pilih Kelas Tujuan Baru (Lingkup {promotionAnalysis.jurusanCode}):
+                    </label>
+
+                    {promotionAnalysis.classesInTargetTingkat.length > 0 && (
+                      <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-md text-[10px]">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPromoteTingkatMode('NEXT');
+                            if (promotionAnalysis.classesInTargetTingkat.length > 0) {
+                              setTargetKelasId(promotionAnalysis.classesInTargetTingkat[0].id);
+                            }
+                          }}
+                          className={cn(
+                            "px-2 py-0.5 rounded transition-all font-medium cursor-pointer",
+                            promoteTingkatMode === 'NEXT'
+                              ? "bg-white text-emerald-800 shadow-xs font-bold"
+                              : "text-slate-500 hover:text-slate-800"
+                          )}
+                        >
+                          Tingkat {promotionAnalysis.targetTingkat} (Rekomendasi)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPromoteTingkatMode('ALL')}
+                          className={cn(
+                            "px-2 py-0.5 rounded transition-all font-medium cursor-pointer",
+                            promoteTingkatMode === 'ALL'
+                              ? "bg-white text-emerald-800 shadow-xs font-bold"
+                              : "text-slate-500 hover:text-slate-800"
+                          )}
+                        >
+                          Semua {promotionAnalysis.jurusanCode}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Search Input Bar */}
+                  <div className="relative">
+                    <Search className="size-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={promoteSearchQuery}
+                      onChange={(e) => setPromoteSearchQuery(e.target.value)}
+                      placeholder={`Cari nama kelas ${promotionAnalysis.jurusanCode} (misal: XI ${promotionAnalysis.jurusanCode} 1, tingkat, wali)...`}
+                      className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-md focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white text-slate-800 placeholder:text-slate-400 font-medium"
+                    />
+                    {promoteSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setPromoteSearchQuery('')}
+                        className="size-4 text-slate-400 hover:text-slate-600 absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center cursor-pointer"
+                        title="Hapus pencarian"
+                      >
+                        <X className="size-3" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Class Options List */}
+                  <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
+                    {filteredTargetClasses.map((k) => {
+                      const isSelected = targetKelasId === k.id;
+                      const kLevel = extractTingkatNumber(k, k.namaKelas);
+                      return (
+                        <div
+                          key={k.id}
+                          onClick={() => setTargetKelasId(k.id)}
+                          className={cn(
+                            "p-2.5 rounded-lg border transition-all cursor-pointer flex items-center justify-between gap-3 text-xs",
+                            isSelected
+                              ? "bg-emerald-50/80 border-emerald-500 ring-1 ring-emerald-500/30 text-emerald-950 font-semibold shadow-xs"
+                              : "bg-white border-slate-200 hover:border-emerald-300 hover:bg-slate-50/80 text-slate-800"
+                          )}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="shrink-0">
+                              {isSelected ? (
+                                <CheckCircle2 className="size-4 text-emerald-600" />
+                              ) : (
+                                <Circle className="size-4 text-slate-300" />
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-bold text-slate-900 text-xs">{k.namaKelas}</span>
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800">
+                                  Tingkat {kLevel}
+                                </span>
+                                <span className="text-[11px] text-slate-500 truncate max-w-[150px]">
+                                  {k.jurusan}
+                                </span>
+                              </div>
+                              {k.waliKelas && (
+                                <p className="text-[11px] text-slate-500 font-normal mt-0.5 truncate">
+                                  Wali: {k.waliKelas.namaLengkap}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {k._count?.siswaList !== undefined && (
+                            <span className="text-[10px] font-medium text-slate-400 shrink-0">
+                              {k._count.siswaList} Siswa
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {/* Empty State */}
+                    {filteredTargetClasses.length === 0 && (
+                      <div className="p-6 text-center border border-dashed border-slate-200 rounded-lg bg-slate-50/50">
+                        <Search className="size-6 text-slate-300 mx-auto mb-1.5" />
+                        <p className="text-xs font-medium text-slate-600">
+                          {promoteSearchQuery
+                            ? `Tidak ada rombel kelas yang cocok dengan "${promoteSearchQuery}".`
+                            : `Belum ada rombel kelas untuk jurusan ${promotionAnalysis.jurusanName} di tingkat ini.`}
+                        </p>
+                        {promoteSearchQuery ? (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setPromoteSearchQuery('')}
+                            className="text-[11px] h-7 mt-2 text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50"
+                          >
+                            Hapus Pencarian
+                          </Button>
+                        ) : (
+                          <p className="text-[11px] text-slate-400 mt-1">
+                            Anda dapat menambahkan rombel baru melalui menu Manajemen Kelas.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Selected Class Confirmation Preview */}
+                  {selectedTargetKelas && (
+                    <div className="p-2.5 bg-emerald-50/60 border border-emerald-200/60 rounded-md text-[11px] text-emerald-900 flex items-center gap-2 mt-2">
+                      <Sparkles className="size-3.5 text-emerald-600 shrink-0" />
+                      <span>
+                        Target Terpilih: <strong>{selectedTargetKelas.namaKelas}</strong> (Tingkat {extractTingkatNumber(selectedTargetKelas, selectedTargetKelas.namaKelas)} - {selectedTargetKelas.jurusan})
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
-            <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
+            {/* Footer */}
+            <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2 shrink-0">
               <Button
                 type="button"
                 variant="outline"
@@ -1416,7 +1806,7 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                 type="button"
                 variant="brand"
                 size="sm"
-                disabled={isPromoting || !targetKelasId}
+                disabled={isPromoting || !targetKelasId || promotionAnalysis.hasMixedJurusan}
                 onClick={handleBatchPromoteClass}
                 className="text-xs h-8 gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
               >
@@ -1428,7 +1818,11 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
                 ) : (
                   <>
                     <GraduationCap className="size-3.5" />
-                    <span>Konfirmasi Naik Kelas</span>
+                    <span>
+                      {selectedTargetKelas
+                        ? `Konfirmasi Naik ke ${selectedTargetKelas.namaKelas}`
+                        : 'Konfirmasi Naik Kelas'}
+                    </span>
                   </>
                 )}
               </Button>
@@ -1436,6 +1830,20 @@ export const StudentManagement: React.FC<StudentManagementProps> = ({
           </div>
         </div>
       )}
+
+      <AddStudentModal
+        isOpen={isAddStudentModalOpen}
+        onClose={() => setIsAddStudentModalOpen(false)}
+        kelasList={kelasList}
+        eskulList={eskulList}
+        onSuccess={(msg) => {
+          if (onRefreshStudents) onRefreshStudents();
+        }}
+        onOpenImportModal={() => {
+          setIsAddStudentModalOpen(false);
+          onAddStudent();
+        }}
+      />
     </div>
   );
 };

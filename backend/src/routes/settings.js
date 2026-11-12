@@ -22,22 +22,51 @@ const DEFAULT_SETTINGS = {
   kinerjaWeight: 30,
 };
 
+export function normalizeSettings(settings) {
+  const merged = { ...DEFAULT_SETTINGS, ...settings };
+  if (merged.isGeofenceActive !== undefined) {
+    if (
+      merged.isGeofenceActive === false ||
+      merged.isGeofenceActive === 'false' ||
+      merged.isGeofenceActive === 0 ||
+      merged.isGeofenceActive === '0'
+    ) {
+      merged.isGeofenceActive = false;
+    } else {
+      merged.isGeofenceActive = true;
+    }
+  }
+  if (merged.geofenceRadius !== undefined) {
+    merged.geofenceRadius = Number(merged.geofenceRadius) || 150;
+  }
+  if (merged.schoolLatitude !== undefined) {
+    merged.schoolLatitude = Number(merged.schoolLatitude) || -6.34215;
+  }
+  if (merged.schoolLongitude !== undefined) {
+    merged.schoolLongitude = Number(merged.schoolLongitude) || 106.71124;
+  }
+  if (merged.qrExpirySeconds !== undefined) {
+    merged.qrExpirySeconds = Number(merged.qrExpirySeconds) || 15;
+  }
+  return merged;
+}
+
 export function getSystemSettings() {
   try {
     if (fs.existsSync(SETTINGS_FILE)) {
       const data = fs.readFileSync(SETTINGS_FILE, 'utf-8');
-      return { ...DEFAULT_SETTINGS, ...JSON.parse(data) };
+      return normalizeSettings(JSON.parse(data));
     }
   } catch (err) {
     console.warn('[Settings] Gagal membaca settings.json, menggunakan default:', err.message);
   }
-  return { ...DEFAULT_SETTINGS };
+  return normalizeSettings({});
 }
 
 export function saveSystemSettings(newSettings) {
   try {
     const current = getSystemSettings();
-    const updated = { ...current, ...newSettings };
+    const updated = normalizeSettings({ ...current, ...newSettings });
     fs.writeFileSync(SETTINGS_FILE, JSON.stringify(updated, null, 2), 'utf-8');
     return updated;
   } catch (err) {
@@ -48,6 +77,7 @@ export function saveSystemSettings(newSettings) {
 
 router.get('/', (req, res) => {
   try {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     const settings = getSystemSettings();
     res.json({ success: true, data: settings });
   } catch (error) {

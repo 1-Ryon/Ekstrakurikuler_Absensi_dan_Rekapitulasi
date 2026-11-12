@@ -236,6 +236,32 @@ export const api = {
     }),
 
   getStudents: () => fetchWithFallback<StudentProfile[]>('/students', undefined, INITIAL_STUDENTS),
+  createStudent: (data: {
+    nis?: string;
+    nisn?: string;
+    namaLengkap?: string;
+    kelasId?: string;
+    kelas?: string;
+    jenisKelamin?: string;
+    noHp?: string;
+    email?: string;
+    eskulIds?: string[];
+    students?: Array<{
+      nis: string;
+      nisn?: string;
+      namaLengkap: string;
+      kelasId?: string;
+      kelas?: string;
+      jenisKelamin?: string;
+      noHp?: string;
+      email?: string;
+      eskulIds?: string[];
+    }>;
+  }) =>
+    fetchWithFallback<{ success: boolean; data?: any; count?: number; message: string; defaultPassword?: string }>('/students', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
   assignEskul: (studentId: string, eskulIds: string[]) =>
     fetchWithFallback<{ success: boolean }>('/students/assign', {
       method: 'POST',
@@ -456,8 +482,11 @@ export const api = {
       body: JSON.stringify({ siswaId, alasan }),
     }),
 
-  getSettings: () =>
-    fetchWithFallback<{
+  getSettings: async () => {
+    const savedGeofence = typeof window !== 'undefined' ? localStorage.getItem('al_amanah_geofence_active') : null;
+    const defaultGeofence = savedGeofence !== null ? savedGeofence === 'true' : false;
+
+    const res = await fetchWithFallback<{
       schoolName: string;
       schoolLatitude: number;
       schoolLongitude: number;
@@ -467,20 +496,34 @@ export const api = {
       kehadiranWeight: number;
       keaktifanWeight: number;
       kinerjaWeight: number;
-    }>('/settings', undefined, {
+    }>('/settings', { cache: 'no-store' }, {
       schoolName: 'SMK AL AMANAH KOTA TANGERANG SELATAN',
       schoolLatitude: -6.34215,
       schoolLongitude: 106.71124,
       geofenceRadius: 150,
-      isGeofenceActive: true,
+      isGeofenceActive: defaultGeofence,
       qrExpirySeconds: 15,
       kehadiranWeight: 40,
       keaktifanWeight: 30,
       kinerjaWeight: 30,
-    }),
-  updateSettings: (settings: any) =>
-    fetchWithFallback<{ success: boolean; message: string; data: any }>('/settings', {
+    });
+
+    if (res && res.isGeofenceActive !== undefined && typeof window !== 'undefined') {
+      const boolVal = res.isGeofenceActive === true || String(res.isGeofenceActive) === 'true';
+      localStorage.setItem('al_amanah_geofence_active', String(boolVal));
+      res.isGeofenceActive = boolVal;
+    }
+    return res;
+  },
+  updateSettings: async (settings: any) => {
+    if (settings && settings.isGeofenceActive !== undefined && typeof window !== 'undefined') {
+      const boolVal = settings.isGeofenceActive === true || String(settings.isGeofenceActive) === 'true';
+      localStorage.setItem('al_amanah_geofence_active', String(boolVal));
+    }
+    return fetchWithFallback<{ success: boolean; message: string; data: any }>('/settings', {
       method: 'PUT',
+      headers: { 'Cache-Control': 'no-cache' },
       body: JSON.stringify(settings),
-    }),
+    });
+  },
 };

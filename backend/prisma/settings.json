@@ -4,7 +4,7 @@
   "schoolLatitude": -6.34215,
   "schoolLongitude": 106.71124,
   "geofenceRadius": 150,
-  "isGeofenceActive": true,
+  "isGeofenceActive": false,
   "qrExpirySeconds": 15,
   "kehadiranWeight": 40,
   "keaktifanWeight": 30,

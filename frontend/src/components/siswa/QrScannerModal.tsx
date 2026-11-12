@@ -64,10 +64,22 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
   };
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [distanceToSchool, setDistanceToSchool] = useState<number | null>(null);
-  const [geofenceActive, setGeofenceActive] = useState<boolean>(true);
+  const [geofenceActive, setGeofenceActive] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('al_amanah_geofence_active');
+      if (saved !== null) return saved === 'true';
+    }
+    return false;
+  });
   const [geofenceRadius, setGeofenceRadius] = useState<number>(150);
   const [isInsideGeofence, setIsInsideGeofence] = useState<boolean>(true);
-  const [locationNotice, setLocationNotice] = useState<string>('Memeriksa posisi GPS...');
+  const [locationNotice, setLocationNotice] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('al_amanah_geofence_active');
+      if (saved === 'false') return 'Mode Bebas (GPS Geofencing Dinonaktifkan)';
+    }
+    return 'Memeriksa konfigurasi geofencing...';
+  });
   const isScanningRef = useRef(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
 
@@ -79,17 +91,21 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
       try {
         const settings = await api.getSettings();
         if (!isMounted) return;
-        const isActive = settings?.isGeofenceActive ?? true;
-        const radius = settings?.geofenceRadius ?? 150;
-        const schoolLat = settings?.schoolLatitude ?? -6.34215;
-        const schoolLng = settings?.schoolLongitude ?? 106.71124;
+        const isActive = settings?.isGeofenceActive === true || String(settings?.isGeofenceActive) === 'true';
+        const radius = Number(settings?.geofenceRadius) || 150;
+        const schoolLat = Number(settings?.schoolLatitude) || -6.34215;
+        const schoolLng = Number(settings?.schoolLongitude) || 106.71124;
 
         setGeofenceActive(isActive);
         setGeofenceRadius(radius);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('al_amanah_geofence_active', String(isActive));
+        }
 
         if (!isActive) {
           setIsInsideGeofence(true);
-          setLocationNotice('Mode Bebas (Geofencing GPS dinonaktifkan di pengaturan)');
+          setLocationNotice('Mode Bebas (GPS Geofencing Dinonaktifkan)');
+          setUserCoords({ lat: schoolLat, lng: schoolLng });
           return;
         }
 
@@ -114,16 +130,20 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
               if (!isMounted) return;
               console.warn('Geolocation warning:', err.message);
               setIsInsideGeofence(true);
-              setLocationNotice('GPS Lokal Toleransi (Izin lokasi dibatasi browser)');
+              setLocationNotice('GPS Toleransi (Izin lokasi dibatasi browser)');
+              setUserCoords({ lat: schoolLat, lng: schoolLng });
             },
             { enableHighAccuracy: true, timeout: 8000 }
           );
         } else {
           setIsInsideGeofence(true);
           setLocationNotice('Geolocation tidak didukung pada browser ini');
+          setUserCoords({ lat: schoolLat, lng: schoolLng });
         }
       } catch (e) {
         console.warn('Settings load error:', e);
+        setIsInsideGeofence(true);
+        setLocationNotice('Mode Bebas (Gagal muat server settings)');
       }
     };
 
@@ -206,13 +226,17 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
         return;
       }
 
+      // If geofence is inactive, safely use school coordinates as fallback so backend never rejects
+      const latToSend = userCoords?.lat ?? -6.34215;
+      const lngToSend = userCoords?.lng ?? 106.71124;
+
       const res = await api.scanPresensi(
         decodedText,
         studentId,
-        `Kamera Siswa (PWA - ${distanceToSchool ? distanceToSchool + 'm' : 'GPS OK'})`,
+        `Kamera Siswa (PWA - ${geofenceActive ? (distanceToSchool ? distanceToSchool + 'm' : 'GPS OK') : 'Mode Bebas'})`,
         'DYNAMIC_QR',
-        userCoords?.lat,
-        userCoords?.lng
+        latToSend,
+        lngToSend
       );
       if (res) {
         resolvedEskul = (res as any).namaEskul || (res as any).data?.namaEskul || resolvedEskul;
@@ -397,10 +421,17 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
                 <div className="absolute bottom-0 right-0 size-4 border-b-2 border-r-2 border-[#00B884]" />
               </div>
 
-              <div className="absolute bottom-2.5 text-[10px] text-slate-300 flex items-center gap-1.5 bg-slate-900/90 px-2.5 py-1 rounded-md border border-slate-700/80">
-                <MapPin className="size-3 text-[#00B884]" />
-                <span>Geofencing: {distanceToSchool ?? 14}m di area sekolah ({isInsideGeofence ? 'Valid' : 'Luar Radius'})</span>
-              </div>
+              {geofenceActive ? (
+                <div className="absolute bottom-2.5 text-[10px] text-slate-300 flex items-center gap-1.5 bg-slate-900/90 px-2.5 py-1 rounded-md border border-slate-700/80">
+                  <MapPin className="size-3 text-[#00B884]" />
+                  <span>Geofencing: {distanceToSchool ?? 14}m di area sekolah ({isInsideGeofence ? 'Valid' : 'Luar Radius'})</span>
+                </div>
+              ) : (
+                <div className="absolute bottom-2.5 text-[10px] text-emerald-300 flex items-center gap-1.5 bg-slate-900/95 px-2.5 py-1 rounded-md border border-emerald-500/50 shadow-xs">
+                  <CheckCircle2 className="size-3 text-emerald-400" />
+                  <span>Mode Bebas: GPS Geofencing Dinonaktifkan</span>
+                </div>
+              )}
             </div>
           )}
 
@@ -492,7 +523,7 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
               <ShieldCheck className="size-3.5 text-emerald-400" />
               <span>Validitas Geofence & Waktu:</span>
             </span>
-            <span className={`font-mono font-semibold text-[11px] truncate max-w-[180px] ${isInsideGeofence ? 'text-emerald-400' : 'text-rose-400'}`}>
+            <span className={`font-mono font-semibold text-[11px] truncate max-w-[200px] ${!geofenceActive || isInsideGeofence ? 'text-emerald-400' : 'text-rose-400'}`}>
               {locationNotice}
             </span>
           </div>

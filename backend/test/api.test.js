@@ -775,13 +775,14 @@ test('28. Settings & Geofencing: GET returns configuration and PUT updates coord
     },
     body: JSON.stringify({
       geofenceRadius: 150,
-      isGeofenceActive: true,
+      isGeofenceActive: false,
     }),
   });
   assert.equal(putRes.status, 200);
   const putData = await putRes.json();
   assert.equal(putData.success, true);
   assert.equal(putData.data.geofenceRadius, 150);
+  assert.equal(putData.data.isGeofenceActive, false);
 
   // Security: RBAC rejects unauthorized roles (SISWA, PEMBINA) from updating system settings
   const siswaPutRes = await fetch(`${BASE_URL}/settings`, {
@@ -1000,34 +1001,50 @@ test('36. Logic: One Scan Per Session Guard rejects duplicate presence after HAD
 });
 
 test('37. Logic: Geofencing GPS enforcement validates radius and rejects missing or out-of-range coordinates', async () => {
-  const currentWindow = Math.floor(Date.now() / 15000);
-  const token = `SMK-AMANAH:sesi-01:${currentWindow}:GEO123`;
-
-  const resMissing = await fetch(`${BASE_URL}/presensi/scan`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SISWA_TOKEN}` },
-    body: JSON.stringify({
-      qrToken: token,
-      siswaId: 'sis-003',
-    }),
+  // Ensure geofencing is temporarily active for this validation test
+  await fetch(`${BASE_URL}/settings`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${ADMIN_TOKEN}` },
+    body: JSON.stringify({ isGeofenceActive: true, geofenceRadius: 150 }),
   });
-  assert.equal(resMissing.status, 400);
-  const dataMissing = await resMissing.json();
-  assert.ok(dataMissing.message.includes('Koordinat GPS lokasi perangkat wajib'));
 
-  const resOutside = await fetch(`${BASE_URL}/presensi/scan`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SISWA_TOKEN}` },
-    body: JSON.stringify({
-      qrToken: token,
-      siswaId: 'sis-003',
-      lat: -6.35000,
-      lng: 106.72000,
-    }),
-  });
-  assert.equal(resOutside.status, 403);
-  const dataOutside = await resOutside.json();
-  assert.ok(dataOutside.message.includes('di luar area SMK Al Amanah'));
+  try {
+    const currentWindow = Math.floor(Date.now() / 15000);
+    const token = `SMK-AMANAH:sesi-01:${currentWindow}:GEO123`;
+
+    const resMissing = await fetch(`${BASE_URL}/presensi/scan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SISWA_TOKEN}` },
+      body: JSON.stringify({
+        qrToken: token,
+        siswaId: 'sis-003',
+      }),
+    });
+    assert.equal(resMissing.status, 400);
+    const dataMissing = await resMissing.json();
+    assert.ok(dataMissing.message.includes('Koordinat GPS lokasi perangkat wajib'));
+
+    const resOutside = await fetch(`${BASE_URL}/presensi/scan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SISWA_TOKEN}` },
+      body: JSON.stringify({
+        qrToken: token,
+        siswaId: 'sis-003',
+        lat: -6.35000,
+        lng: 106.72000,
+      }),
+    });
+    assert.equal(resOutside.status, 403);
+    const dataOutside = await resOutside.json();
+    assert.ok(dataOutside.message.includes('di luar area SMK Al Amanah'));
+  } finally {
+    // Restore geofencing back to disabled so manual testing remains uninterrupted
+    await fetch(`${BASE_URL}/settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${ADMIN_TOKEN}` },
+      body: JSON.stringify({ isGeofenceActive: false }),
+    });
+  }
 });
 
 test('38. Mode B Presensi: POST /api/presensi/teacher-scan allows Pembina to scan student digital ID card', async () => {
@@ -1353,5 +1370,61 @@ test('48. Pendaftaran: Student registration enforces maximum 2 active eskuls lim
 
   // Clean up test membership
   await prisma.anggotaEskul.deleteMany({ where: { id: { in: ['ang-test-01', 'ang-test-02'] } } });
+  await prisma.$disconnect();
+});
+
+test('49. Master Data: POST /api/students supports single and small-batch student creation', async () => {
+  const prisma = new PrismaClient();
+  const testNisSingle = 'TEST_NIS_' + Date.now().toString().slice(-6);
+
+  // 1. Test single student creation
+  const resSingle = await fetch(`${BASE_URL}/students`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${ADMIN_TOKEN}`,
+    },
+    body: JSON.stringify({
+      nis: testNisSingle,
+      namaLengkap: 'Siswa Uji Satuan',
+      kelas: 'X RPL 1',
+      jenisKelamin: 'L',
+      noHp: '081299990001',
+    }),
+  });
+
+  assert.equal(resSingle.status, 201);
+  const dataSingle = await resSingle.json();
+  assert.equal(dataSingle.success, true);
+  assert.equal(dataSingle.data.nis, testNisSingle);
+  assert.equal(dataSingle.data.namaLengkap, 'Siswa Uji Satuan');
+
+  // 2. Test small-batch student creation
+  const testNisBatch1 = 'BATCH_' + (Date.now() + 1).toString().slice(-6);
+  const testNisBatch2 = 'BATCH_' + (Date.now() + 2).toString().slice(-6);
+
+  const resBatch = await fetch(`${BASE_URL}/students`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${ADMIN_TOKEN}`,
+    },
+    body: JSON.stringify({
+      students: [
+        { nis: testNisBatch1, namaLengkap: 'Siswa Batch 1', kelas: 'X RPL 1', jenisKelamin: 'L' },
+        { nis: testNisBatch2, namaLengkap: 'Siswa Batch 2', kelas: 'X RPL 2', jenisKelamin: 'P' },
+      ],
+    }),
+  });
+
+  assert.equal(resBatch.status, 201);
+  const dataBatch = await resBatch.json();
+  assert.equal(dataBatch.success, true);
+  assert.equal(dataBatch.count, 2);
+
+  // Clean up
+  await prisma.siswa.deleteMany({
+    where: { nis: { in: [testNisSingle, testNisBatch1, testNisBatch2] } },
+  });
   await prisma.$disconnect();
 });

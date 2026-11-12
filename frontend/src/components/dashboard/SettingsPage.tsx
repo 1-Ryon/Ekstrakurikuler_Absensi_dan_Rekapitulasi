@@ -17,7 +17,13 @@ import { api } from '../../services/api';
 export const SettingsPage: React.FC = () => {
   const [qrExpiry, setQrExpiry] = useState<number>(15);
   const [geofenceRadius, setGeofenceRadius] = useState<number>(150);
-  const [isGeofenceActive, setIsGeofenceActive] = useState<boolean>(true);
+  const [isGeofenceActive, setIsGeofenceActive] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('al_amanah_geofence_active');
+      if (saved !== null) return saved === 'true';
+    }
+    return false;
+  });
   const [schoolLatitude, setSchoolLatitude] = useState<number>(-6.34215);
   const [schoolLongitude, setSchoolLongitude] = useState<number>(106.71124);
   const [schoolName, setSchoolName] = useState<string>('SMK AL AMANAH KOTA TANGERANG SELATAN');
@@ -31,6 +37,8 @@ export const SettingsPage: React.FC = () => {
   const [isLocating, setIsLocating] = useState(false);
   const [locateMsg, setLocateMsg] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isSavingToggle, setIsSavingToggle] = useState(false);
+  const [toggleNotice, setToggleNotice] = useState<string | null>(null);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -39,7 +47,11 @@ export const SettingsPage: React.FC = () => {
         if (data) {
           if (data.qrExpirySeconds !== undefined) setQrExpiry(data.qrExpirySeconds);
           if (data.geofenceRadius !== undefined) setGeofenceRadius(data.geofenceRadius);
-          if (data.isGeofenceActive !== undefined) setIsGeofenceActive(data.isGeofenceActive);
+          if (data.isGeofenceActive !== undefined) {
+            const activeBool = data.isGeofenceActive === true || String(data.isGeofenceActive) === 'true';
+            setIsGeofenceActive(activeBool);
+            localStorage.setItem('al_amanah_geofence_active', String(activeBool));
+          }
           if (data.schoolLatitude !== undefined) setSchoolLatitude(data.schoolLatitude);
           if (data.schoolLongitude !== undefined) setSchoolLongitude(data.schoolLongitude);
           if (data.kehadiranWeight !== undefined) setKehadiranWeight(data.kehadiranWeight);
@@ -49,12 +61,49 @@ export const SettingsPage: React.FC = () => {
         }
       } catch (err) {
         console.warn('Gagal memuat settings dari server, menggunakan local cache:', err);
+        const saved = localStorage.getItem('al_amanah_geofence_active');
+        if (saved !== null) setIsGeofenceActive(saved === 'true');
       } finally {
         setIsLoading(false);
       }
     };
     loadSettings();
   }, []);
+
+  const handleToggleGeofence = async () => {
+    const nextState = !isGeofenceActive;
+    setIsGeofenceActive(nextState);
+    setIsSavingToggle(true);
+    setToggleNotice(null);
+    try {
+      await api.updateSettings({
+        schoolName,
+        npsn,
+        qrExpirySeconds: qrExpiry,
+        geofenceRadius,
+        isGeofenceActive: nextState,
+        schoolLatitude,
+        schoolLongitude,
+        kehadiranWeight,
+        keaktifanWeight,
+        kinerjaWeight,
+      });
+      localStorage.setItem('al_amanah_geofence_active', String(nextState));
+      setToggleNotice(
+        nextState
+          ? 'Geofencing GPS diaktifkan: Siswa wajib berada dalam radius sekolah untuk absen.'
+          : 'Geofencing GPS dinonaktifkan (Bypass Mode Aktif): Siswa dapat absen bebas tanpa cek GPS untuk pengujian.'
+      );
+      setTimeout(() => setToggleNotice(null), 5000);
+    } catch (err: any) {
+      console.error('Gagal menyimpan toggle GPS ke server:', err);
+      localStorage.setItem('al_amanah_geofence_active', String(nextState));
+      setToggleNotice(`Pengaturan GPS lokal diperbarui ke ${nextState ? 'Aktif' : 'Nonaktif'}.`);
+      setTimeout(() => setToggleNotice(null), 5000);
+    } finally {
+      setIsSavingToggle(false);
+    }
+  };
 
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -168,28 +217,61 @@ export const SettingsPage: React.FC = () => {
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Pembatasan Lokasi Presensi (Geofencing)</span>
+                  <span>Pembatasan Lokasi Presensi (Geofencing GPS)</span>
                 </label>
                 <button
                   type="button"
-                  onClick={() => setIsGeofenceActive(!isGeofenceActive)}
-                  className="flex items-center gap-1 text-[11px] font-bold text-slate-600 hover:text-slate-900 cursor-pointer"
+                  onClick={handleToggleGeofence}
+                  disabled={isSavingToggle}
+                  className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-[11px] font-bold text-slate-700 hover:text-slate-900 cursor-pointer transition-all disabled:opacity-60"
+                  title="Klik untuk langsung mengaktifkan atau menonaktifkan verifikasi GPS"
                 >
-                  {isGeofenceActive ? (
-                    <span className="text-emerald-600 flex items-center gap-1">
-                      <ToggleRight className="w-4 h-4 text-emerald-600" /> Aktif
+                  {isSavingToggle ? (
+                    <span className="text-slate-500 flex items-center gap-1">
+                      <div className="size-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                      Menyimpan...
+                    </span>
+                  ) : isGeofenceActive ? (
+                    <span className="text-emerald-700 flex items-center gap-1">
+                      <ToggleRight className="w-4 h-4 text-emerald-600" /> Aktif (Kunci Radius)
                     </span>
                   ) : (
-                    <span className="text-slate-400 flex items-center gap-1">
-                      <ToggleLeft className="w-4 h-4" /> Nonaktif (Bypass)
+                    <span className="text-amber-700 flex items-center gap-1">
+                      <ToggleLeft className="w-4 h-4 text-amber-600" /> Nonaktif (Mode Bebas Testing)
                     </span>
                   )}
                 </button>
               </div>
 
+              {toggleNotice && (
+                <div className={`mb-2 p-2 rounded-md text-[11px] font-semibold flex items-center gap-1.5 transition-all ${
+                  isGeofenceActive ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-900 border border-amber-300'
+                }`}>
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                  <span>{toggleNotice}</span>
+                </div>
+              )}
+
               <select
                 value={geofenceRadius}
-                onChange={(e) => setGeofenceRadius(Number(e.target.value))}
+                onChange={async (e) => {
+                  const newRadius = Number(e.target.value);
+                  setGeofenceRadius(newRadius);
+                  try {
+                    await api.updateSettings({
+                      schoolName,
+                      npsn,
+                      qrExpirySeconds: qrExpiry,
+                      geofenceRadius: newRadius,
+                      isGeofenceActive,
+                      schoolLatitude,
+                      schoolLongitude,
+                      kehadiranWeight,
+                      keaktifanWeight,
+                      kinerjaWeight,
+                    });
+                  } catch {}
+                }}
                 disabled={!isGeofenceActive}
                 className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#00B884]/20 disabled:opacity-50"
               >
@@ -199,10 +281,12 @@ export const SettingsPage: React.FC = () => {
                 <option value={250}>250 Meter (Toleransi Area Luar Gerbang)</option>
                 <option value={500}>500 Meter (Radius Luas)</option>
               </select>
-              <span className="text-[11px] text-slate-400 mt-1 block">
+              <span className={`text-[11px] mt-1 block font-medium ${
+                isGeofenceActive ? 'text-slate-500' : 'text-amber-700'
+              }`}>
                 {isGeofenceActive 
                   ? `Siswa wajib berada dalam radius ${geofenceRadius} meter dari titik koordinat sekolah.`
-                  : 'Geofencing dinonaktifkan: Siswa dapat absen tanpa verifikasi GPS (berguna untuk simulasi demo).'}
+                  : 'Geofencing dinonaktifkan: Siswa dapat langsung absen tanpa verifikasi GPS (siap untuk testing/demo kapan saja).'}
               </span>
             </div>
           </div>
